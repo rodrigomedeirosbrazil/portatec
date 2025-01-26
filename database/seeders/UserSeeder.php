@@ -15,9 +15,18 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create super-admin role
         $superAdminRole = Role::create([
             'name' => 'super-admin',
+            'guard_name' => 'web'
+        ]);
+
+        Role::create([
+            'name' => 'owner',
+            'guard_name' => 'web'
+        ]);
+
+        Role::create([
+            'name' => 'host',
             'guard_name' => 'web'
         ]);
 

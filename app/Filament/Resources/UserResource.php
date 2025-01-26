@@ -15,7 +15,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
-use App\Enums\RoleEnum;
 use STS\FilamentImpersonate\Tables\Actions\Impersonate;
 
 class UserResource extends Resource
@@ -34,8 +33,6 @@ class UserResource extends Resource
                 TextInput::make('email')
                     ->email()
                     ->required(),
-
-                DateTimePicker::make('email_verified_at'),
 
                 Select::make('roles')
                     ->label('System roles')
