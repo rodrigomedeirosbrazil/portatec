@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -33,21 +34,13 @@ class User extends Authenticatable implements FilamentUser
         'password' => 'hashed',
     ];
 
-    public function canAccessPanel(Panel $panel): bool
-    {
-        if (
-            $panel->getId() === 'admin'
-            && $this->hasRole('admin') === false
-            && $this->hasRole('super-admin') === false
-        ) {
-            return false;
-        }
-
-        return true;
-    }
-
     public function getRoleNamesAttribute(): string
     {
         return $this->roles->pluck('name')->join(',');
+    }
+
+    public function properties(): BelongsToMany
+    {
+        return $this->belongsToMany(Property::class);
     }
 }
