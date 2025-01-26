@@ -11,8 +11,8 @@ class CustomLoginResponse implements Responsable
 {
     public function toResponse($request): RedirectResponse | Redirector
     {
-        $superAdmin = auth()->user()->hasRole('super-admin');
+        $superAdmin = auth()->user()->hasRole('super_admin');
 
-        return redirect()->intended($superAdmin ? '/admin' : Filament::getUrl());
+        return redirect()->intended($superAdmin ? '/admin' : '/app');
     }
 }

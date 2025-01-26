@@ -16,11 +16,11 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $superAdminRole = Role::create([
-            'name' => 'super-admin',
+            'name' => 'super_admin',
             'guard_name' => 'web'
         ]);
 
-        Role::create([
+        $ownerRole = Role::create([
             'name' => 'owner',
             'guard_name' => 'web'
         ]);
@@ -33,12 +33,19 @@ class UserSeeder extends Seeder
         // Create super-admin user
         $superAdmin = User::create([
             'name' => 'Super Admin',
+            'email' => 'contato@medeirostec.com.br',
+            'password' => Hash::make('123qweasd'),
+            'email_verified_at' => now(),
+        ]);
+
+        $owner = User::create([
+            'name' => 'Rodrigo',
             'email' => 'rodrigo@medeirostec.com.br',
             'password' => Hash::make('123qweasd'),
             'email_verified_at' => now(),
         ]);
 
-        // Assign role to user
         $superAdmin->assignRole($superAdminRole);
+        $owner->assignRole($ownerRole);
     }
 }

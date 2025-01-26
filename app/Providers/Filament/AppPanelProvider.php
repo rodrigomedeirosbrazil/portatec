@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Responses\CustomLoginResponse;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -18,6 +19,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Filament\Http\Responses\Auth\Contracts\LoginResponse;
 
 class AppPanelProvider extends PanelProvider
 {
@@ -25,8 +27,12 @@ class AppPanelProvider extends PanelProvider
     {
         return $panel
             ->id('app')
+            ->bootUsing(function () {
+                app()->bind(LoginResponse::class, CustomLoginResponse::class);
+            })
             ->path('app')
             ->login()
+            ->profile()
             ->brandName(config('app.name'))
             ->colors([
                 'primary' => Color::Amber,
