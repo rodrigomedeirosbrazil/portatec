@@ -2,11 +2,13 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Responses\CustomLoginResponse;
 use Filament\Http\Middleware\Authenticate;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Http\Responses\Auth\Contracts\LoginResponse;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -24,6 +26,9 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
+            ->bootUsing(function () {
+                app()->bind(LoginResponse::class, CustomLoginResponse::class);
+            })
             ->default()
             ->id('admin')
             ->path('admin')
