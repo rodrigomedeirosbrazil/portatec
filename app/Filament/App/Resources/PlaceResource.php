@@ -2,10 +2,9 @@
 
 namespace App\Filament\App\Resources;
 
-use App\Enums\PropertyRoleEnum;
-use App\Filament\App\Resources\PropertyResource\Pages;
-use App\Filament\App\Resources\PropertyResource\RelationManagers;
-use App\Models\Property;
+use App\Enums\PlaceRoleEnum;
+use App\Filament\App\Resources\PlaceResource\Pages;
+use App\Models\Place;
 use Filament\Forms;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -17,9 +16,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class PropertyResource extends Resource
+class PlaceResource extends Resource
 {
-    protected static ?string $model = Property::class;
+    protected static ?string $model = Place::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -31,15 +30,16 @@ class PropertyResource extends Resource
                     ->required()
                     ->maxLength(255),
 
-                Repeater::make('propertyUsers')
+                Repeater::make('placeUsers')
                     ->relationship()
                     ->columnSpanFull()
                     ->schema([
                         Select::make('user_id')
                             ->relationship('user', 'name')
                             ->required(),
+
                         Select::make('role')
-                            ->options(PropertyRoleEnum::class)
+                            ->options(PlaceRoleEnum::class)
                             ->required(),
                     ])
             ]);
@@ -79,9 +79,9 @@ class PropertyResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListProperties::route('/'),
-            'create' => Pages\CreateProperty::route('/create'),
-            'edit' => Pages\EditProperty::route('/{record}/edit'),
+            'index' => Pages\ListPlaces::route('/'),
+            'create' => Pages\CreatePlace::route('/create'),
+            'edit' => Pages\EditPlace::route('/{record}/edit'),
         ];
     }
 }

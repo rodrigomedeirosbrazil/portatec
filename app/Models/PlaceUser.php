@@ -5,11 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PropertyUser extends Model
+class PlaceUser extends Model
 {
-    public function property(): BelongsTo
+    public function place(): BelongsTo
     {
-        return $this->belongsTo(Property::class);
+        return $this->belongsTo(Place::class);
     }
 
     public function user(): BelongsTo

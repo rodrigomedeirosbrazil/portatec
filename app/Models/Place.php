@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use App\Enums\PropertyRoleEnum;
+use App\Enums\PlaceRoleEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Property extends Model
+class Place extends Model
 {
     use HasFactory;
 
@@ -19,11 +19,11 @@ class Property extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'role' => PropertyRoleEnum::class,
+        'role' => PlaceRoleEnum::class,
     ];
 
-    public function propertyUsers(): HasMany
+    public function placeUsers(): HasMany
     {
-        return $this->hasMany(PropertyUser::class);
+        return $this->hasMany(PlaceUser::class);
     }
 }

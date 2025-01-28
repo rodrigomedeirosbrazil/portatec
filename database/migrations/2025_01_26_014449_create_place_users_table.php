@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\PropertyRoleEnum;
+use App\Enums\PlaceRoleEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,14 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('property_users', function (Blueprint $table) {
+        Schema::create('place_users', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('property_id')->constrained();
+            $table->foreignId('place_id')->constrained();
             $table->foreignId('user_id')->constrained();
-            $table->enum('role', PropertyRoleEnum::values());
+            $table->enum('role', PlaceRoleEnum::values());
             $table->timestamps();
 
-            $table->unique(['property_id', 'user_id']);
+            $table->unique(['place_id', 'user_id']);
         });
     }
 
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('property_users');
+        Schema::dropIfExists('place_users');
     }
 };

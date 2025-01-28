@@ -4,7 +4,7 @@ namespace App\Enums;
 
 use App\Enums\Traits\Valuable;
 
-enum PropertyRoleEnum: string
+enum PlaceRoleEnum: string
 {
     use Valuable;
 
