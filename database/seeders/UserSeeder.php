@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Enums\PropertyRoleEnum;
+use App\Models\Property;
+use App\Models\PropertyUser;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -20,32 +23,69 @@ class UserSeeder extends Seeder
             'guard_name' => 'web'
         ]);
 
-        $ownerRole = Role::create([
-            'name' => 'owner',
-            'guard_name' => 'web'
-        ]);
+        User::create([
+            'name' => 'Super Admin',
+            'email' => 'contato@medeirostec.com.br',
+            'password' => Hash::make('123'),
+            'email_verified_at' => now(),
+        ])
+            ->assignRole($superAdminRole);
 
-        Role::create([
+        $hostRole = Role::create([
             'name' => 'host',
             'guard_name' => 'web'
         ]);
 
-        // Create super-admin user
-        $superAdmin = User::create([
-            'name' => 'Super Admin',
-            'email' => 'contato@medeirostec.com.br',
-            'password' => Hash::make('123qweasd'),
-            'email_verified_at' => now(),
-        ]);
-
-        $owner = User::create([
+        $rodrigo =User::create([
             'name' => 'Rodrigo',
             'email' => 'rodrigo@medeirostec.com.br',
-            'password' => Hash::make('123qweasd'),
+            'password' => Hash::make('123'),
             'email_verified_at' => now(),
+        ])
+            ->assignRole($hostRole);
+
+        $maitte = User::create([
+            'name' => 'Maittê',
+            'email' => 'maitte.andrade@gmail.com',
+            'password' => Hash::make('123'),
+            'email_verified_at' => now(),
+        ])
+            ->assignRole($hostRole);
+
+        $guestRole = Role::create([
+            'name' => 'guest',
+            'guard_name' => 'web'
         ]);
 
-        $superAdmin->assignRole($superAdminRole);
-        $owner->assignRole($ownerRole);
+        $guest = User::create([
+            'name' => 'Guest',
+            'email' => 'guest@medeirostec.com.br',
+            'password' => Hash::make('123'),
+            'email_verified_at' => now(),
+        ])
+            ->assignRole($guestRole);
+
+        $property = Property::create([
+            'name' => 'Beach House',
+        ]);
+
+        PropertyUser::create([
+            'property_id' => $property->id,
+            'user_id' => $rodrigo->id,
+            'role' => PropertyRoleEnum::Admin,
+        ]);
+
+        PropertyUser::create([
+            'property_id' => $property->id,
+            'user_id' => $maitte->id,
+            'role' => PropertyRoleEnum::Host,
+        ]);
+
+        PropertyUser::create([
+            'property_id' => $property->id,
+            'user_id' => $guest->id,
+            'role' => PropertyRoleEnum::Guest,
+        ]);
     }
 }
+

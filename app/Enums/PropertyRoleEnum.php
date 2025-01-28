@@ -4,11 +4,11 @@ namespace App\Enums;
 
 use App\Enums\Traits\Valuable;
 
-enum RoleEnum: string
+enum PropertyRoleEnum: string
 {
     use Valuable;
 
     case Admin = 'admin';
     case Host = 'host';
-    case guest = 'guest';
+    case Guest = 'guest';
 }
