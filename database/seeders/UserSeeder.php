@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Enums\PlaceRoleEnum;
 use App\Enums\PropertyRoleEnum;
+use App\Models\Place;
+use App\Models\PlaceUser;
 use App\Models\Property;
 use App\Models\PropertyUser;
 use App\Models\User;
@@ -65,26 +68,26 @@ class UserSeeder extends Seeder
         ])
             ->assignRole($guestRole);
 
-        $property = Property::create([
+        $place = Place::create([
             'name' => 'Beach House',
         ]);
 
-        PropertyUser::create([
-            'property_id' => $property->id,
+        PlaceUser::create([
+            'place_id' => $place->id,
             'user_id' => $rodrigo->id,
-            'role' => PropertyRoleEnum::Admin,
+            'role' => PlaceRoleEnum::Admin,
         ]);
 
-        PropertyUser::create([
-            'property_id' => $property->id,
+        PlaceUser::create([
+            'place_id' => $place->id,
             'user_id' => $maitte->id,
-            'role' => PropertyRoleEnum::Host,
+            'role' => PlaceRoleEnum::Host,
         ]);
 
-        PropertyUser::create([
-            'property_id' => $property->id,
+        PlaceUser::create([
+            'place_id' => $place->id,
             'user_id' => $guest->id,
-            'role' => PropertyRoleEnum::Guest,
+            'role' => PlaceRoleEnum::Guest,
         ]);
     }
 }
