@@ -5,12 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PlaceUser extends Model
+class PlaceDevice extends Model
 {
     protected $fillable = [
         'place_id',
-        'user_id',
-        'role',
+        'device_id',
     ];
 
     public function place(): BelongsTo
@@ -18,8 +17,8 @@ class PlaceUser extends Model
         return $this->belongsTo(Place::class);
     }
 
-    public function user(): BelongsTo
+    public function device(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Device::class);
     }
 }

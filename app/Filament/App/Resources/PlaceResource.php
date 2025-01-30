@@ -5,7 +5,6 @@ namespace App\Filament\App\Resources;
 use App\Enums\PlaceRoleEnum;
 use App\Filament\App\Resources\PlaceResource\Pages;
 use App\Models\Place;
-use Filament\Forms;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -13,8 +12,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PlaceResource extends Resource
 {
@@ -60,6 +57,7 @@ class PlaceResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -69,19 +67,13 @@ class PlaceResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListPlaces::route('/'),
             'create' => Pages\CreatePlace::route('/create'),
             'edit' => Pages\EditPlace::route('/{record}/edit'),
+            'view' => Pages\ViewPlace::route('/{record}'),
         ];
     }
 }
