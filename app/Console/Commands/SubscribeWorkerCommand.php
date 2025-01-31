@@ -39,8 +39,8 @@ class SubscribeWorkerCommand extends Command
 
         $mqtt = MQTT::connection();
         $mqtt->subscribe($topic, function (string $topic, string $message) {
-            $this->info("[$topic]: $message");
-            Log::info("[$topic]: $message");
+            $this->info("$topic: $message");
+            Log::channel('mqtt-messages')->info("$topic: $message");
             dispatch(new MqttMessageEvent($topic, $message));
         }, 1);
 
