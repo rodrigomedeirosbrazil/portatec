@@ -12,6 +12,7 @@ use Filament\Infolists\Infolist;
 use Illuminate\Support\HtmlString;
 use Filament\Infolists\Components\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
+use PhpMqtt\Client\Facades\MQTT;
 
 class ViewPlace extends ViewRecord
 {
@@ -40,6 +41,9 @@ class ViewPlace extends ViewRecord
                         RepeatableEntry::make('placeDevices')
                             ->schema([
                                 TextEntry::make('device.name')
+                                    ->hidden(
+                                        fn ($record) => $record->device->type === DeviceTypeEnum::Sensor
+                                    )
                                     ->label(fn ($record) => $record->device->type->value)
                                     ->suffixAction(
                                         fn ($record) => $record->device->type === DeviceTypeEnum::Button
@@ -47,15 +51,27 @@ class ViewPlace extends ViewRecord
                                                 ->button()
                                                 ->icon('heroicon-m-play')
                                                 ->action(function ($record) {
-                                                    dd('Push button clicked');
+                                                    if (empty($record->device->topic)) {
+                                                        return;
+                                                    }
+                                                    MQTT::publish($record->device->topic, 'ON');
                                                 })
-                                            : Action::make('Sensor')
+                                            : Action::make('Switch')
                                                 ->button()
                                                 ->icon('heroicon-m-power')
                                                 ->action(function ($record) {
-                                                    dd('Sensor clicked');
+                                                    if (empty($record->device->topic)) {
+                                                        return;
+                                                    }
+                                                    MQTT::publish($record->device->topic, 'ON');
                                                 })
                                     ),
+                                TextEntry::make('device.name')
+                                    ->hidden(
+                                        fn ($record) => $record->device->type === DeviceTypeEnum::Button
+                                            || $record->device->type === DeviceTypeEnum::Switch
+                                    )
+                                    ->label(fn ($record) => $record->device->type->value)
                             ])
                     ])
                     ->columns(2),
