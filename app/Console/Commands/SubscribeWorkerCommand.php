@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Events\MqttMessageEvent;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use PhpMqtt\Client\Facades\MQTT;
 
 class SubscribeWorkerCommand extends Command
@@ -13,7 +15,7 @@ class SubscribeWorkerCommand extends Command
      * @var string
      */
     protected $signature = 'mqtt:subscribe-worker
-                            {topic : The topic to subscribe to}';
+                            {--topic : The topic to subscribe to}';
 
     /**
      * The console command description.
@@ -27,19 +29,19 @@ class SubscribeWorkerCommand extends Command
      */
     public function handle()
     {
-        $topic = $this->argument('topic');
+        $topic = $this->option('topic');
 
         if (! $topic) {
-            $this->error('Please provide a topic to subscribe to.');
-
-            return;
+            $topic = '#';
         }
 
         $this->info("Subscribed to topic [$topic].");
 
         $mqtt = MQTT::connection();
         $mqtt->subscribe($topic, function (string $topic, string $message) {
-            $this->info("Received QoS level 1 message on topic [$topic]: $message");
+            $this->info("[$topic]: $message");
+            Log::info("[$topic]: $message");
+            dispatch(new MqttMessageEvent($topic, $message));
         }, 1);
 
         $mqtt->loop(true);
