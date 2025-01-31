@@ -11,6 +11,7 @@
         "filament/filament": "^3.2",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
+        "php-mqtt/laravel-client": "^1.5",
         "stechstudio/filament-impersonate": "^3.15"
     },
     "require-dev": {
