@@ -16,6 +16,11 @@ return new class extends Migration
             $table->string('name');
             $table->string('type');
             $table->string('topic')->nullable();
+            $table->string('command_topic')->nullable();
+            $table->string('payload_on')->nullable();
+            $table->string('payload_off')->nullable();
+            $table->json('json_attribute')->nullable();
+            $table->string('status')->nullable();
             $table->timestamps();
         });
     }

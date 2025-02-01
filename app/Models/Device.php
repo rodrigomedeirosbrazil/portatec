@@ -16,6 +16,11 @@ class Device extends Model
         'name',
         'type',
         'topic',
+        'command_topic',
+        'payload_on',
+        'payload_off',
+        'json_attribute',
+        'status',
     ];
 
     protected $casts = [
