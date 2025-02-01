@@ -3,7 +3,9 @@
 namespace App\Filament\App\Resources\PlaceResource\Pages;
 
 use App\Enums\DeviceTypeEnum;
+use App\Events\PlaceDeviceStatusEvent;
 use App\Filament\App\Resources\PlaceResource;
+use App\Models\PlaceDevice;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Infolists\Components\Section;
@@ -14,10 +16,27 @@ use Filament\Infolists\Components\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Notifications\Notification;
 use PhpMqtt\Client\Facades\MQTT;
+use Livewire\Attributes\On;
 
 class ViewPlace extends ViewRecord
 {
     protected static string $resource = PlaceResource::class;
+
+    public function getListeners(): array
+    {
+        return [
+            'echo-private:Place.Device.Status.' . $this->record->id . ',PlaceDeviceStatusEvent' => 'refreshDeviceStatus',
+        ];
+    }
+
+    public function refreshDeviceStatus ($event): void
+    {
+        $this->record->placeDevices->each(function (PlaceDevice $placeDevice) use ($event) {
+            if ($placeDevice->device_id === data_get($event, 'deviceId')) {
+                $placeDevice->device->status = data_get($event, 'status');
+            }
+        });
+    }
 
     public function infolist(Infolist $infolist): Infolist
     {
