@@ -32,9 +32,11 @@ class ViewPlace extends ViewRecord
     public function refreshDeviceStatus ($event): void
     {
         $this->record->placeDevices->each(function (PlaceDevice $placeDevice) use ($event) {
-            if ($placeDevice->device_id === data_get($event, 'deviceId')) {
-                $placeDevice->device->status = data_get($event, 'status');
+            if ($placeDevice->device_id !== data_get($event, 'deviceId')) {
+                return;
             }
+
+            $placeDevice->device->status = data_get($event, 'status');
         });
     }
 
