@@ -3,7 +3,6 @@
 namespace App\Filament\App\Resources\PlaceResource\Pages;
 
 use App\Enums\DeviceTypeEnum;
-use App\Events\PlaceDeviceStatusEvent;
 use App\Filament\App\Resources\PlaceResource;
 use App\Models\PlaceDevice;
 use Filament\Actions;
@@ -16,11 +15,23 @@ use Filament\Infolists\Components\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Notifications\Notification;
 use PhpMqtt\Client\Facades\MQTT;
-use Livewire\Attributes\On;
 
 class ViewPlace extends ViewRecord
 {
     protected static string $resource = PlaceResource::class;
+
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+
+        $this->record->placeDevices->each(function (PlaceDevice $placeDevice) {
+            if (empty($placeDevice->device->command_topic)) {
+                return;
+            }
+
+            MQTT::publish($placeDevice->device->command_topic, '');
+        });
+    }
 
     public function getListeners(): array
     {
