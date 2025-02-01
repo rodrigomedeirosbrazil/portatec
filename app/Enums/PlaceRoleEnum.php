@@ -10,5 +10,4 @@ enum PlaceRoleEnum: string
 
     case Admin = 'admin';
     case Host = 'host';
-    case Guest = 'guest';
 }
