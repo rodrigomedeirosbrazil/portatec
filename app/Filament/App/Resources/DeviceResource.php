@@ -38,6 +38,15 @@ class DeviceResource extends Resource
                 TextInput::make('topic')
                     ->maxLength(255),
 
+                TextInput::make('command_topic')
+                    ->maxLength(255),
+
+                TextInput::make('payload_on')
+                    ->maxLength(255),
+
+                TextInput::make('payload_off')
+                    ->maxLength(255),
+
                 Repeater::make('placeDevices')
                     ->relationship()
                     ->schema([
