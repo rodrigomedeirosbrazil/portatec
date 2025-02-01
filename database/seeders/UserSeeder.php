@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Enums\DeviceTypeEnum;
 use App\Enums\PlaceRoleEnum;
 use App\Enums\PropertyRoleEnum;
+use App\Models\Device;
 use App\Models\Place;
 use App\Models\PlaceUser;
 use App\Models\Property;
@@ -39,7 +41,7 @@ class UserSeeder extends Seeder
             'guard_name' => 'web'
         ]);
 
-        $rodrigo =User::create([
+        $rodrigo = User::create([
             'name' => 'Rodrigo',
             'email' => 'rodrigo@medeirostec.com.br',
             'password' => Hash::make('123'),
@@ -54,19 +56,6 @@ class UserSeeder extends Seeder
             'email_verified_at' => now(),
         ])
             ->assignRole($hostRole);
-
-        $guestRole = Role::create([
-            'name' => 'guest',
-            'guard_name' => 'web'
-        ]);
-
-        $guest = User::create([
-            'name' => 'Guest',
-            'email' => 'guest@medeirostec.com.br',
-            'password' => Hash::make('123'),
-            'email_verified_at' => now(),
-        ])
-            ->assignRole($guestRole);
 
         $place = Place::create([
             'name' => 'Beach House',
@@ -84,10 +73,30 @@ class UserSeeder extends Seeder
             'role' => PlaceRoleEnum::Host,
         ]);
 
-        PlaceUser::create([
+        $portaoGaragem = Device::create([
+            'name' => 'Portão garagem',
+            'type' => DeviceTypeEnum::Button,
+            'topic' => 'stat/esmeralda6/POWER1',
+            'command_topic' => 'cmnd/esmeralda6/POWER1',
+            'payload_on' => 'ON',
+            'payload_off' => 'OFF',
+        ]);
+
+        $portaoGaragem->placeDevices()->create([
             'place_id' => $place->id,
-            'user_id' => $guest->id,
-            'role' => PlaceRoleEnum::Guest,
+        ]);
+
+        $statusPortaoGaragem = Device::create([
+            'name' => 'Status portão garagem',
+            'type' => DeviceTypeEnum::Sensor,
+            'topic' => 'stat/esmeralda6/RESULT',
+            'json_attribute' => 'POWER2',
+            'payload_on' => 'ON',
+            'payload_off' => 'OFF',
+        ]);
+
+        $statusPortaoGaragem->placeDevices()->create([
+            'place_id' => $place->id,
         ]);
     }
 }
