@@ -51,19 +51,24 @@ class ViewPlace extends ViewRecord
                                                 ->button()
                                                 ->icon('heroicon-m-play')
                                                 ->action(function ($record) {
-                                                    if (empty($record->device->topic)) {
+                                                    if (empty($record->device->command_topic)) {
                                                         return;
                                                     }
-                                                    MQTT::publish($record->device->topic, 'ON');
+                                                    MQTT::publish($record->device->command_topic, $record->device->payload_on);
                                                 })
                                             : Action::make('Switch')
                                                 ->button()
                                                 ->icon('heroicon-m-power')
                                                 ->action(function ($record) {
-                                                    if (empty($record->device->topic)) {
+                                                    if (empty($record->device->command_topic)) {
                                                         return;
                                                     }
-                                                    MQTT::publish($record->device->topic, 'ON');
+
+                                                    $toggledPayload = $record->device->status === $record->device->payload_off
+                                                        ? $record->device->payload_on
+                                                        : $record->device->payload_off;
+
+                                                    MQTT::publish($record->device->command_topic, $toggledPayload);
                                                 })
                                     ),
                                 TextEntry::make('device.name')
@@ -71,7 +76,7 @@ class ViewPlace extends ViewRecord
                                         fn ($record) => $record->device->type === DeviceTypeEnum::Button
                                             || $record->device->type === DeviceTypeEnum::Switch
                                     )
-                                    ->label(fn ($record) => $record->device->type->value)
+                                    ->label(fn ($record) => $record->device->status)
                             ])
                     ])
                     ->columns(2),
