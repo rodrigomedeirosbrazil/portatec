@@ -12,6 +12,7 @@ use Filament\Infolists\Infolist;
 use Illuminate\Support\HtmlString;
 use Filament\Infolists\Components\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Notifications\Notification;
 use PhpMqtt\Client\Facades\MQTT;
 
 class ViewPlace extends ViewRecord
@@ -44,7 +45,7 @@ class ViewPlace extends ViewRecord
                                     ->hidden(
                                         fn ($record) => $record->device->type === DeviceTypeEnum::Sensor
                                     )
-                                    ->label(fn ($record) => $record->device->type->value)
+                                    ->label('')
                                     ->suffixAction(
                                         fn ($record) => $record->device->type === DeviceTypeEnum::Button
                                             ? Action::make('pushButton')
@@ -55,6 +56,11 @@ class ViewPlace extends ViewRecord
                                                         return;
                                                     }
                                                     MQTT::publish($record->device->command_topic, $record->device->payload_on);
+
+                                                    Notification::make()
+                                                        ->title('Command sent.')
+                                                        ->success()
+                                                        ->send();
                                                 })
                                             : Action::make('Switch')
                                                 ->button()
@@ -69,14 +75,19 @@ class ViewPlace extends ViewRecord
                                                         : $record->device->payload_off;
 
                                                     MQTT::publish($record->device->command_topic, $toggledPayload);
+
+                                                    Notification::make()
+                                                        ->title('Command sent.')
+                                                        ->success()
+                                                        ->send();
                                                 })
                                     ),
-                                TextEntry::make('device.name')
+                                TextEntry::make('device.status')
                                     ->hidden(
                                         fn ($record) => $record->device->type === DeviceTypeEnum::Button
                                             || $record->device->type === DeviceTypeEnum::Switch
                                     )
-                                    ->label(fn ($record) => $record->device->status)
+                                    ->label(fn ($record) => $record->device->name)
                             ])
                     ])
                     ->columns(2),
