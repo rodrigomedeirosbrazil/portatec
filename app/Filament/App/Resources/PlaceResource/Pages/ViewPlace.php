@@ -32,28 +32,25 @@ class ViewPlace extends ViewRecord
 
     public function askForDeviceAvailability(): void
     {
-        $this->record->placeDevices->each(
+        $this->record->placeDevices->map(
             fn (PlaceDevice $placeDevice) => $placeDevice->device->availability_topic
         )
             ->filter()
             ->unique()
             ->each(
-                fn ($topic) => GetMqttMessageJob::dispatch(MQTT::connection(), $topic)
+                fn (string $topic) => GetMqttMessageJob::dispatch($topic)
             );
     }
 
     public function askForDeviceStatus(): void
     {
-        $this->record->placeDevices->each(
+        $this->record->placeDevices->map(
             fn (PlaceDevice $placeDevice) => $placeDevice->device->command_topic
         )
             ->filter()
             ->unique()
             ->each(
-                fn ($topic) => GetMqttMessageJob::dispatch(MQTT::connection(), $topic)
-            )
-            ->each(
-                fn ($topic) => MQTT::publish($topic, '')
+                fn (string $topic) => MQTT::publish($topic, '')
             );
     }
 
@@ -101,11 +98,16 @@ class ViewPlace extends ViewRecord
                                     ->hidden(
                                         fn ($record) => $record->device->type === DeviceTypeEnum::Sensor
                                     )
-                                    ->label('')
+                                    ->label(
+                                        fn ($record) => ! $record->device->is_available ? ' (Offline)' : ''
+                                    )
                                     ->suffixAction(
                                         fn ($record) => $record->device->type === DeviceTypeEnum::Button
                                             ? Action::make('pushButton')
                                                 ->button()
+                                                ->disabled(
+                                                    fn ($record) => !$record->device->is_available
+                                                )
                                                 ->icon('heroicon-m-play')
                                                 ->action(function ($record) {
                                                     if (empty($record->device->command_topic)) {
@@ -120,6 +122,9 @@ class ViewPlace extends ViewRecord
                                                 })
                                             : Action::make('Switch')
                                                 ->button()
+                                                ->disabled(
+                                                    fn ($record) => !$record->device->is_available
+                                                )
                                                 ->icon('heroicon-m-power')
                                                 ->action(function ($record) {
                                                     if (empty($record->device->command_topic)) {
@@ -138,12 +143,18 @@ class ViewPlace extends ViewRecord
                                                         ->send();
                                                 })
                                     ),
-                                TextEntry::make('device.status')
+                                TextEntry::make('device.name')
                                     ->hidden(
                                         fn ($record) => $record->device->type === DeviceTypeEnum::Button
                                             || $record->device->type === DeviceTypeEnum::Switch
                                     )
-                                    ->label(fn ($record) => $record->device->name)
+                                    ->label(
+                                        fn ($record) => ! $record->device->is_available
+                                            ? "{$record->device->name} (Offline)"
+                                            : ($record->device->status === $record->device->payload_on
+                                                ? "{$record->device->name} is On"
+                                                : "{$record->device->name} is Off")
+                                    )
                             ])
                     ])
                     ->columns(2),
