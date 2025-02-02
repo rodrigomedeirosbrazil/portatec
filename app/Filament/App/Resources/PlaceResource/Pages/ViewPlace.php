@@ -3,7 +3,9 @@
 namespace App\Filament\App\Resources\PlaceResource\Pages;
 
 use App\Enums\DeviceTypeEnum;
+use App\Events\MqttMessageEvent;
 use App\Filament\App\Resources\PlaceResource;
+use App\Jobs\GetMqttMessageJob;
 use App\Models\PlaceDevice;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
@@ -24,13 +26,35 @@ class ViewPlace extends ViewRecord
     {
         parent::mount($record);
 
-        $this->record->placeDevices->each(function (PlaceDevice $placeDevice) {
-            if (empty($placeDevice->device->command_topic)) {
-                return;
-            }
+        $this->askForDeviceAvailability();
+        $this->askForDeviceStatus();
+    }
 
-            MQTT::publish($placeDevice->device->command_topic, '');
-        });
+    public function askForDeviceAvailability(): void
+    {
+        $this->record->placeDevices->each(
+            fn (PlaceDevice $placeDevice) => $placeDevice->device->availability_topic
+        )
+            ->filter()
+            ->unique()
+            ->each(
+                fn ($topic) => GetMqttMessageJob::dispatch(MQTT::connection(), $topic)
+            );
+    }
+
+    public function askForDeviceStatus(): void
+    {
+        $this->record->placeDevices->each(
+            fn (PlaceDevice $placeDevice) => $placeDevice->device->command_topic
+        )
+            ->filter()
+            ->unique()
+            ->each(
+                fn ($topic) => GetMqttMessageJob::dispatch(MQTT::connection(), $topic)
+            )
+            ->each(
+                fn ($topic) => MQTT::publish($topic, '')
+            );
     }
 
     public function getListeners(): array
