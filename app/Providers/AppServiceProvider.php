@@ -6,6 +6,7 @@ use App\Events\MqttMessageEvent;
 use App\Listeners\DeliveryStatusFromMqttListener;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (config('app.env') === 'production') {
+            URL::forceScheme('https');
+        }
+
         Event::listen(
             MqttMessageEvent::class,
             DeliveryStatusFromMqttListener::class,
