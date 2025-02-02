@@ -39,7 +39,8 @@ RUN php artisan optimize
 COPY ./docker/prod/supervisord.conf /etc/supervisord.conf
 COPY ./docker/prod/nginx.conf /etc/nginx/nginx.conf
 COPY ./docker/prod/www.conf /usr/local/etc/php-fpm.d/www.conf
-COPY ./docker/prod/php.ini /usr/local/etc/php/php.ini
+# COPY ./docker/prod/php.ini /usr/local/etc/php/php.ini
+RUN mv /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
 COPY ./docker/prod/sites/* /etc/nginx/sites-available/
 
 COPY ./docker/prod/docker-entrypoint.sh /
