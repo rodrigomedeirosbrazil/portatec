@@ -18,7 +18,6 @@ services:
         volumes:
             - './.env:/var/www/.env'
             - './database.sqlite:/var/www/database/database.sqlite'
-            - './letsencrypt:/etc/letsencrypt'
             - './storage:/var/www/storage'
         networks:
             - medeirostec-network
