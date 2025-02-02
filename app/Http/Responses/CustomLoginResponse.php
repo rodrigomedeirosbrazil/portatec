@@ -13,6 +13,6 @@ class CustomLoginResponse implements Responsable
     {
         $superAdmin = auth()->user()->hasRole('super_admin');
 
-        return redirect()->intended($superAdmin ? '/admin' : '/app');
+        return redirect()->intended($superAdmin ? '/admin' : '/main');
     }
 }
