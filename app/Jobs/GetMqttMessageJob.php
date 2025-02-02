@@ -12,19 +12,19 @@ class GetMqttMessageJob implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public MqttClient $mqtt, public string $topic)
+    public function __construct(public string $topic)
     {
     }
 
     public function handle(): void
     {
-        $this->mqtt = MQTT::connection();
-        $this->mqtt->subscribe($this->topic, function ($topic, $message) {
+        $mqtt = MQTT::connection();
+        $mqtt->subscribe($this->topic, function ($topic, $message) use ($mqtt) {
             MqttMessageEvent::dispatch($topic, $message);
-            $this->mqtt->interrupt();
+            $mqtt->interrupt();
         });
 
-        $this->mqtt->loop(true);
-        $this->mqtt->disconnect();
+        $mqtt->loop(true);
+        $mqtt->disconnect();
     }
 }
