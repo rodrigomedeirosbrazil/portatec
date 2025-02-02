@@ -1,0 +1,54 @@
+services:
+    portatec:
+        image: portatec
+        build:
+            context: ./
+            dockerfile: ./docker/prod/Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '${APP_PORT:-80}:80'
+            - '${HTTPS_PORT:-443}:443'
+            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
+            - '${REVERB_PORT:-8080}:${REVERB_PORT:-8080}'
+        environment:
+            WWWUSER: '${WWWUSER}'
+        volumes:
+            - './.env:/var/www/.env'
+            - './database.sqlite:/var/www/database/database.sqlite'
+            - './letsencrypt:/etc/letsencrypt'
+            - './storage:/var/www/storage'
+        networks:
+            - medeirostec-network
+        depends_on:
+            - redis
+        restart: always
+
+
+    redis:
+        image: 'redis:alpine'
+        volumes:
+            - 'portatec-redis:/data'
+        networks:
+            - medeirostec-network
+        healthcheck:
+            test:
+                - CMD
+                - redis-cli
+                - ping
+            retries: 3
+            timeout: 5s
+        restart: always
+
+
+networks:
+  medeirostec-network:
+      external: true
+      name: medeirostec-network
+      driver: bridge
+
+volumes:
+    portatec-redis:
+        driver: local
