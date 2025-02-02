@@ -1,0 +1,30 @@
+name: Laravel Tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "**.php"
+      - "composer.json"
+      - "composer.lock"
+      - ".github/workflows/run-tests.yml"
+      - ".github/actions/laravel-tests/action.yml"
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.sender.login != vars.BOT_USERNAME
+
+    strategy:
+      matrix:
+        operating-system: [ ubuntu-latest ]
+        php-versions: [ '8.4' ]
+        dependency-stability: [ prefer-stable ]
+
+    name: Laravel Tests
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/php-environment
+      - uses: ./.github/actions/laravel-tests

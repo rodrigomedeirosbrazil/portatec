@@ -1,0 +1,24 @@
+name: "laravel-tests"
+description: "Run the tests"
+
+inputs:
+  branch:
+    description: "The branch to deploy"
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.branch }}
+    - uses: ./.github/actions/php-environment
+      with:
+        branch: ${{ inputs.branch }}
+    - name: Execute tests (Unit and Feature tests) via PestPHP
+      shell: bash
+      run: |
+        php artisan migrate:fresh
+        echo "Running unit/integration tests"
+        php artisan test --parallel

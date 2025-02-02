@@ -1,0 +1,64 @@
+name: "php-environment"
+description: "Setup PHP environment"
+
+inputs:
+  composer_auth:
+    description: "The auth key to install composer dependencies"
+    required: true
+  branch:
+    description: "The branch to deploy"
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.branch }}
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.4
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+        coverage: xdebug
+
+    - name: Validate composer.json and composer.lock
+      shell: bash
+      run: "composer validate --strict"
+
+    - name: Get composer cache directory
+      shell: bash
+      id: composer-cache
+      run: echo "::set-output name=directory::$(composer config cache-files-dir)"
+
+    - name: Cache dependencies installed with composer
+      uses: "actions/cache@v2.0.0"
+      with:
+        path: "${{ steps.composer-cache.outputs.directory }}"
+        key: "php-${{ matrix.php-version }}-composer-${{ matrix.dependencies }}-${{ hashFiles('composer.lock') }}"
+        restore-keys: "php-${{ matrix.php-version }}-composer-${{ matrix.dependencies }}-"
+
+    - name: Copy .env
+      shell: bash
+      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+
+    - name: Create storage folders
+      shell: bash
+      run: mkdir -p storage/framework/{sessions,views,cache}
+
+    - name: Directory Permissions
+      shell: bash
+      run: chmod -R 777 storage bootstrap/cache
+
+    - name: Create database sqlite
+      shell: bash
+      run: touch database/database.sqlite
+
+    - name: Install Composer dependencies
+      shell: bash
+      run: |
+        composer install --no-progress --prefer-dist --optimize-autoloader --ignore-platform-reqs
+        php artisan key:generate
