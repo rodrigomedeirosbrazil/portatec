@@ -15,7 +15,7 @@ class SubscribeWorkerCommand extends Command
      * @var string
      */
     protected $signature = 'mqtt:subscribe-worker
-                            {--topic : The topic to subscribe to}';
+                            {--topic=}';
 
     /**
      * The console command description.
