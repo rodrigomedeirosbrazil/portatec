@@ -53,6 +53,9 @@ class DeviceResource extends Resource
                 TextInput::make('payload_off')
                     ->maxLength(255),
 
+                TextInput::make('json_attribute')
+                    ->maxLength(255),
+
                 Repeater::make('placeDevices')
                     ->relationship()
                     ->schema([
