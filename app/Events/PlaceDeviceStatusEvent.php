@@ -14,7 +14,7 @@ class PlaceDeviceStatusEvent implements ShouldBroadcast
     use InteractsWithSockets;
     use SerializesModels;
 
-    public function __construct(public int $placeId, public int $deviceId, public string $status)
+    public function __construct(public int $placeId, public int $deviceId, public bool $isAvailable, public string $status)
     {
     }
 

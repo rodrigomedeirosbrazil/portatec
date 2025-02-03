@@ -41,6 +41,12 @@ class DeviceResource extends Resource
                 TextInput::make('command_topic')
                     ->maxLength(255),
 
+                TextInput::make('availability_topic')
+                    ->maxLength(255),
+
+                TextInput::make('availability_payload_on')
+                    ->maxLength(255),
+
                 TextInput::make('payload_on')
                     ->maxLength(255),
 

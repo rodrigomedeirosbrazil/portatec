@@ -19,12 +19,16 @@ class Device extends Model
         'command_topic',
         'payload_on',
         'payload_off',
+        'availability_topic',
+        'availability_payload_on',
+        'is_available',
         'json_attribute',
         'status',
     ];
 
     protected $casts = [
         'type' => DeviceTypeEnum::class,
+        'is_available' => 'boolean',
     ];
 
     public function placeDevices(): HasMany

@@ -30,7 +30,7 @@ class AppPanelProvider extends PanelProvider
             ->bootUsing(function () {
                 app()->bind(LoginResponse::class, CustomLoginResponse::class);
             })
-            ->path('app')
+            ->path('main')
             ->login()
             ->profile()
             ->brandName(config('app.name'))
