@@ -31,4 +31,12 @@ class Place extends Model
     {
         return $this->hasMany(PlaceDevice::class);
     }
+
+    public function hasAccessToPlace(User $user): bool
+    {
+        return $this->placeUsers()
+            ->where('user_id', $user->id)
+            ->whereIn('role', [PlaceRoleEnum::Admin, PlaceRoleEnum::Host])
+            ->exists();
+    }
 }

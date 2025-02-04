@@ -10,7 +10,7 @@ use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 class PlacePage extends Page
 {
     public Place $place;
-
+    public ?string $token;
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
     protected static string $view = 'filament.pages.place';
@@ -18,6 +18,18 @@ class PlacePage extends Page
     public function mount(int $id): void
     {
         $this->place = Place::findOrFail($id);
+        $this->token = null;
+
+        if (! $this->userCanAccess()) {
+            abort(403);
+        }
+    }
+
+    public function userCanAccess(): bool
+    {
+        return auth()->check()
+            && (auth()->user()->hasRole('super_admin')
+                || $this->place->hasAccessToPlace(auth()->user()));
     }
 
     public static function canAccess(): bool
