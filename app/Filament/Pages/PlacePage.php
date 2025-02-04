@@ -17,7 +17,7 @@ class PlacePage extends Page
 
     public function mount(int $id): void
     {
-        $this->place = Place::find($id);
+        $this->place = Place::findOrFail($id);
     }
 
     public static function canAccess(): bool
@@ -27,6 +27,6 @@ class PlacePage extends Page
 
     public function getTitle(): string | Htmlable
     {
-        return __('Place');
+        return $this->place->name;
     }
 }
