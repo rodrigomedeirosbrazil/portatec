@@ -3,15 +3,14 @@
 namespace App\Filament\Pages;
 
 use App\Models\Place;
-use Filament\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
 use PhpMqtt\Client\Facades\MQTT;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Auth;
 use App\Jobs\GetMqttMessageJob;
 use App\Models\PlaceDevice;
+use Filament\Pages\BasePage;
 
-class PlacePage extends Page
+class PlacePage extends BasePage
 {
     public Place $place;
     public ?string $token;
@@ -75,11 +74,21 @@ class PlacePage extends Page
 
     public function toggleDevice($deviceId): void
     {
-        $device = $this->place->placeDevices->firstWhere('device_id', $deviceId);
+        $placeDevice = $this->place->placeDevices->firstWhere('device_id', $deviceId);
+        $device = $placeDevice->device;
 
-        if (! $device || empty($device->command_topic)) {
+        if (! $device) {
             Notification::make()
-                ->title('Device is not available.')
+                ->title('Device not found.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if (empty($device->command_topic)) {
+            Notification::make()
+                ->title('Device does not have a command topic.')
                 ->danger()
                 ->send();
 
@@ -99,11 +108,20 @@ class PlacePage extends Page
 
     public function pushButton($deviceId): void
     {
-        $device = $this->place->placeDevices->firstWhere('device_id', $deviceId);
-
-        if (! $device || empty($device->command_topic)) {
+        $placeDevice = $this->place->placeDevices->firstWhere('device_id', $deviceId);
+        $device = $placeDevice->device;
+        if (! $device) {
             Notification::make()
-                ->title('Device is not available.')
+                ->title('Device not found.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if (empty($device->command_topic)) {
+            Notification::make()
+                ->title('Device does not have a command topic.')
                 ->danger()
                 ->send();
 
