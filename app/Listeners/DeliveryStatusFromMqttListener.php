@@ -36,19 +36,20 @@ class DeliveryStatusFromMqttListener implements ShouldQueue
             ->with('placeDevices.place')
             ->cursor()
             ->each(function (Device $device) use ($event) {
-                $payload = $event->message;
+                $status = $event->message;
                 if ($device->json_attribute) {
-                    $payload = data_get(json_decode($event->message), $device->json_attribute);
+                    $status = data_get(json_decode($event->message), $device->json_attribute);
                 }
 
-                $device->status = $payload;
+                $device->status = $status;
                 $device->save();
 
                 $device->placeDevices->each(fn (PlaceDevice $placeDevice) =>
                     PlaceDeviceStatusEvent::dispatch(
                         $placeDevice->place_id,
                         $device->id,
-                        $payload
+                        $device->is_available,
+                        $status ?? '',
                     )
                 );
             });
@@ -71,7 +72,7 @@ class DeliveryStatusFromMqttListener implements ShouldQueue
                         $placeDevice->place_id,
                         $device->id,
                         $device->is_available,
-                        $status
+                        $status ?? '',
                     )
                 );
             });
