@@ -96,13 +96,13 @@ class ViewPlace extends ViewRecord
                             ->schema([
                                 TextEntry::make('device.name')
                                     ->hidden(
-                                        fn ($record) => $record->device->type === DeviceTypeEnum::Sensor
+                                        fn ($record) => $record->device->type !== DeviceTypeEnum::Button
                                     )
                                     ->label(
                                         fn ($record) => ! $record->device->is_available ? ' (Offline)' : ''
                                     )
                                     ->suffixAction(
-                                        fn ($record) => $record->device->type === DeviceTypeEnum::Button
+                                        fn ($record) => $record->device->type === DeviceTypeEnum::Switch
                                             ? Action::make('pushButton')
                                                 ->button()
                                                 ->disabled(
@@ -145,8 +145,7 @@ class ViewPlace extends ViewRecord
                                     ),
                                 TextEntry::make('device.name')
                                     ->hidden(
-                                        fn ($record) => $record->device->type === DeviceTypeEnum::Button
-                                            || $record->device->type === DeviceTypeEnum::Switch
+                                        fn ($record) => ! $record->device->type === DeviceTypeEnum::Sensor
                                     )
                                     ->label(
                                         fn ($record) => ! $record->device->is_available
