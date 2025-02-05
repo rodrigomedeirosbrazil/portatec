@@ -68,7 +68,6 @@ class PlacePage extends BasePage
             }
 
             $placeDevice->device->status = data_get($event, 'status');
-            $this->deviceStates[$placeDevice->id] = $placeDevice->device->status === $placeDevice->device->payload_on;
         });
     }
 
