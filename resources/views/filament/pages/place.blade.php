@@ -8,7 +8,7 @@
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-2 mb-2">
                             <h3 class="text-base font-semibold text-gray-950 dark:text-white">
                                 {{ $placeDevice->device->name }}
                             </h3>
@@ -26,7 +26,8 @@
                                 wire:click="pushButton({{ $placeDevice->device_id }})"
                                 @class([
                                     'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold',
-                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->is_available,
+                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->status === $placeDevice->device->payload_off,
+                                    'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-offset-0' => $placeDevice->device->status === $placeDevice->device->payload_on,
                                     'cursor-not-allowed opacity-70' => ! $placeDevice->device->is_available,
                                 ])
                             >
@@ -41,12 +42,11 @@
                             <button
                                 wire:click="toggleDevice({{ $placeDevice->device_id }})"
                                 @class([
-                                    'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
-                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->is_available,
-                                    'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-offset-0' => ! $placeDevice->device->is_available,
+                                    'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold',
+                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->is_available && $placeDevice->device->status === $placeDevice->device->payload_on,
+                                    'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-offset-0' => $placeDevice->device->is_available && $placeDevice->device->status === $placeDevice->device->payload_off,
                                     'cursor-not-allowed opacity-70' => ! $placeDevice->device->is_available,
                                 ])
-                                @disabled(! $placeDevice->device->is_available)
                             >
                                 {{ $placeDevice->device->status === $placeDevice->device->payload_on ? 'On' : 'Off' }}
                             </button>
@@ -55,7 +55,11 @@
                         @if ($placeDevice->device->type === DeviceTypeEnum::Sensor)
                             <div class="flex items-center space-x-2">
                                 <span class="text-2xl font-semibold text-gray-900 dark:text-white">
-                                    {{ $placeDevice->device->status ?? 'N/A' }}
+                                    @if (! empty($placeDevice->device->status))
+                                        {{ $placeDevice->device->status }}
+                                    @else
+                                        Not available
+                                    @endif
                                 </span>
                             </div>
                         @endif
