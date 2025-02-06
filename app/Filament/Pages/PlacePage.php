@@ -94,13 +94,13 @@ class PlacePage extends BasePage
             return;
         }
 
-        $newState = ! $device->status;
+        $newState = $device->status === $device->payload_on ? false : true;
         $payload = $newState ? $device->payload_on : $device->payload_off;
 
         MQTT::publish($device->command_topic, $payload);
 
         Notification::make()
-            ->title('Command sent.')
+            ->title(fn () => $newState ? 'Device turned on' : 'Device turned off')
             ->success()
             ->send();
     }
