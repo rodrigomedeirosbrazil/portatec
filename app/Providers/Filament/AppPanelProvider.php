@@ -32,6 +32,9 @@ class AppPanelProvider extends PanelProvider
             })
             ->path('main')
             ->login()
+            ->registration()
+            ->passwordReset()
+            ->emailVerification()
             ->profile()
             ->brandName(config('app.name'))
             ->colors([
