@@ -12,6 +12,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Actions\Action;
 
 class PlaceResource extends Resource
 {
@@ -57,7 +58,9 @@ class PlaceResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Action::make('view')
+                    ->url(fn ($record): string => route('place', $record))
+                    ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -73,7 +76,6 @@ class PlaceResource extends Resource
             'index' => Pages\ListPlaces::route('/'),
             'create' => Pages\CreatePlace::route('/create'),
             'edit' => Pages\EditPlace::route('/{record}/edit'),
-            'view' => Pages\ViewPlace::route('/{record}'),
         ];
     }
 }
