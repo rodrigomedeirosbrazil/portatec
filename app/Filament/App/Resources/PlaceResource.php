@@ -50,9 +50,11 @@ class PlaceResource extends Resource
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-                $query->whereHas('placeUsers', function (Builder $query) {
-                    $query->where('user_id', auth()->id());
-                });
+                $query->when(! auth()->user()->hasRole('super_admin'), fn (Builder $query) =>
+                    $query->whereHas('placeUsers', fn (Builder $query) =>
+                        $query->where('user_id', auth()->user()->id)
+                    )
+                );
             })
             ->columns([
                 TextColumn::make('id')
