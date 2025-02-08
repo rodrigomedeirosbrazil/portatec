@@ -15,6 +15,8 @@ use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Contracts\Pagination\CursorPaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 class DeviceResource extends Resource
 {
@@ -69,6 +71,15 @@ class DeviceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->whereHas('placeDevices', function (Builder $query) {
+                    $query->whereHas('place', function (Builder $query) {
+                        $query->whereHas('placeUsers', function (Builder $query) {
+                            $query->where('user_id', auth()->id());
+                        });
+                    });
+                });
+            })
             ->columns([
                 TextColumn::make('id')
                     ->label('ID')
@@ -115,5 +126,14 @@ class DeviceResource extends Resource
             'create' => Pages\CreateDevice::route('/create'),
             'edit' => Pages\EditDevice::route('/{record}/edit'),
         ];
+    }
+
+    protected function paginateTableQuery(Builder $query): CursorPaginator
+    {
+        return $query->cursorPaginate(
+            ($this->getTableRecordsPerPage() === 'all')
+                ? $query->count()
+                : $this->getTableRecordsPerPage()
+        );
     }
 }

@@ -14,6 +14,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Contracts\Pagination\CursorPaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 class PlaceResource extends Resource
 {
@@ -47,6 +49,11 @@ class PlaceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->whereHas('placeUsers', function (Builder $query) {
+                    $query->where('user_id', auth()->id());
+                });
+            })
             ->columns([
                 TextColumn::make('id')
                     ->label('ID')
@@ -81,5 +88,14 @@ class PlaceResource extends Resource
             'create' => Pages\CreatePlace::route('/create'),
             'edit' => Pages\EditPlace::route('/{record}/edit'),
         ];
+    }
+
+    protected function paginateTableQuery(Builder $query): CursorPaginator
+    {
+        return $query->cursorPaginate(
+            ($this->getTableRecordsPerPage() === 'all')
+                ? $query->count()
+                : $this->getTableRecordsPerPage()
+        );
     }
 }
