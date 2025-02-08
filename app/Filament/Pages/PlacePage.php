@@ -17,7 +17,7 @@ class PlacePage extends BasePage
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static string $view = 'filament.pages.place';
 
-    public function mount(int $id, ?string $token): void
+    public function mount(int $id, ?string $token = null): void
     {
         $this->place = Place::findOrFail($id);
         $this->token = $token;
