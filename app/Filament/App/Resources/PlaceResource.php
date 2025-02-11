@@ -35,6 +35,8 @@ class PlaceResource extends Resource
                     ->relationship()
                     ->columnSpanFull()
                     ->defaultItems(1)
+                    ->minItems(1)
+                    ->required()
                     ->schema([
                         Select::make('user_id')
                             ->relationship('user', 'name')
