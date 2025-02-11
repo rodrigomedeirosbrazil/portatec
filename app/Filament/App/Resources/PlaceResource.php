@@ -34,13 +34,16 @@ class PlaceResource extends Resource
                 Repeater::make('placeUsers')
                     ->relationship()
                     ->columnSpanFull()
+                    ->defaultItems(1)
                     ->schema([
                         Select::make('user_id')
                             ->relationship('user', 'name')
+                            ->default(fn () => filament()->auth()->user()->id)
                             ->required(),
 
                         Select::make('role')
                             ->options(PlaceRoleEnum::class)
+                            ->default(PlaceRoleEnum::Admin)
                             ->required(),
                     ])
             ]);
