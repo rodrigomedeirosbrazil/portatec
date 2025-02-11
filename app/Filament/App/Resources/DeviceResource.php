@@ -65,6 +65,9 @@ class DeviceResource extends Resource
                             ->relationship('place', 'name')
                             ->required(),
                     ])
+                    ->minItems(1)
+                    ->defaultItems(1)
+                    ->required()
             ]);
     }
 
