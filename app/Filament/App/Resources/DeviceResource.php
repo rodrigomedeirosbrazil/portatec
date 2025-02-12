@@ -62,7 +62,14 @@ class DeviceResource extends Resource
                     ->relationship()
                     ->schema([
                         Select::make('place_id')
-                            ->relationship('place', 'name')
+                            ->relationship(
+                                'place',
+                                'name',
+                                fn ($query) => $query->whereHas('placeUsers', fn ($query) =>
+                                    $query->where('user_id', filament()->auth()->user()->id)
+                                        ->where('role', 'admin')
+                                )
+                            )
                             ->required(),
                     ])
                     ->minItems(1)
