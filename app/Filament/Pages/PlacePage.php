@@ -17,16 +17,17 @@ class PlacePage extends BasePage
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static string $view = 'filament.pages.place';
 
-    public function mount(int $id): void
+    public function mount(int $id, ?string $token = null): void
     {
         $this->place = Place::findOrFail($id);
-        $this->token = null;
-        $this->askForDeviceAvailability();
-        $this->askForDeviceStatus();
+        $this->token = $token;
 
-        if (! $this->userCanAccess()) {
+        if (! $this->userCanAccess() && ! $this->tokenIsValid()) {
             abort(403);
         }
+
+        $this->askForDeviceAvailability();
+        $this->askForDeviceStatus();
     }
 
     public function askForDeviceAvailability(): void
@@ -140,6 +141,22 @@ class PlacePage extends BasePage
         return auth()->check()
             && (auth()->user()->hasRole('super_admin')
             || $this->place->hasAccessToPlace(auth()->user()));
+    }
+
+    public function tokenIsValid(): bool
+    {
+        return false; // TODO: Remove this
+        if (! $this->token) {
+            return false;
+        }
+
+        if (auth()->check()) {
+            auth()->logout();
+        }
+
+        auth()->loginUsingId($this->token);
+
+        return $this->userCanAccess();
     }
 
     public static function canAccess(): bool
