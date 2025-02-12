@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Device;
 use App\Models\Place;
+use App\Policies\DevicePolicy;
 use App\Policies\PlacePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -15,6 +17,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         Place::class => PlacePolicy::class,
+        Device::class => DevicePolicy::class,
     ];
 
     /**
