@@ -6,16 +6,12 @@ use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
 use Filament\Forms\Form;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Repeater;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use STS\FilamentImpersonate\Tables\Actions\Impersonate;
+use Filament\Tables\Actions\EditAction;
 
 class UserResource extends Resource
 {
@@ -34,6 +30,12 @@ class UserResource extends Resource
                     ->email()
                     ->required(),
 
+                TextInput::make('password')
+                    ->required()
+                    ->password()
+                    ->revealable()
+                    ->maxLength(255),
+
                 Select::make('roles')
                     ->label('System roles')
                     ->relationship('roles', 'name')
@@ -50,14 +52,12 @@ class UserResource extends Resource
                 TextColumn::make('id')
                     ->label('ID')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('name')
+
+                TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email')
+
+                TextColumn::make('email')
                     ->searchable(),
-                IconColumn::make('email_verified_at')
-                    ->label('Verified')
-                    ->boolean()
-                    ->sortable(),
 
                 TextColumn::make('roleNames')
                     ->label('Roles')
@@ -78,7 +78,7 @@ class UserResource extends Resource
             ])
             ->actions([
                 Impersonate::make(),
-                Tables\Actions\EditAction::make(),
+                EditAction::make(),
             ]);
     }
 
