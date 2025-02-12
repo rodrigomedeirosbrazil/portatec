@@ -145,6 +145,7 @@ class PlacePage extends BasePage
 
     public function tokenIsValid(): bool
     {
+        return false; // TODO: Remove this
         if (! $this->token) {
             return false;
         }
