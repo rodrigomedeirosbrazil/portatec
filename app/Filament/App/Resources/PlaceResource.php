@@ -40,7 +40,7 @@ class PlaceResource extends Resource
                     ->schema([
                         Select::make('user_id')
                             ->relationship('user', 'name')
-                            ->default(fn () => filament()->auth()->user()->id)
+                            ->default(fn () => auth()->user()->id)
                             ->required(),
 
                         Select::make('role')
@@ -55,7 +55,7 @@ class PlaceResource extends Resource
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-                $query->when(! filament()->auth()->user()->hasRole('super_admin'), fn (Builder $query) =>
+                $query->when(! auth()->user()->hasRole('super_admin'), fn (Builder $query) =>
                     $query->whereHas('placeUsers', fn (Builder $query) =>
                         $query->where('user_id', filament()->auth()->user()->id)
                     )
@@ -81,9 +81,9 @@ class PlaceResource extends Resource
                     ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make()
                     ->visible(fn (Place $record): bool =>
-                        filament()->auth()->user()->hasRole('super_admin') ||
+                        auth()->user()->hasRole('super_admin') ||
                         $record->placeUsers()
-                            ->where('user_id', filament()->auth()->user()->id)
+                            ->where('user_id', auth()->user()->id)
                             ->where('role', PlaceRoleEnum::Admin)
                             ->exists()
                     ),
