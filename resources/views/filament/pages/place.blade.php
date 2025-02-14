@@ -1,7 +1,13 @@
 <?php
     use App\Enums\DeviceTypeEnum;
 ?>
+
 <x-filament::card>
+<div class="mb-4">
+    <h2 class="text-2xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-3xl">
+        {{ $place->name }}
+    </h2>
+</div>
 <div class="p-4 md:p-6 space-y-2">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         @foreach ($place->placeDevices as $placeDevice)
