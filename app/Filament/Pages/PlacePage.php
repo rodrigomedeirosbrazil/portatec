@@ -19,6 +19,12 @@ class PlacePage extends BasePage
 
     public function mount(int $id, ?string $token = null): void
     {
+        if (! auth()->check()) {
+            session()->put('url.intended', url()->current());
+            redirect('/main/login');
+            return;
+        }
+
         $this->place = Place::findOrFail($id);
         $this->token = $token;
 
