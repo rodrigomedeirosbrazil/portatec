@@ -21,4 +21,4 @@ runs:
       run: |
         php artisan migrate:fresh
         echo "Running unit/integration tests"
-        php artisan test --parallel
+        php artisan test

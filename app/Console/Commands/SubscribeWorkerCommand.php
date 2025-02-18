@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Events\MqttMessageEvent;
+use App\Models\Device;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use PhpMqtt\Client\Facades\MQTT;
@@ -14,36 +15,53 @@ class SubscribeWorkerCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'mqtt:subscribe-worker
-                            {--topic=}';
+    protected $signature = 'mqtt:subscribe-worker';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Subscribe to an MQTT topic and listen for messages';
+    protected $description = 'Subscribe to an MQTT topics';
+
+    protected string $pidCacheKey = 'mqtt-subscribe-worker.pid';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $topic = $this->option('topic');
-
-        if (! $topic) {
-            $topic = '#';
-        }
-
-        $this->info("Subscribed to topic [$topic].");
-
+        $this->checkIfWorkerIsRunning();
         $mqtt = MQTT::connection();
-        $mqtt->subscribe($topic, function (string $topic, string $message) {
-            $this->info("$topic: $message");
-            Log::channel('mqtt-messages')->info("$topic: $message");
-            MqttMessageEvent::dispatch($topic, $message);
-        }, 0);
+
+        pcntl_async_signals(true);
+        pcntl_signal(SIGINT, fn () => $mqtt->interrupt());
+
+        Device::all()
+            ->pluck('topic')
+            ->unique()
+            ->each(function (string $topic) use ($mqtt) {
+                $mqtt->subscribe($topic, function (string $topic, string $message) {
+                    $this->info("$topic: $message");
+                    Log::channel('mqtt-messages')->info("$topic: $message");
+                    MqttMessageEvent::dispatch($topic, $message);
+                }, 0);
+            });
 
         $mqtt->loop(true);
+        $this->info('Worker PID: ' . posix_getpid() . ' terminated.');
+        $mqtt->disconnect();
+    }
+
+    private function checkIfWorkerIsRunning(): void
+    {
+        if (cache()->has($this->pidCacheKey)) {
+            $pid = cache()->get($this->pidCacheKey);
+            posix_kill($pid, SIGINT);
+        }
+
+        $pid = posix_getpid();
+        $this->info("Starting the subscribe worker (PID: $pid)...");
+        cache()->put($this->pidCacheKey, $pid);
     }
 }
