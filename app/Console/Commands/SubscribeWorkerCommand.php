@@ -49,6 +49,8 @@ class SubscribeWorkerCommand extends Command
             });
 
         $mqtt->loop(true);
+        $this->info('Worker PID: ' . posix_getpid() . ' terminated.');
+        $mqtt->disconnect();
     }
 
     private function checkIfWorkerIsRunning(): void
