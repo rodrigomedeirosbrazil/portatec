@@ -24,11 +24,14 @@ class SubscribeWorkerCommand extends Command
      */
     protected $description = 'Subscribe to an MQTT topics';
 
+    protected string $pidCacheKey = 'mqtt-subscribe-worker.pid';
+
     /**
      * Execute the console command.
      */
     public function handle()
     {
+        $this->checkIfWorkerIsRunning();
         $mqtt = MQTT::connection();
 
         pcntl_async_signals(true);
@@ -46,5 +49,17 @@ class SubscribeWorkerCommand extends Command
             });
 
         $mqtt->loop(true);
+    }
+
+    private function checkIfWorkerIsRunning(): void
+    {
+        if (cache()->has($this->pidCacheKey)) {
+            $pid = cache()->get($this->pidCacheKey);
+            posix_kill($pid, SIGINT);
+        }
+
+        $pid = posix_getpid();
+        $this->info("Starting the subscribe worker (PID: $pid)...");
+        cache()->put($this->pidCacheKey, $pid);
     }
 }
