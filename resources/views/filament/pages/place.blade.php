@@ -28,20 +28,7 @@
 
                     <div class="mt-4">
                         @if ($placeDevice->device->type === DeviceTypeEnum::Button)
-                            <button
-                                wire:click="pushButton({{ $placeDevice->device_id }})"
-                                @class([
-                                    'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold',
-                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->status === $placeDevice->device->payload_off,
-                                    'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-offset-0' => $placeDevice->device->status === $placeDevice->device->payload_on,
-                                    'cursor-not-allowed opacity-70' => ! $placeDevice->device->is_available,
-                                ])
-                            >
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                                </svg>
-                                <span>Push</span>
-                            </button>
+                            <livewire:swipe-to-unlock />
                         @endif
 
                         @if ($placeDevice->device->type === DeviceTypeEnum::Switch)
