@@ -37,11 +37,11 @@ jobs:
 
       - name: Transfer Docker Compose file to remote server
         run: |
-          scp -o StrictHostKeyChecking=no docker-compose-prod.yml ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_ADDRESS }}:${{ secrets.REMOTE_SERVER_PATH }}
+          scp -o StrictHostKeyChecking=no docker-compose-prod.yml ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_ADDRESS }}:${{ secrets.REMOTE_SERVER_PATH }}/docker-compose.yml
 
       - name: Deploy Docker containers using Docker Compose on remote server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_ADDRESS }} << 'ENDSSH'
-          docker-compose -f ${{ secrets.REMOTE_SERVER_PATH }}/docker-compose-prod.yml up -d ${{ env.IMAGE_NAME }}
+          docker-compose -f ${{ secrets.REMOTE_SERVER_PATH }}/docker-compose.yml up -d ${{ env.IMAGE_NAME }}
           docker system prune -af
           ENDSSH

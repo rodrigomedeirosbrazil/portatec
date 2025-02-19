@@ -41,6 +41,7 @@ class SubscribeWorkerCommand extends Command
             ->pluck('topic')
             ->unique()
             ->each(function (string $topic) use ($mqtt) {
+                $this->info("Subscribing to $topic...");
                 $mqtt->subscribe($topic, function (string $topic, string $message) {
                     $this->info("$topic: $message");
                     Log::channel('mqtt-messages')->info("$topic: $message");
