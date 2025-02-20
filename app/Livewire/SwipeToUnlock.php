@@ -9,17 +9,19 @@ class SwipeToUnlock extends Component
 {
     public $unlocked = false;
     public $device_id;
+    public $key;
 
     public function mount($device_id)
     {
         $this->device_id = $device_id;
+        $this->key = "swipe-to-unlock-{$device_id}";
     }
 
     #[On('unlock')]
     public function unlock()
     {
         $this->unlocked = true;
-        $this->dispatch('pushButton', deviceId: $this->device_id);
+        $this->dispatch('pushButton', deviceId: $this->device_id)->self();
     }
 
     public function render()
