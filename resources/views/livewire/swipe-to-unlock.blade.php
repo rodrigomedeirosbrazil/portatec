@@ -10,44 +10,46 @@
 
 @push('scripts')
     <script>
-        const slider = document.getElementById("slider");
-        const container = slider.parentElement;
-        let isDragging = false;
-        let startX, initialLeft;
+        document.addEventListener('livewire:init', () => {
+            const slider = document.getElementById("slider");
+            const container = slider.parentElement;
+            let isDragging = false;
+            let startX, initialLeft;
 
-        function startDrag(e) {
-            isDragging = true;
-            startX = e.touches ? e.touches[0].clientX : e.clientX;
-            initialLeft = slider.offsetLeft;
-        }
-
-        function onDrag(e) {
-            if (!isDragging) return;
-            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            let newLeft = initialLeft + (clientX - startX);
-            let maxLeft = container.clientWidth - slider.clientWidth;
-            newLeft = Math.max(0, Math.min(maxLeft, newLeft));
-            slider.style.left = newLeft + "px";
-        }
-
-        function stopDrag() {
-            if (!isDragging) return;
-            isDragging = false;
-            if (slider.offsetLeft > container.clientWidth - slider.clientWidth - 5) {
-                alert("Unlocked!");
-                slider.style.left = "0px"; // Reset position after unlocking
-            } else {
-                slider.style.left = "0px";
+            function startDrag(e) {
+                isDragging = true;
+                startX = e.touches ? e.touches[0].clientX : e.clientX;
+                initialLeft = slider.offsetLeft;
             }
-        }
 
-        slider.addEventListener("mousedown", startDrag);
-        document.addEventListener("mousemove", onDrag);
-        document.addEventListener("mouseup", stopDrag);
+            function onDrag(e) {
+                if (!isDragging) return;
+                let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                let newLeft = initialLeft + (clientX - startX);
+                let maxLeft = container.clientWidth - slider.clientWidth;
+                newLeft = Math.max(0, Math.min(maxLeft, newLeft));
+                slider.style.left = newLeft + "px";
+            }
 
-        slider.addEventListener("touchstart", startDrag);
-        document.addEventListener("touchmove", onDrag);
-        document.addEventListener("touchend", stopDrag);
+            function stopDrag() {
+                if (!isDragging) return;
+                isDragging = false;
+                if (slider.offsetLeft > container.clientWidth - slider.clientWidth - 5) {
+                    Livewire.dispatch('unlock');
+                    slider.style.left = "0px"; // Reset position after unlocking
+                } else {
+                    slider.style.left = "0px";
+                }
+            }
+
+            slider.addEventListener("mousedown", startDrag);
+            document.addEventListener("mousemove", onDrag);
+            document.addEventListener("mouseup", stopDrag);
+
+            slider.addEventListener("touchstart", startDrag);
+            document.addEventListener("touchmove", onDrag);
+            document.addEventListener("touchend", stopDrag);
+        });
     </script>
 @endpush
 

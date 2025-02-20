@@ -28,7 +28,7 @@
 
                     <div class="mt-4">
                         @if ($placeDevice->device->type === DeviceTypeEnum::Button)
-                            <livewire:swipe-to-unlock />
+                            <livewire:swipe-to-unlock :device_id="$placeDevice->device_id" />
                         @endif
 
                         @if ($placeDevice->device->type === DeviceTypeEnum::Switch)

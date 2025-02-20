@@ -64,6 +64,7 @@ class PlacePage extends BasePage
     {
         return [
             'echo-private:Place.Device.Status.' . $this->place->id . ',PlaceDeviceStatusEvent' => 'refreshDeviceStatus',
+            'pushButton' => 'pushButton',
         ];
     }
 
