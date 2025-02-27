@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\CommandLogResource\Pages;
+namespace App\Filament\App\Resources\CommandLogResource\Pages;
 
-use App\Filament\Resources\CommandLogResource;
-use Filament\Actions;
+use App\Filament\App\Resources\CommandLogResource;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewCommandLog extends ViewRecord
