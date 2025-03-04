@@ -26,6 +26,10 @@ class CommandLogResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    protected static ?string $modelLabel = 'Log de comandos';
+
+    protected static ?string $pluralModelLabel = 'Logs de comandos';
+
     public static function form(Form $form): Form
     {
         return $form
