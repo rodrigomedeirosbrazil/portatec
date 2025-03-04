@@ -164,7 +164,7 @@ class PlacePage extends BasePage
         ]);
 
         Notification::make()
-            ->title('Command sent.')
+            ->title(__('app.command_sent'))
             ->success()
             ->send();
     }

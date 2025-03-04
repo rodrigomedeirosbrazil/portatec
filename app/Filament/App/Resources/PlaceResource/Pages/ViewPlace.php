@@ -116,7 +116,7 @@ class ViewPlace extends ViewRecord
                                                     MQTT::publish($record->device->command_topic, $record->device->payload_on);
 
                                                     Notification::make()
-                                                        ->title('Command sent.')
+                                                        ->title(__('app.command_sent'))
                                                         ->success()
                                                         ->send();
                                                 })
@@ -138,7 +138,7 @@ class ViewPlace extends ViewRecord
                                                     MQTT::publish($record->device->command_topic, $toggledPayload);
 
                                                     Notification::make()
-                                                        ->title('Command sent.')
+                                                        ->title(__('app.command_sent'))
                                                         ->success()
                                                         ->send();
                                                 })

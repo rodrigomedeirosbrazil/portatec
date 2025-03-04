@@ -23,11 +23,16 @@ class PlaceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $modelLabel = 'Local';
+
+    protected static ?string $pluralModelLabel = 'Locais';
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 TextInput::make('name')
+                    ->label(__('app.name'))
                     ->required()
                     ->maxLength(255),
 
@@ -40,10 +45,12 @@ class PlaceResource extends Resource
                     ->schema([
                         Select::make('user_id')
                             ->relationship('user', 'name')
+                            ->label(__('app.user'))
                             ->default(fn () => auth()->user()->id)
                             ->required(),
 
                         Select::make('role')
+                            ->label(__('app.role'))
                             ->options(PlaceRoleEnum::class)
                             ->default(PlaceRoleEnum::Admin)
                             ->required(),
