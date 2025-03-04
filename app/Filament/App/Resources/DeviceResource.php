@@ -26,26 +26,35 @@ class DeviceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $modelLabel = 'Dispositivo';
+
+    protected static ?string $pluralModelLabel = 'Dispositivos';
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 TextInput::make('name')
+                    ->label(__('app.name'))
                     ->required()
                     ->maxLength(255),
 
                 Select::make('type')
+                    ->label(__('app.type'))
                     ->options(DeviceTypeEnum::toArray())
                     ->searchable()
                     ->required(),
 
                 TextInput::make('topic')
+                    ->label(__('app.topic'))
                     ->maxLength(255),
 
                 TextInput::make('command_topic')
+                    ->label(__('app.command_topic'))
                     ->maxLength(255),
 
                 TextInput::make('availability_topic')
+                    ->label(__('app.availability_topic'))
                     ->maxLength(255),
 
                 TextInput::make('availability_payload_on')
