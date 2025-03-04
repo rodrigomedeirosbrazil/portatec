@@ -40,7 +40,9 @@ class PlacePage extends BasePage
     public function askForDeviceAvailability(): void
     {
         $this->place->placeDevices->map(
-            fn (PlaceDevice $placeDevice) => $placeDevice->device->availability_topic
+            function (PlaceDevice $placeDevice) {
+                return $placeDevice->device?->availability_topic;
+            }
         )
             ->filter()
             ->unique()
@@ -52,7 +54,7 @@ class PlacePage extends BasePage
     public function askForDeviceStatus(): void
     {
         $this->place->placeDevices->map(
-            fn (PlaceDevice $placeDevice) => $placeDevice->device->command_topic
+            fn (PlaceDevice $placeDevice) => $placeDevice->device?->command_topic
         )
             ->filter()
             ->unique()
