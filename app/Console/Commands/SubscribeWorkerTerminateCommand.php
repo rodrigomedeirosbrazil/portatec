@@ -28,6 +28,12 @@ class SubscribeWorkerTerminateCommand extends Command
     public function handle()
     {
         $pid = cache()->get($this->pidCacheKey);
+        if (! $pid) {
+            $this->error('No worker to terminate.');
+
+            return;
+        }
+
         $this->info("Terminating the subscribe worker (PID: $pid)...");
         posix_kill($pid, SIGINT)
             ? $this->info('SIGINT sent to the worker.')

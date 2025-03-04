@@ -32,7 +32,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_ADDRESS }} << 'ENDSSH'
           docker load -i ${{ secrets.REMOTE_SERVER_PATH }}/${{ env.IMAGE_NAME }}-image.tar
-          rm -rf ${{ env.IMAGE_NAME }}-image.tar
+          rm -rf ${{ secrets.REMOTE_SERVER_PATH }}/${{ env.IMAGE_NAME }}-image.tar
           ENDSSH
 
       - name: Transfer Docker Compose file to remote server

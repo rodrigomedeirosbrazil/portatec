@@ -7,6 +7,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use PhpMqtt\Client\Facades\MQTT;
 use Filament\Notifications\Notification;
 use App\Jobs\GetMqttMessageJob;
+use App\Models\CommandLog;
 use App\Models\PlaceDevice;
 use Filament\Pages\BasePage;
 
@@ -39,7 +40,9 @@ class PlacePage extends BasePage
     public function askForDeviceAvailability(): void
     {
         $this->place->placeDevices->map(
-            fn (PlaceDevice $placeDevice) => $placeDevice->device->availability_topic
+            function (PlaceDevice $placeDevice) {
+                return $placeDevice->device?->availability_topic;
+            }
         )
             ->filter()
             ->unique()
@@ -51,7 +54,7 @@ class PlacePage extends BasePage
     public function askForDeviceStatus(): void
     {
         $this->place->placeDevices->map(
-            fn (PlaceDevice $placeDevice) => $placeDevice->device->command_topic
+            fn (PlaceDevice $placeDevice) => $placeDevice->device?->command_topic
         )
             ->filter()
             ->unique()
@@ -106,6 +109,18 @@ class PlacePage extends BasePage
 
         MQTT::publish($device->command_topic, $payload);
 
+        // Log the command
+        CommandLog::create([
+            'user_id' => auth()->id(),
+            'place_id' => $this->place->id,
+            'device_id' => $device->id,
+            'command_type' => 'toggle',
+            'command_payload' => $payload,
+            'device_type' => $device->type->value ?? null,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+
         Notification::make()
             ->title(fn () => $newState ? 'Device turned on' : 'Device turned off')
             ->success()
@@ -135,6 +150,18 @@ class PlacePage extends BasePage
         }
 
         MQTT::publish($device->command_topic, $device->payload_on);
+
+        // Log the command
+        CommandLog::create([
+            'user_id' => auth()->id(),
+            'place_id' => $this->place->id,
+            'device_id' => $device->id,
+            'command_type' => 'push_button',
+            'command_payload' => $device->payload_on,
+            'device_type' => $device->type->value ?? null,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
 
         Notification::make()
             ->title('Command sent.')
