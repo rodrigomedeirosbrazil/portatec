@@ -84,6 +84,7 @@ class PlaceResource extends Resource
             ])
             ->actions([
                 Action::make('view')
+                    ->label(__('app.view'))
                     ->url(fn ($record): string => route('place', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make()

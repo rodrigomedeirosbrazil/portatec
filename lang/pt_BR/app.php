@@ -23,6 +23,7 @@ return [
     'users' => 'Usuários',
     'role' => 'Função',
     'roles' => 'Funções',
+    'view' => 'Visualizar',
 
     // Ações e notificações
     'command_sent' => 'Comando enviado.',
