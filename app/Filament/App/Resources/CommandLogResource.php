@@ -36,6 +36,15 @@ class CommandLogResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->when(! auth()->user()->hasRole('super_admin'), fn (Builder $query) =>
+                    $query->whereHas('place', fn (Builder $query) =>
+                        $query->whereHas('placeUsers', fn (Builder $query) =>
+                            $query->where('user_id', auth()->user()->id)
+                        )
+                    )
+                );
+            })
             ->columns([
                 TextColumn::make('id')
                     ->sortable()
@@ -98,7 +107,6 @@ class CommandLogResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([])
             ->defaultSort('created_at', 'desc');
