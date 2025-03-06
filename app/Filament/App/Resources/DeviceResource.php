@@ -81,6 +81,8 @@ class DeviceResource extends Resource
                                         ->where('role', 'admin')
                                 )
                             )
+                            ->searchable()
+                            ->preload(false)
                             ->required(),
                     ])
                     ->minItems(1)
