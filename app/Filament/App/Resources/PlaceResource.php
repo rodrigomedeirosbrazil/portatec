@@ -46,7 +46,8 @@ class PlaceResource extends Resource
                         Select::make('user_id')
                             ->relationship('user', 'name')
                             ->label(__('app.user'))
-                            ->default(fn () => auth()->user()->id)
+                            ->searchable()
+                            ->preload(false)
                             ->required(),
 
                         Select::make('role')
