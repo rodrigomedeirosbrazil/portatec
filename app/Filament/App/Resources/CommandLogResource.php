@@ -8,7 +8,7 @@ use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -176,6 +176,7 @@ class CommandLogResource extends Resource
                     }),
             ])
             ->actions([
+                ViewAction::make(),
             ])
             ->bulkActions([])
             ->defaultSort('created_at', 'desc');
@@ -190,7 +191,6 @@ class CommandLogResource extends Resource
     {
         return [
             'index' => Pages\ListCommandLogs::route('/'),
-            'view' => Pages\ViewCommandLog::route('/{record}'),
         ];
     }
 
