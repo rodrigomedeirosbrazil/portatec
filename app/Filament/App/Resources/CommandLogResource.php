@@ -53,28 +53,29 @@ class CommandLogResource extends Resource
                 TextColumn::make('id')
                     ->sortable()
                     ->searchable(),
+
                 TextColumn::make('user.name')
                     ->sortable()
                     ->searchable()
                     ->toggleable(),
+
                 TextColumn::make('place.name')
                     ->sortable()
                     ->searchable(),
+
                 TextColumn::make('device.name')
                     ->sortable()
                     ->searchable()
                     ->toggleable(),
+
                 TextColumn::make('command_type')
                     ->sortable()
                     ->searchable(),
-                TextColumn::make('device_type')
+
+                TextColumn::make('command_payload')
                     ->sortable()
-                    ->searchable()
-                    ->toggleable(),
-                TextColumn::make('ip_address')
-                    ->sortable()
-                    ->searchable()
-                    ->toggleable(),
+                    ->searchable(),
+
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
