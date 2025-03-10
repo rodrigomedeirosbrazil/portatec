@@ -57,6 +57,20 @@ return [
         'button' => 'Botão',
     ],
 
+    'command_log_fields' => [
+        'id' => 'ID',
+        'user' => 'Usuário',
+        'place' => 'Local',
+        'device' => 'Dispositivo',
+        'command_type' => 'Tipo de comando',
+        'command_payload' => 'Payload do comando',
+        'device_type' => 'Tipo de dispositivo',
+        'ip_address' => 'Endereço IP',
+        'user_agent' => 'User Agent',
+        'created_at' => 'Criado em',
+        'updated_at' => 'Atualizado em',
+    ],
+
     // Funções de local
     'place_roles' => [
         'admin' => 'Administrador',

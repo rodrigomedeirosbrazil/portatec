@@ -30,10 +30,67 @@ class CommandLogResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Logs de comandos';
 
+    protected static function getFieldLabel(string $field): string
+    {
+        return __('app.command_log_fields.' . $field);
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
+                Forms\Components\Section::make()
+                    ->schema([
+                        Forms\Components\TextInput::make('id')
+                            ->label(static::getFieldLabel('id'))
+                            ->disabled(),
+
+                        Forms\Components\Select::make('user_id')
+                            ->relationship('user', 'name')
+                            ->label(static::getFieldLabel('user'))
+                            ->disabled(),
+
+                        Forms\Components\Select::make('place_id')
+                            ->relationship('place', 'name')
+                            ->label(static::getFieldLabel('place'))
+                            ->disabled(),
+
+                        Forms\Components\Select::make('device_id')
+                            ->relationship('device', 'name')
+                            ->label(static::getFieldLabel('device'))
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('command_type')
+                            ->label(static::getFieldLabel('command_type'))
+                            ->disabled(),
+
+                        Forms\Components\Textarea::make('command_payload')
+                            ->label(static::getFieldLabel('command_payload'))
+                            ->disabled()
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('device_type')
+                            ->label(static::getFieldLabel('device_type'))
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('ip_address')
+                            ->label(static::getFieldLabel('ip_address'))
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('user_agent')
+                            ->label(static::getFieldLabel('user_agent'))
+                            ->disabled()
+                            ->columnSpanFull(),
+
+                        Forms\Components\DateTimePicker::make('created_at')
+                            ->label(static::getFieldLabel('created_at'))
+                            ->disabled(),
+
+                        Forms\Components\DateTimePicker::make('updated_at')
+                            ->label(static::getFieldLabel('updated_at'))
+                            ->disabled(),
+                    ])
+                    ->columns(2),
             ]);
     }
 
@@ -41,42 +98,49 @@ class CommandLogResource extends Resource
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-                $query->when(! auth()->user()->hasRole('super_admin'), fn (Builder $query) =>
+                $query->when(! auth()?->user()->hasRole('super_admin'), fn (Builder $query) =>
                     $query->whereHas('place', fn (Builder $query) =>
                         $query->whereHas('placeUsers', fn (Builder $query) =>
-                            $query->where('user_id', auth()->user()->id)
+                            $query->where('user_id', auth()?->user()->id)
                         )
                     )
                 );
             })
             ->columns([
                 TextColumn::make('id')
+                    ->label(static::getFieldLabel('id'))
                     ->sortable()
                     ->searchable(),
 
                 TextColumn::make('user.name')
+                    ->label(static::getFieldLabel('user'))
                     ->sortable()
                     ->searchable()
                     ->toggleable(),
 
                 TextColumn::make('place.name')
+                    ->label(static::getFieldLabel('place'))
                     ->sortable()
                     ->searchable(),
 
                 TextColumn::make('device.name')
+                    ->label(static::getFieldLabel('device'))
                     ->sortable()
                     ->searchable()
                     ->toggleable(),
 
                 TextColumn::make('command_type')
+                    ->label(static::getFieldLabel('command_type'))
                     ->sortable()
                     ->searchable(),
 
                 TextColumn::make('command_payload')
+                    ->label(static::getFieldLabel('command_payload'))
                     ->sortable()
                     ->searchable(),
 
                 TextColumn::make('created_at')
+                    ->label(static::getFieldLabel('created_at'))
                     ->dateTime()
                     ->sortable()
                     ->searchable(),
