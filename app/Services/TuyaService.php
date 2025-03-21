@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\TuyaAuthenticationDTO;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -18,19 +19,19 @@ class TuyaService
         $this->clientSecret = env('TUYA_CLIENT_SECRET');
     }
 
-    public function getAccessToken()
+    public function getAccessToken(): ?TuyaAuthenticationDTO
     {
         $urlPath = '/v1.0/token?grant_type=1';
 
         $method = 'GET';
         $headers = [];
         $body = '';
-        $signStr = $this->calcSignString($method, $headers, $body, $urlPath); // e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        $signStr = $this->calcSignString($method, $headers, $body, $urlPath);
 
         $timestamp = now()->timestamp * 1000;
         $nonce = '';
 
-        $sign = $this->calculateSign($timestamp, $nonce, $signStr); // 8D8FC41B14C165C245BC4CCC8BDAC0BECE80B8EEB1EABB1E94585B23FD882C1B
+        $sign = $this->calculateSign($timestamp, $nonce, $signStr);
 
         $response = Http::withHeaders([
             'client_id' => $this->clientId,
@@ -39,7 +40,17 @@ class TuyaService
             'sign_method' => 'HMAC-SHA256',
         ])->send($method, self::API_URL . $urlPath);
 
-        dd($response->body());
+        if ($response->successful() && $response->json('success')) {
+            $data = json_decode($response->body(), true);
+            return new TuyaAuthenticationDTO(
+                accessToken: data_get($data, 'result.access_token'),
+                refreshToken: data_get($data, 'result.refresh_token'),
+                expireTime: data_get($data, 'result.expire_time'),
+                uid: data_get($data, 'result.uid'),
+            );
+        }
+
+        return null;
     }
 
     private function calculateSign(string $timestamp, string $nonce, string $signStr)
