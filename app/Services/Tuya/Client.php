@@ -5,6 +5,7 @@ namespace App\Services\Tuya;
 use App\Services\Tuya\DTOs\TuyaAuthenticationDTO;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Request;
 
 class Client
 {
@@ -23,7 +24,7 @@ class Client
     public function authenticate(): bool
     {
         $response = $this->sendRequest(
-            method: 'GET',
+            method: Request::METHOD_GET,
             urlPath: '/v1.0/token?grant_type=1',
         );
 
@@ -46,7 +47,7 @@ class Client
     {
         $urlPath = "/v1.0/token/{$this->authenticationDTO->refreshToken}";
         $response = $this->sendRequest(
-            method: 'GET',
+            method: Request::METHOD_GET,
             urlPath: $urlPath,
         );
 
@@ -67,11 +68,9 @@ class Client
 
     public function sendRequest(string $method, string $urlPath, ?array $body = null): Response
     {
-        $headers = [];
-
-        $requestString = $this->getRequestString(
+        $stringRequest = $this->getStringRequest(
             method: $method,
-            headers: $headers,
+            headers: [],
             body: $body,
             urlPath: $urlPath,
         );
@@ -80,36 +79,44 @@ class Client
         $nonce = '';
 
         $sign = $this->getSignString(
+            clientId: $this->clientId,
+            clientSecret: $this->clientSecret,
+            accessToken: $this->authenticationDTO?->accessToken ?? '',
             timestamp: $timestamp,
             nonce: $nonce,
-            requestString: $requestString,
+            stringRequest: $stringRequest,
         );
 
-        $response = $this->http->withHeaders([
+        $headers = [
             'client_id' => $this->clientId,
             'sign' => $sign,
             't' => $timestamp,
             'sign_method' => 'HMAC-SHA256',
-        ])->send($method, $urlPath);
+        ];
+
+        if ($this->authenticationDTO?->accessToken) {
+            $headers['access_token'] = $this->authenticationDTO->accessToken;
+        }
+        $response = $this->http->withHeaders($headers)->send($method, $urlPath);
 
         return $response;
     }
 
-    public function getSignString(string $timestamp, string $nonce, string $requestString)
+    public function getSignString(string $clientId, string $clientSecret, string $accessToken, string $timestamp, string $nonce, string $stringRequest)
     {
         $str = implode('', [
-            $this->clientId,
-            $this->authenticationDTO?->accessToken ?? '',
+            $clientId,
+            $accessToken,
             $timestamp,
             $nonce,
-            $requestString,
+            $stringRequest,
         ]);
 
-        $hash = hash_hmac('sha256', $str, $this->clientSecret, false);
+        $hash = hash_hmac('sha256', $str, $clientSecret, false);
         return strtoupper($hash);
     }
 
-    public function getRequestString(string $method, ?array $headers, ?array $body, string $urlPath)
+    public function getStringRequest(string $method, ?array $headers, ?array $body, string $urlPath)
     {
         $jsonBody = $body == null ? '' : json_encode($body);
 
