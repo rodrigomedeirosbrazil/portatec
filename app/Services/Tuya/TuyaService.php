@@ -2,6 +2,7 @@
 
 namespace App\Services\Tuya;
 
+use App\Services\Tuya\DTOs\TuyaTicketDTO;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 class TuyaService
@@ -35,6 +36,129 @@ class TuyaService
         }
 
         Log::error('Failed to get tuya devices', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+
+        return null;
+    }
+
+    public function getPasswordTicket(string $deviceId): ?TuyaTicketDTO
+    {
+        if (
+            ! $this->client->isAuthenticated()
+            && ! $this->client->authenticate()
+        ) {
+            throw new \Exception('Failed to authenticate');
+        }
+
+        $urlPath = "/v1.0/devices/{$deviceId}/door-lock/password-ticket";
+
+        $response = $this->client->sendRequest(
+            method: Request::METHOD_POST,
+            urlPath: $urlPath,
+        );
+
+        if ($response->successful() && boolval($response->json('success', false))) {
+            $data = json_decode($response->body(), true);
+            return new TuyaTicketDTO(
+                ticketId: data_get($data, 'result.ticket_id'),
+                ticketKey: data_get($data, 'result.ticket_key'),
+                expireTime: data_get($data, 'result.expire_time'),
+            );
+        }
+
+        Log::error('Failed to get tuya ticket', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+
+        return null;
+    }
+
+    public function decryptTicketKey(string $clientSecret, TuyaTicketDTO $ticket)
+    {
+        $key = hex2bin($ticket->ticketKey);
+		$cipherMethod = 'aes-256-ecb';
+		$options = OPENSSL_RAW_DATA;
+		// $keyUtf8 = mb_convert_encoding($clientSecret, 'UTF-8', 'ISO-8859-1');
+        $keyUtf8 = utf8_encode($clientSecret);
+		return openssl_decrypt($key, $cipherMethod, $keyUtf8, $options);
+    }
+
+    public function encryptPasswordWithTicket(string $clientSecret, string $password, TuyaTicketDTO $ticket): ?string
+    {
+        $decriptedKey = $this->decryptTicketKey($clientSecret, $ticket);
+        $decryptKeyHex = bin2hex($decriptedKey);
+
+		$cipherMethod = 'aes-128-ecb';
+		$options = OPENSSL_RAW_DATA;
+
+		$binaryPassword = openssl_encrypt($password, $cipherMethod, hex2bin($decryptKeyHex), $options);
+
+		if ($binaryPassword === false) {
+			return null;
+		}
+
+		$encryptedPassword = bin2hex($binaryPassword);
+
+		return $encryptedPassword;
+    }
+
+    public function createTemporaryPassword(
+        string $deviceId,
+        string $name,
+        string $password,
+        int $effectiveTime,
+        int $invalidTime,
+        int $type,
+    ) {
+        if (
+            ! $this->client->isAuthenticated()
+            && ! $this->client->authenticate()
+        ) {
+            throw new \Exception('Failed to authenticate');
+        }
+
+        $ticket = $this->getPasswordTicket($deviceId);
+
+        $encryptedPassword = $this->encryptPasswordWithTicket($this->client->getClientSecret(), $password, $ticket);
+
+        $urlPath = "/v2.0/devices/{$deviceId}/door-lock/temp-password";
+
+        $body = [
+            'name' => $name,
+            'password' => $encryptedPassword,
+            'effective_time' => $effectiveTime,
+            'invalid_time' => $invalidTime,
+            'password_type' => 'ticket',
+            'ticket_id' => $ticket->ticketId,
+            'type' => $type,
+            'schedule_list' => [
+                [
+                    'effective_time' => 720,
+                    'invalid_time' => 1080,
+                    'working_day' => 1,
+                ]
+            ]
+        ];
+
+        Log::info('Creating temporary password', [
+            'body' => $body,
+        ]);
+
+        $response = $this->client->sendRequest(
+            method: Request::METHOD_POST,
+            urlPath: $urlPath,
+            body: $body
+        );
+
+        if ($response->successful() && boolval($response->json('success', false))) {
+            $data = json_decode($response->body(), true);
+            return $data;
+        }
+
+        Log::error('Failed to create temporary password', [
             'status' => $response->status(),
             'body' => $response->body(),
         ]);
