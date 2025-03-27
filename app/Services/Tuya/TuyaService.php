@@ -43,6 +43,48 @@ class TuyaService
         return null;
     }
 
+    public function sendPulse(string $deviceId): bool
+    {
+        if (
+            ! $this->client->isAuthenticated()
+            && ! $this->client->authenticate()
+        ) {
+            throw new \Exception('Failed to authenticate');
+        }
+
+        $urlPath = "/v1.0/iot-03/devices/{$deviceId}/commands";
+
+        $body = [
+            'commands' => [
+                [
+                    'code' => 'switch_1',
+                    'value' => true,
+                ],
+                [
+                    'code' => 'countdown_1',
+                    'value' => 1,
+                ],
+            ],
+        ];
+
+        $response = $this->client->sendRequest(
+            method: Request::METHOD_POST,
+            urlPath: $urlPath,
+            body: $body,
+        );
+
+        if ($response->successful() && boolval($response->json('success', false))) {
+            return true;
+        }
+
+        Log::error('Failed to send pulse', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+
+        return false;
+    }
+
     public function getPasswordTicket(string $deviceId): ?TuyaTicketDTO
     {
         if (
