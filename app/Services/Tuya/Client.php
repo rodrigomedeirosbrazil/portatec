@@ -97,7 +97,9 @@ class Client
         if ($this->authenticationDTO?->accessToken) {
             $headers['access_token'] = $this->authenticationDTO->accessToken;
         }
-        $response = $this->http->withHeaders($headers)->send($method, $urlPath);
+        $response = $this->http
+            ->replaceHeaders($headers)
+            ->send($method, $urlPath);
 
         return $response;
     }

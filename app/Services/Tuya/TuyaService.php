@@ -29,7 +29,7 @@ class TuyaService
             urlPath: $urlPath,
         );
 
-        if ($response->successful()) {
+        if ($response->successful() && boolval($response->json('success', false))) {
             $data = json_decode($response->body(), true);
             return $data;
         }
