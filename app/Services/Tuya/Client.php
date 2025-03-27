@@ -21,6 +21,16 @@ class Client
         $this->authenticationDTO = null;
     }
 
+    public function getClientId(): string
+    {
+        return $this->clientId;
+    }
+
+    public function getClientSecret(): string
+    {
+        return $this->clientSecret;
+    }
+
     public function authenticate(): bool
     {
         $response = $this->sendRequest(
@@ -99,7 +109,9 @@ class Client
         }
         $response = $this->http
             ->replaceHeaders($headers)
-            ->send($method, $urlPath);
+            ->send($method, $urlPath, [
+                'json' => $body,
+            ]);
 
         return $response;
     }
