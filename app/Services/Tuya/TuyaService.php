@@ -208,4 +208,34 @@ class TuyaService
 
         return null;
     }
+
+    public function deleteTemporaryPassword(
+        string $deviceId,
+        int $passwordId,
+    ) : bool {
+        if (
+            ! $this->client->isAuthenticated()
+            && ! $this->client->authenticate()
+        ) {
+            throw new \Exception('Failed to authenticate');
+        }
+
+        $urlPath = "/v1.0/devices/{$deviceId}/door-lock/temp-passwords/{$passwordId}";
+
+        $response = $this->client->sendRequest(
+            method: Request::METHOD_DELETE,
+            urlPath: $urlPath,
+        );
+
+        if ($response->successful() && boolval($response->json('success', false))) {
+            return true;
+        }
+
+        Log::error('Failed to create temporary password', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+
+        return false;
+    }
 }
