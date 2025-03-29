@@ -120,12 +120,11 @@ class TuyaService
 
     public function decryptTicketKey(string $clientSecret, TuyaTicketDTO $ticket)
     {
-        $key = hex2bin($ticket->ticketKey);
+        $data = hex2bin($ticket->ticketKey);
 		$cipherMethod = 'aes-256-ecb';
 		$options = OPENSSL_RAW_DATA;
-		// $keyUtf8 = mb_convert_encoding($clientSecret, 'UTF-8', 'ISO-8859-1');
-        $keyUtf8 = utf8_encode($clientSecret);
-		return openssl_decrypt($key, $cipherMethod, $keyUtf8, $options);
+		$keyUtf8 = mb_convert_encoding($clientSecret, 'UTF-8', 'ISO-8859-1');
+		return openssl_decrypt($data, $cipherMethod, $keyUtf8, $options);
     }
 
     public function encryptPasswordWithTicket(string $clientSecret, string $password, TuyaTicketDTO $ticket): ?string
@@ -151,10 +150,10 @@ class TuyaService
         string $deviceId,
         string $name,
         string $password,
-        int $effectiveTime,
-        int $invalidTime,
-        int $type,
-    ) {
+        ?int $effectiveTime = null,
+        ?int $invalidTime = null,
+        ?int $type = null,
+    ) : ?int {
         if (
             ! $this->client->isAuthenticated()
             && ! $this->client->authenticate()
@@ -166,9 +165,22 @@ class TuyaService
 
         $encryptedPassword = $this->encryptPasswordWithTicket($this->client->getClientSecret(), $password, $ticket);
 
-        $urlPath = "/v2.0/devices/{$deviceId}/door-lock/temp-password";
+        $urlPath = "/v1.0/devices/{$deviceId}/door-lock/temp-password";
+
+        if (! $effectiveTime) {
+            $effectiveTime = now()->timestamp;
+        }
+
+        if (! $invalidTime) {
+            $invalidTime = now()->addDay()->timestamp;
+        }
+
+        if (! $type) {
+            $type = 0;
+        }
 
         $body = [
+            'device_id' => $deviceId,
             'name' => $name,
             'password' => $encryptedPassword,
             'effective_time' => $effectiveTime,
@@ -176,18 +188,7 @@ class TuyaService
             'password_type' => 'ticket',
             'ticket_id' => $ticket->ticketId,
             'type' => $type,
-            'schedule_list' => [
-                [
-                    'effective_time' => 720,
-                    'invalid_time' => 1080,
-                    'working_day' => 1,
-                ]
-            ]
         ];
-
-        Log::info('Creating temporary password', [
-            'body' => $body,
-        ]);
 
         $response = $this->client->sendRequest(
             method: Request::METHOD_POST,
@@ -197,7 +198,7 @@ class TuyaService
 
         if ($response->successful() && boolval($response->json('success', false))) {
             $data = json_decode($response->body(), true);
-            return $data;
+            return data_get($data, 'result.id');
         }
 
         Log::error('Failed to create temporary password', [
