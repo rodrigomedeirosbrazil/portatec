@@ -231,7 +231,7 @@ class TuyaService
             return true;
         }
 
-        Log::error('Failed to create temporary password', [
+        Log::error('Failed to delete temporary password', [
             'status' => $response->status(),
             'body' => $response->body(),
         ]);
