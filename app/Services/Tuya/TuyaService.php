@@ -5,6 +5,7 @@ namespace App\Services\Tuya;
 use App\Services\Tuya\DTOs\TuyaTicketDTO;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+
 class TuyaService
 {
     private Client $client;

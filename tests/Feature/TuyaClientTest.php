@@ -11,7 +11,7 @@ class TuyaClientTest extends TestCase
 {
     public function testStringRequest(): void
     {
-        $uid = 'az1742250055143BSJGs';
+        $uid = '12345678901234567890';
         $expectedStringRequest = 'GET' . PHP_EOL . 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' . PHP_EOL . '' . PHP_EOL . "/v1.0/users/{$uid}/devices";
 
         Http::fake();
@@ -32,12 +32,12 @@ class TuyaClientTest extends TestCase
 
     public function testSignString(): void
     {
-        $clientId = 'twfspdm9p5mkvtxe9y8n';
-        $clientSecret = '12f3598e08484b518eaf495ae249ef9f';
-        $uid = 'az1742250055143BSJGs';
-        $accessToken = '7c59621407dce5eeada4fd5f2e0ac548';
+        $clientId = '12345678901234567890';
+        $clientSecret = '12345678901234567890123456789012';
+        $uid = '12345678901234567890';
+        $accessToken = '12345678901234567890';
 
-        $expectedSign = '9D5D3F8C0F97002A1DC9A1EBB40FF0E5D17399A2ADEDA2AB414EC1CF94A30588';
+        $expectedSign = 'EB4B380CA7851EF26CECA0A277A2B57442233653DB0A1CCB25864C2C4547896D';
 
         $stringRequest = 'GET'
             . PHP_EOL
