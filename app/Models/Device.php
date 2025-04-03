@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DeviceRelatedTypeEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Events\DeviceCreatedEvent;
 use App\Events\DeviceDeletedEvent;
@@ -9,6 +10,7 @@ use App\Events\DeviceUpdatedEvent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Device extends Model
@@ -19,20 +21,14 @@ class Device extends Model
     protected $fillable = [
         'name',
         'type',
-        'topic',
-        'command_topic',
-        'payload_on',
-        'payload_off',
-        'availability_topic',
-        'availability_payload_on',
-        'is_available',
+        'device_type',
         'json_attribute',
         'status',
     ];
 
     protected $casts = [
         'type' => DeviceTypeEnum::class,
-        'is_available' => 'boolean',
+        'device_type' => DeviceRelatedTypeEnum::class,
     ];
 
     protected static function booted(): void
@@ -54,5 +50,15 @@ class Device extends Model
     public function placeDevices(): HasMany
     {
         return $this->hasMany(PlaceDevice::class);
+    }
+
+    public function mqttDevice(): HasOne
+    {
+        return $this->hasOne(MqttDevice::class);
+    }
+
+    public function tuyaDevice(): HasOne
+    {
+        return $this->hasOne(TuyaDevice::class);
     }
 }
