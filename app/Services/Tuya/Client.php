@@ -10,14 +10,13 @@ use Illuminate\Http\Request;
 class Client
 {
     private $http;
-    private string $clientId;
-    private string $clientSecret;
     private ?TuyaAuthenticationDTO $authenticationDTO;
 
-    public function __construct() {
+    public function __construct(
+        public string $clientId,
+        public string $clientSecret,
+    ) {
         $this->http = Http::baseUrl('https://openapi.tuyaus.com');
-        $this->clientId = env('TUYA_CLIENT_ID');
-        $this->clientSecret = env('TUYA_CLIENT_SECRET');
         $this->authenticationDTO = null;
     }
 

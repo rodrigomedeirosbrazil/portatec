@@ -10,9 +10,14 @@ class TuyaService
 {
     private Client $client;
 
-    public function __construct()
-    {
-        $this->client = new Client();
+    public function __construct(
+        public string $clientId,
+        public string $clientSecret,
+    ) {
+        $this->client = new Client(
+            clientId: $this->clientId,
+            clientSecret: $this->clientSecret,
+        );
     }
 
     public function getDevices(string $uid)
