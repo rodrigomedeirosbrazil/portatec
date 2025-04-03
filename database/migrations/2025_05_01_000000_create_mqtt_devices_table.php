@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('availability_topic')->nullable();
             $table->string('availability_payload_on')->nullable();
             $table->boolean('is_available')->default(true);
+            $table->string('json_attribute')->nullable();
             $table->timestamps();
 
             $table->index(['topic']);

@@ -8,6 +8,10 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * This migration creates a bidirectional relationship between devices and mqtt_devices:
+     * 1. The mqtt_devices.device_id points to the original device
+     * 2. The devices.device_related_id points to the mqtt_device
      */
     public function up(): void
     {
@@ -19,6 +23,7 @@ return new class extends Migration
             if (!empty($device->topic)) {
                 // Insere na tabela mqtt_devices
                 $mqttDeviceId = DB::table('mqtt_devices')->insertGetId([
+                    'device_id' => $device->id, // Set the reference back to the original device
                     'topic' => $device->topic,
                     'command_topic' => $device->command_topic,
                     'payload_on' => $device->payload_on,
@@ -26,6 +31,7 @@ return new class extends Migration
                     'availability_topic' => $device->availability_topic ?? null,
                     'availability_payload_on' => $device->availability_payload_on ?? null,
                     'is_available' => $device->is_available ?? true,
+                    'json_attribute' => $device->json_attribute ?? null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -68,6 +74,7 @@ return new class extends Migration
                         'availability_topic' => $mqttDevice->availability_topic,
                         'availability_payload_on' => $mqttDevice->availability_payload_on,
                         'is_available' => $mqttDevice->is_available,
+                        'json_attribute' => $mqttDevice->json_attribute,
                         'device_type' => null,
                         'device_related_id' => null,
                     ]);

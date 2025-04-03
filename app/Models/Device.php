@@ -22,7 +22,6 @@ class Device extends Model
         'name',
         'type',
         'device_type',
-        'json_attribute',
         'status',
     ];
 

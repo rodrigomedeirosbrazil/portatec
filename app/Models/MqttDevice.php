@@ -19,6 +19,7 @@ class MqttDevice extends Model
         'availability_topic',
         'availability_payload_on',
         'is_available',
+        'json_attribute',
     ];
 
     protected $casts = [
