@@ -15,14 +15,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Migrar dados de devices para mqtt_devices
         $devices = DB::table('devices')->get();
 
         foreach ($devices as $device) {
-            // Só migra se tiver pelo menos o campo 'topic' preenchido
-            if (!empty($device->topic)) {
-                // Insere na tabela mqtt_devices
-                $mqttDeviceId = DB::table('mqtt_devices')->insertGetId([
+            if (! empty($device->topic)) {
+                DB::table('mqtt_devices')->insertGetId([
                     'device_id' => $device->id, // Set the reference back to the original device
                     'topic' => $device->topic,
                     'command_topic' => $device->command_topic,
@@ -41,7 +38,6 @@ return new class extends Migration
                     ->where('id', $device->id)
                     ->update([
                         'device_type' => DeviceRelatedTypeEnum::Mqtt->value,
-                        'device_related_id' => $mqttDeviceId,
                     ]);
             }
         }
@@ -55,7 +51,6 @@ return new class extends Migration
         // Recuperar os dados MQTT para a tabela devices
         $devices = DB::table('devices')
             ->where('device_type', DeviceRelatedTypeEnum::Mqtt->value)
-            ->whereNotNull('device_related_id')
             ->get();
 
         foreach ($devices as $device) {

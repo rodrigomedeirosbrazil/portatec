@@ -6,22 +6,15 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('devices', function (Blueprint $table) {
-            // Add device_type if it doesn't exist
-            if (!Schema::hasColumn('devices', 'device_type')) {
+            if (! Schema::hasColumn('devices', 'device_type')) {
                 $table->string('device_type')->nullable()->after('type'); // 'mqtt', 'tuya', etc.
             }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('devices', function (Blueprint $table) {

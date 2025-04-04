@@ -13,6 +13,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('devices', function (Blueprint $table) {
+            // Remove index on topic column if it exists
+            if (Schema::hasIndex('devices', 'devices_topic_index')) {
+                $table->dropIndex('devices_topic_index');
+            }
+
             // Remove columns that are now stored in mqtt_devices table
             $table->dropColumn([
                 'topic',

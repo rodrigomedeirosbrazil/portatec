@@ -14,11 +14,9 @@ return new class extends Migration
         Schema::create('tuya_devices', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tuya_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('name')->nullable();
             $table->string('device_id')->nullable();
             $table->string('local_key')->nullable();
             $table->string('category')->nullable();
-            $table->boolean('is_online')->nullable();
             $table->timestamps();
         });
     }
