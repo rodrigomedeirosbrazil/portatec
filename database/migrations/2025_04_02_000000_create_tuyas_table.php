@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tuya', function (Blueprint $table) {
+        Schema::create('tuyas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('device_id')->nullable()->constrained()->nullOnDelete();
             $table->string('client_id')->nullable();
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tuya');
+        Schema::dropIfExists('tuyas');
     }
 };

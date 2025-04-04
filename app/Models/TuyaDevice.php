@@ -15,7 +15,6 @@ class TuyaDevice extends Model
         'tuya_id',
         'device_id',
         'local_key',
-        'category',
     ];
 
     public function tuya(): BelongsTo

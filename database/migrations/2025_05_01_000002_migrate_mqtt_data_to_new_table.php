@@ -71,7 +71,6 @@ return new class extends Migration
                         'is_available' => $mqttDevice->is_available,
                         'json_attribute' => $mqttDevice->json_attribute,
                         'device_type' => null,
-                        'device_related_id' => null,
                     ]);
             }
         }

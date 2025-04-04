@@ -2,16 +2,15 @@
 
 namespace Database\Seeders;
 
+use App\Enums\DeviceRelatedTypeEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Enums\PlaceRoleEnum;
-use App\Enums\PropertyRoleEnum;
 use App\Models\Device;
 use App\Models\Place;
 use App\Models\PlaceUser;
-use App\Models\Property;
-use App\Models\PropertyUser;
+use App\Models\Tuya;
+use App\Models\TuyaDevice;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -73,34 +72,23 @@ class UserSeeder extends Seeder
             'role' => PlaceRoleEnum::Host,
         ]);
 
-        $portaoGaragem = Device::create([
-            'name' => 'Portão garagem',
+        $portaoPedestres = Device::create([
+            'name' => 'Portão pedestres',
             'type' => DeviceTypeEnum::Button,
-            'topic' => 'stat/esmeralda6/POWER1',
-            'command_topic' => 'cmnd/esmeralda6/POWER1',
-            'availability_topic' => 'tele/esmeralda6/LWT',
-            'availability_payload_on' => 'Online',
-            'payload_on' => 'ON',
-            'payload_off' => 'OFF',
+            'device_type' => DeviceRelatedTypeEnum::Tuya,
         ]);
 
-        $portaoGaragem->placeDevices()->create([
-            'place_id' => $place->id,
+        $tuya = Tuya::create([
+            'device_id' => $portaoPedestres->id,
+            'client_id' => '1234567890',
+            'client_secret' => '1234567890',
+            'uid' => '1234567890',
         ]);
 
-        $statusPortaoGaragem = Device::create([
-            'name' => 'Status portão garagem',
-            'type' => DeviceTypeEnum::Sensor,
-            'topic' => 'stat/esmeralda6/RESULT',
-            'availability_topic' => 'tele/esmeralda6/LWT',
-            'availability_payload_on' => 'Online',
-            'json_attribute' => 'POWER2',
-            'payload_on' => 'ON',
-            'payload_off' => 'OFF',
-        ]);
-
-        $statusPortaoGaragem->placeDevices()->create([
-            'place_id' => $place->id,
+        TuyaDevice::create([
+            'tuya_id' => $tuya->id,
+            'device_id' => '1234567890',
+            'local_key' => '1234567890',
         ]);
     }
 }

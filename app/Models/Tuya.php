@@ -11,7 +11,7 @@ class Tuya extends Model
 {
     use HasFactory;
 
-    protected $table = 'tuya';
+    protected $table = 'tuyas';
 
     protected $fillable = [
         'device_id',

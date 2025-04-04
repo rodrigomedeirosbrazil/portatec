@@ -9,6 +9,7 @@ use App\Events\DeviceDeletedEvent;
 use App\Events\DeviceUpdatedEvent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -19,6 +20,7 @@ class Device extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'user_id',
         'name',
         'type',
         'device_type',
@@ -44,6 +46,11 @@ class Device extends Model
         static::deleted(function (Device $device) {
             event(new DeviceDeletedEvent($device->id));
         });
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function placeDevices(): HasMany
