@@ -15,10 +15,11 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('type');
+            $table->string('chip_id')->nullable();
             $table->string('status')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            $table->index(['topic']);
+            $table->index(['chip_id']);
         });
     }
 
