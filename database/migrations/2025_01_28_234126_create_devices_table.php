@@ -15,14 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('type');
-            $table->string('topic')->nullable();
-            $table->string('command_topic')->nullable();
-            $table->string('payload_on')->nullable();
-            $table->string('payload_off')->nullable();
-            $table->string('json_attribute')->nullable();
             $table->string('status')->nullable();
             $table->timestamps();
-
+            $table->softDeletes();
             $table->index(['topic']);
         });
     }
