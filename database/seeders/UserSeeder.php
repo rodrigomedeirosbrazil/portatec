@@ -76,30 +76,9 @@ class UserSeeder extends Seeder
         $portaoGaragem = Device::create([
             'name' => 'Portão garagem',
             'type' => DeviceTypeEnum::Button,
-            'topic' => 'stat/esmeralda6/POWER1',
-            'command_topic' => 'cmnd/esmeralda6/POWER1',
-            'availability_topic' => 'tele/esmeralda6/LWT',
-            'availability_payload_on' => 'Online',
-            'payload_on' => 'ON',
-            'payload_off' => 'OFF',
         ]);
 
         $portaoGaragem->placeDevices()->create([
-            'place_id' => $place->id,
-        ]);
-
-        $statusPortaoGaragem = Device::create([
-            'name' => 'Status portão garagem',
-            'type' => DeviceTypeEnum::Sensor,
-            'topic' => 'stat/esmeralda6/RESULT',
-            'availability_topic' => 'tele/esmeralda6/LWT',
-            'availability_payload_on' => 'Online',
-            'json_attribute' => 'POWER2',
-            'payload_on' => 'ON',
-            'payload_off' => 'OFF',
-        ]);
-
-        $statusPortaoGaragem->placeDevices()->create([
             'place_id' => $place->id,
         ]);
     }
