@@ -45,28 +45,8 @@ class DeviceResource extends Resource
                     ->searchable()
                     ->required(),
 
-                TextInput::make('topic')
-                    ->label(__('app.topic'))
-                    ->maxLength(255),
-
-                TextInput::make('command_topic')
-                    ->label(__('app.command_topic'))
-                    ->maxLength(255),
-
-                TextInput::make('availability_topic')
-                    ->label(__('app.availability_topic'))
-                    ->maxLength(255),
-
-                TextInput::make('availability_payload_on')
-                    ->maxLength(255),
-
-                TextInput::make('payload_on')
-                    ->maxLength(255),
-
-                TextInput::make('payload_off')
-                    ->maxLength(255),
-
-                TextInput::make('json_attribute')
+                TextInput::make('chip_id')
+                    ->label(__('app.chip_id'))
                     ->maxLength(255),
 
                 Repeater::make('placeDevices')
@@ -109,16 +89,21 @@ class DeviceResource extends Resource
                 TextColumn::make('id')
                     ->label('ID')
                     ->sortable(),
+
                 TextColumn::make('name')
                     ->searchable(),
+
                 TextColumn::make('type')
                     ->searchable(),
-                TextColumn::make('topic')
+
+                TextColumn::make('chip_id')
                     ->searchable(),
+
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
