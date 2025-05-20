@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('type');
             $table->string('chip_id')->nullable();
-            $table->dateTime('last_sync')->nullable();
+            $table->timestamp('last_sync')->nullable();
             $table->string('status')->nullable();
             $table->timestamps();
             $table->softDeletes();
