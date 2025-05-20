@@ -26,6 +26,7 @@ class Device extends Model
 
     protected $casts = [
         'type' => DeviceTypeEnum::class,
+        'last_sync' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -47,5 +48,10 @@ class Device extends Model
     public function placeDevices(): HasMany
     {
         return $this->hasMany(PlaceDevice::class);
+    }
+
+    public function isAvailable(): bool
+    {
+        return $this->last_sync ? $this->last_sync->diffInMinutes(now()) < 10 : false;
     }
 }
