@@ -19,20 +19,13 @@ class Device extends Model
     protected $fillable = [
         'name',
         'type',
-        'topic',
-        'command_topic',
-        'payload_on',
-        'payload_off',
-        'availability_topic',
-        'availability_payload_on',
-        'is_available',
-        'json_attribute',
+        'chip_id',
+        'last_sync',
         'status',
     ];
 
     protected $casts = [
         'type' => DeviceTypeEnum::class,
-        'is_available' => 'boolean',
     ];
 
     protected static function booted(): void
