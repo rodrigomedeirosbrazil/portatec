@@ -56,15 +56,6 @@ class PlacePage extends BasePage
             return;
         }
 
-        if (empty($device->command_topic)) {
-            Notification::make()
-                ->title('Device does not have a command topic.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
         cache()->put('device-command-' . $device->id, 'pulse', now()->addSeconds(10));
 
         // Log the command
