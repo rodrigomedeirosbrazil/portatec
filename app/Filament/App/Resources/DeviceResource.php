@@ -99,6 +99,10 @@ class DeviceResource extends Resource
                 TextColumn::make('chip_id')
                     ->searchable(),
 
+                TextColumn::make('last_sync')
+                    ->dateTime()
+                    ->sortable(),
+
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
