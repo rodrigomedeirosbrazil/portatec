@@ -4,11 +4,8 @@ namespace App\Filament\Pages;
 
 use App\Models\Place;
 use Illuminate\Contracts\Support\Htmlable;
-use PhpMqtt\Client\Facades\MQTT;
 use Filament\Notifications\Notification;
-use App\Jobs\GetMqttMessageJob;
 use App\Models\CommandLog;
-use App\Models\PlaceDevice;
 use Filament\Pages\BasePage;
 
 class PlacePage extends BasePage
@@ -32,35 +29,6 @@ class PlacePage extends BasePage
         if (! $this->userCanAccess() && ! $this->tokenIsValid()) {
             abort(403);
         }
-
-        $this->askForDeviceAvailability();
-        $this->askForDeviceStatus();
-    }
-
-    public function askForDeviceAvailability(): void
-    {
-        $this->place->placeDevices->map(
-            function (PlaceDevice $placeDevice) {
-                return $placeDevice->device?->availability_topic;
-            }
-        )
-            ->filter()
-            ->unique()
-            ->each(
-                fn (string $topic) => GetMqttMessageJob::dispatch($topic)
-            );
-    }
-
-    public function askForDeviceStatus(): void
-    {
-        $this->place->placeDevices->map(
-            fn (PlaceDevice $placeDevice) => $placeDevice->device?->command_topic
-        )
-            ->filter()
-            ->unique()
-            ->each(
-                fn (string $topic) => MQTT::publish($topic, '')
-            );
     }
 
     public function getListeners(): array
@@ -70,61 +38,9 @@ class PlacePage extends BasePage
         ];
     }
 
-    public function refreshDeviceStatus($event): void
-    {
-        $this->place->placeDevices->each(function (PlaceDevice $placeDevice) use ($event) {
-            if ($placeDevice->device_id !== data_get($event, 'deviceId')) {
-                return;
-            }
-
-            $placeDevice->device->status = data_get($event, 'status');
-        });
-    }
-
     public function toggleDevice($deviceId): void
     {
-        $placeDevice = $this->place->placeDevices->firstWhere('device_id', $deviceId);
-        $device = $placeDevice->device;
-
-        if (! $device) {
-            Notification::make()
-                ->title('Device not found.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        if (empty($device->command_topic)) {
-            Notification::make()
-                ->title('Device does not have a command topic.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        $newState = $device->status === $device->payload_on ? false : true;
-        $payload = $newState ? $device->payload_on : $device->payload_off;
-
-        MQTT::publish($device->command_topic, $payload);
-
-        // Log the command
-        CommandLog::create([
-            'user_id' => auth()->id(),
-            'place_id' => $this->place->id,
-            'device_id' => $device->id,
-            'command_type' => 'toggle',
-            'command_payload' => $payload,
-            'device_type' => $device->type->value ?? null,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
-
-        Notification::make()
-            ->title(fn () => $newState ? 'Device turned on' : 'Device turned off')
-            ->success()
-            ->send();
+        return;
     }
 
     public function pushButton($deviceId): void
@@ -140,16 +56,7 @@ class PlacePage extends BasePage
             return;
         }
 
-        if (empty($device->command_topic)) {
-            Notification::make()
-                ->title('Device does not have a command topic.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        MQTT::publish($device->command_topic, $device->payload_on);
+        cache()->put('device-command-' . $device->id, 'pulse', now()->addSeconds(10));
 
         // Log the command
         CommandLog::create([
@@ -157,7 +64,6 @@ class PlacePage extends BasePage
             'place_id' => $this->place->id,
             'device_id' => $device->id,
             'command_type' => 'push_button',
-            'command_payload' => $device->payload_on,
             'device_type' => $device->type->value ?? null,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),

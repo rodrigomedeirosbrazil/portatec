@@ -19,20 +19,14 @@ class Device extends Model
     protected $fillable = [
         'name',
         'type',
-        'topic',
-        'command_topic',
-        'payload_on',
-        'payload_off',
-        'availability_topic',
-        'availability_payload_on',
-        'is_available',
-        'json_attribute',
+        'chip_id',
+        'last_sync',
         'status',
     ];
 
     protected $casts = [
         'type' => DeviceTypeEnum::class,
-        'is_available' => 'boolean',
+        'last_sync' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -54,5 +48,10 @@ class Device extends Model
     public function placeDevices(): HasMany
     {
         return $this->hasMany(PlaceDevice::class);
+    }
+
+    public function isAvailable(): bool
+    {
+        return $this->last_sync ? $this->last_sync->diffInMinutes(now()) < 10 : false;
     }
 }

@@ -18,7 +18,7 @@
                             <h3 class="text-base font-semibold text-gray-950 dark:text-white">
                                 {{ $placeDevice->device->name }}
                             </h3>
-                            @if (! $placeDevice->device->is_available)
+                            @if (! $placeDevice->device->isAvailable())
                                 <span class="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20">
                                     Offline
                                 </span>
@@ -34,7 +34,7 @@
                                     'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold',
                                     'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->status === $placeDevice->device->payload_off,
                                     'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-offset-0' => $placeDevice->device->status === $placeDevice->device->payload_on,
-                                    'cursor-not-allowed opacity-70' => ! $placeDevice->device->is_available,
+                                    'cursor-not-allowed opacity-70' => ! $placeDevice->device->isAvailable(),
                                 ])
                             >
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -49,9 +49,8 @@
                                 wire:click="toggleDevice({{ $placeDevice->device_id }})"
                                 @class([
                                     'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold',
-                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->is_available && $placeDevice->device->status === $placeDevice->device->payload_on,
-                                    'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-offset-0' => $placeDevice->device->is_available && $placeDevice->device->status === $placeDevice->device->payload_off,
-                                    'cursor-not-allowed opacity-70' => ! $placeDevice->device->is_available,
+                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->isAvailable(),
+                                    'cursor-not-allowed opacity-70' => ! $placeDevice->device->isAvailable(),
                                 ])
                             >
                                 {{ $placeDevice->device->status === $placeDevice->device->payload_on ? 'On' : 'Off' }}

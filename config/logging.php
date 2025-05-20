@@ -136,13 +136,6 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
-
-        'mqtt-messages' => [
-            'driver' => 'daily',
-            'path' => storage_path('logs/mqtt-messages.log'),
-            'days' => 14,
-        ],
-
     ],
 
 ];
