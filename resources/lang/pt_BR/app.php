@@ -27,6 +27,7 @@ return [
 
     // Ações e notificações
     'command_sent' => 'Comando enviado.',
+    'sending' => 'Enviando...',
     'toggle_device' => 'Alternar dispositivo',
     'push_button' => 'Pressionar botão',
     'ask_for_status' => 'Verificar status',
@@ -41,6 +42,7 @@ return [
     // Campos
     'name' => 'Nome',
     'type' => 'Tipo',
+    'chip_id' => 'Chip ID',
     'topic' => 'Tópico',
     'command_topic' => 'Tópico de comando',
     'availability_topic' => 'Tópico de disponibilidade',
