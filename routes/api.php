@@ -16,7 +16,11 @@ Route::post('/sync/{chipId}', function (Request $request, string $chipId) {
     $millis = $request->input('millis');
     if ($millis) {
         $uptime = now()->subMilliseconds($millis)->diffForHumans();
-        Log::info("Device {$device->id}:{$device->name} live since {$uptime}");
+        Log::info(json_encode([
+            'device' => $device->id,
+            'uptime' => $uptime,
+            ...$request->all(),
+        ]));
     }
 
     $device->last_sync = now();
