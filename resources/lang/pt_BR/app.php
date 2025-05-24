@@ -27,6 +27,7 @@ return [
 
     // Ações e notificações
     'command_sent' => 'Comando enviado.',
+    'sending' => 'Enviando...',
     'toggle_device' => 'Alternar dispositivo',
     'push_button' => 'Pressionar botão',
     'ask_for_status' => 'Verificar status',
@@ -41,7 +42,11 @@ return [
     // Campos
     'name' => 'Nome',
     'type' => 'Tipo',
+    'chip_id' => 'Chip ID',
     'topic' => 'Tópico',
+    'status' => 'Status',
+    'online' => 'Online',
+    'offline' => 'Offline',
     'command_topic' => 'Tópico de comando',
     'availability_topic' => 'Tópico de disponibilidade',
     'payload_on' => 'Payload para ligar',
@@ -49,6 +54,18 @@ return [
     'created_at' => 'Criado em',
     'updated_at' => 'Atualizado em',
     'deleted_at' => 'Excluído em',
+
+    // Seções e descrições do formulário
+    'device_information' => 'Informações do Dispositivo',
+    'device_information_description' => 'Configure as informações básicas do dispositivo.',
+    'device_status_description' => 'Visualize o status atual e última sincronização do dispositivo.',
+    'device_places_description' => 'Associe o dispositivo aos locais onde ele está instalado.',
+
+    // Status e estados
+    'current_status' => 'Status Atual',
+    'new_device' => 'Novo Dispositivo',
+    'last_sync' => 'Última Sincronização',
+    'never_synced' => 'Nunca Sincronizado',
 
     // Tipos de dispositivos
     'device_types' => [

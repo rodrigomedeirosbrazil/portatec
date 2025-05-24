@@ -30,30 +30,48 @@
                         @if ($placeDevice->device->type === DeviceTypeEnum::Button)
                             <button
                                 wire:click="pushButton({{ $placeDevice->device_id }})"
+                                @disabled(isset($loadingDevices[$placeDevice->device_id]) || !$placeDevice->device->isAvailable())
                                 @class([
-                                    'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold',
-                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->status === $placeDevice->device->payload_off,
-                                    'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-offset-0' => $placeDevice->device->status === $placeDevice->device->payload_on,
-                                    'cursor-not-allowed opacity-70' => ! $placeDevice->device->isAvailable(),
+                                    'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200',
+                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->status === $placeDevice->device->payload_off && $placeDevice->device->isAvailable() && !isset($loadingDevices[$placeDevice->device_id]),
+                                    'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-offset-0' => $placeDevice->device->status === $placeDevice->device->payload_on && $placeDevice->device->isAvailable() && !isset($loadingDevices[$placeDevice->device_id]),
+                                    'cursor-not-allowed opacity-70' => !$placeDevice->device->isAvailable() || isset($loadingDevices[$placeDevice->device_id]),
                                 ])
                             >
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                                </svg>
-                                <span>Push</span>
+                                @if (isset($loadingDevices[$placeDevice->device_id]))
+                                    <svg class="h-5 w-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>{{ __('app.sending') }}</span>
+                                @else
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                    </svg>
+                                    <span>Push</span>
+                                @endif
                             </button>
                         @endif
 
                         @if ($placeDevice->device->type === DeviceTypeEnum::Switch)
                             <button
                                 wire:click="toggleDevice({{ $placeDevice->device_id }})"
+                                @disabled(isset($loadingDevices[$placeDevice->device_id]) || !$placeDevice->device->isAvailable())
                                 @class([
-                                    'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold',
-                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->isAvailable(),
-                                    'cursor-not-allowed opacity-70' => ! $placeDevice->device->isAvailable(),
+                                    'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200',
+                                    'bg-primary-600 text-white hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-0' => $placeDevice->device->isAvailable() && !isset($loadingDevices[$placeDevice->device_id]),
+                                    'cursor-not-allowed opacity-70' => !$placeDevice->device->isAvailable() || isset($loadingDevices[$placeDevice->device_id]),
                                 ])
                             >
-                                {{ $placeDevice->device->status === $placeDevice->device->payload_on ? 'On' : 'Off' }}
+                                @if (isset($loadingDevices[$placeDevice->device_id]))
+                                    <svg class="h-5 w-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>{{ __('app.sending') }}</span>
+                                @else
+                                    {{ $placeDevice->device->status === $placeDevice->device->payload_on ? 'On' : 'Off' }}
+                                @endif
                             </button>
                         @endif
 
@@ -74,4 +92,14 @@
         @endforeach
     </div>
 </div>
+
+<script>
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('remove-loading', (event) => {
+            setTimeout(() => {
+                Livewire.dispatch('removeLoading', { deviceId: event.deviceId });
+            }, 1500); // Remove loading state after 1.5 seconds
+        });
+    });
+</script>
 </x-filament::card>

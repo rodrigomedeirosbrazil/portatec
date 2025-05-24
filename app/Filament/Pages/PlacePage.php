@@ -12,6 +12,8 @@ class PlacePage extends BasePage
 {
     public Place $place;
     public ?string $token;
+    public array $loadingDevices = [];
+
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static string $view = 'filament.pages.place';
 
@@ -35,6 +37,7 @@ class PlacePage extends BasePage
     {
         return [
             'echo-private:Place.Device.Status.' . $this->place->id . ',PlaceDeviceStatusEvent' => 'refreshDeviceStatus',
+            'removeLoading' => 'removeLoading',
         ];
     }
 
@@ -45,34 +48,59 @@ class PlacePage extends BasePage
 
     public function pushButton($deviceId): void
     {
-        $placeDevice = $this->place->placeDevices->firstWhere('device_id', $deviceId);
-        $device = $placeDevice->device;
-        if (! $device) {
+        $this->loadingDevices[$deviceId] = true;
+
+        try {
+            $placeDevice = $this->place->placeDevices->firstWhere('device_id', $deviceId);
+            $device = $placeDevice->device;
+
+            if (! $device) {
+                Notification::make()
+                    ->title('Device not found.')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
+            cache()->put('device-command-' . $device->id, 'pulse', now()->addSeconds(10));
+
+            // Log the command
+            CommandLog::create([
+                'user_id' => auth()->id(),
+                'place_id' => $this->place->id,
+                'device_id' => $device->id,
+                'command_type' => 'push_button',
+                'device_type' => $device->type->value ?? null,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
             Notification::make()
-                ->title('Device not found.')
-                ->danger()
+                ->title(__('app.command_sent'))
+                ->success()
                 ->send();
 
-            return;
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error sending command.')
+                ->danger()
+                ->send();
+        } finally {
+            // Remove loading state after a short delay to show feedback
+            $this->dispatch('remove-loading', deviceId: $deviceId);
         }
+    }
 
-        cache()->put('device-command-' . $device->id, 'pulse', now()->addSeconds(10));
+    public function removeLoading($deviceId): void
+    {
+        unset($this->loadingDevices[$deviceId]);
+    }
 
-        // Log the command
-        CommandLog::create([
-            'user_id' => auth()->id(),
-            'place_id' => $this->place->id,
-            'device_id' => $device->id,
-            'command_type' => 'push_button',
-            'device_type' => $device->type->value ?? null,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
-
-        Notification::make()
-            ->title(__('app.command_sent'))
-            ->success()
-            ->send();
+    public function refreshDeviceStatus(): void
+    {
+        // Refresh the place data to get updated device statuses
+        $this->place->refresh();
+        $this->place->load('placeDevices.device');
     }
 
     public function userCanAccess(): bool
