@@ -10,12 +10,7 @@ class SyncController extends Controller
 {
     public function sync(Request $request, string $chipId)
     {
-        $device = Device::where('chip_id', $chipId)->first();
-
-        if (! $device) {
-            Log::error("Device {$chipId} not found");
-            return response()->json(['error' => 'Device not found'], 404);
-        }
+        $device = Device::where('chip_id', $chipId)->firstOrFail();
 
         $millis = $request->input('millis');
         if ($millis) {
@@ -40,5 +35,41 @@ class SyncController extends Controller
 
         cache()->forget($deviceCommandKey);
         return response('pulse', 200, ['Content-Type' => 'text/plain']);
+    }
+
+    public function firmware(Request $request)
+    {
+        $chipId = $request->input('chip_id');
+        $device = Device::where('chip_id', $chipId)->firstOrFail();
+
+        $firmwareVersion = $request->input('version');
+
+        $firmwareParts = explode(' ', $firmwareVersion);
+        $firmwareDate = $firmwareParts[0];
+        $firmwareNumber = $firmwareParts[1];
+
+        if (! $firmwareDate || ! $firmwareNumber) {
+            return response()->json(['error' => 'Invalid firmware version'], 400);
+        }
+
+        $lastFirmwareVersion = cache()->get('last-firmware-version');
+        $lastFirmwareDate = $lastFirmwareVersion ? explode(' ', $lastFirmwareVersion)[0] : null;
+        $lastFirmwareNumber = $lastFirmwareVersion ? explode(' ', $lastFirmwareVersion)[1] : 0;
+
+        if (! $lastFirmwareVersion) {
+            return response()->noContent();
+        }
+
+        if ($firmwareDate === $lastFirmwareDate && $firmwareNumber === $lastFirmwareNumber) {
+            return response()->noContent();
+        }
+
+        $lastFirmwareUrl = cache()->get('last-firmware-url');
+
+        if ($lastFirmwareUrl) {
+            return response()->redirectTo($lastFirmwareUrl);
+        }
+
+        return response()->noContent();
     }
 }
