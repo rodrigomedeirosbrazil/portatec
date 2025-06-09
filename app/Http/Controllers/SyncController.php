@@ -4,37 +4,23 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Device;
-use Illuminate\Support\Facades\Log;
+use App\Services\DeviceSyncService;
 
 class SyncController extends Controller
 {
+    public function __construct(
+        private DeviceSyncService $deviceSyncService
+    ) {}
+
     public function sync(Request $request, string $chipId)
     {
-        $device = Device::where('chip_id', $chipId)->firstOrFail();
+        $result = $this->deviceSyncService->syncDevice($chipId, $request->all());
 
-        $millis = $request->input('millis');
-        if ($millis) {
-            $uptime = now()->subMilliseconds($millis)->diffForHumans();
-            Log::info(json_encode([
-                'device' => $device->id,
-                'uptime' => $uptime,
-                ...$request->all(),
-            ]));
-        }
-
-        $device->last_sync = now();
-        $device->save();
-
-        $deviceCommandKey = 'device-command-' . $device->id;
-
-        $command = cache()->get($deviceCommandKey);
-
-        if (! $command) {
+        if (! $result['has_command']) {
             return response()->noContent();
         }
 
-        cache()->forget($deviceCommandKey);
-        return response('pulse', 200, ['Content-Type' => 'text/plain']);
+        return response($result['command'], 200, ['Content-Type' => 'text/plain']);
     }
 
     public function firmware(Request $request)
