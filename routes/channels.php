@@ -2,6 +2,11 @@
 
 use Illuminate\Support\Facades\Broadcast;
 
+// Canal público para sincronização de dispositivos
+Broadcast::channel('device-sync.{chipId}', function () {
+    return true; // Canal público, sem autenticação
+});
+
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
