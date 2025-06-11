@@ -65,7 +65,7 @@ def subscribe_to_channel(ws):
     print(f"📡 Inscrito no canal: {channel_name}")
 
     # Inicia o envio periódico de dados
-    send_device_data_periodically(ws)
+    # send_device_data_periodically(ws)
 
 def send_device_data(ws):
     """Envia dados simulados do dispositivo"""
@@ -153,11 +153,11 @@ def simulate_device():
         except Exception as e:
             if running:
                 print(f"⚠️  Erro na conexão: {e}")
-                print("🔄 Tentando reconectar em 5 segundos...")
-                for _ in range(50):  # 5 segundos divididos em 50 partes de 0.1s
-                    if not running:
-                        break
-                    time.sleep(0.1)
+
+        # Sempre aguarda 5 segundos antes de tentar reconectar
+        if running:
+            print("🔄 Tentando reconectar em 5 segundos...")
+            time.sleep(5)
 
     # Garante que o WebSocket seja fechado
     try:
