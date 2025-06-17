@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Events\DevicePulseEvent;
 use App\Models\Place;
 use Illuminate\Contracts\Support\Htmlable;
 use Filament\Notifications\Notification;
@@ -63,7 +64,7 @@ class PlacePage extends BasePage
                 return;
             }
 
-            cache()->put('device-command-' . $device->id, 'pulse', now()->addSeconds(10));
+            broadcast(new DevicePulseEvent($device->chip_id));
 
             // Log the command
             CommandLog::create([
@@ -104,7 +105,7 @@ class PlacePage extends BasePage
         $this->place->load('placeDevices.device');
     }
 
-    public function showDeviceCommandAck($deviceId, $command): void
+    public function showDeviceCommandAck(): void
     {
         Notification::make()
             ->title(__('app.command_ack'))
