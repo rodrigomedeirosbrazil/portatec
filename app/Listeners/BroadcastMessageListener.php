@@ -59,9 +59,9 @@ class BroadcastMessageListener
             ->unique()
             ->each(fn ($placeId) =>
                 PlaceDeviceCommandAckEvent::dispatch(
-                    placeId: $placeId,
-                    deviceId: $device->id,
-                    command: $data['command'],
+                    $placeId,
+                    $device->id,
+                    $data['command'],
                 )
             );
     }
