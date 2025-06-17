@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
-use App\Services\DeviceSyncService;
+use App\Events\PlaceDeviceCommandAckEvent;
+use App\Models\Device;
+use App\Services\DeviceService;
 use Laravel\Reverb\Events\MessageReceived;
 use Illuminate\Support\Facades\Log;
 
 class BroadcastMessageListener
 {
     public function __construct(
-        private DeviceSyncService $deviceSyncService
+        private DeviceService $deviceService
     ) {}
 
     public function handle(MessageReceived $event): void
@@ -22,30 +24,45 @@ class BroadcastMessageListener
             return;
         }
 
-        // Check if this is a device sync event
-        if ($message['event'] !== 'DeviceSync') {
+        if ($message['event'] === 'client-device-status') {
+            $this->handleClientDeviceStatus($message['data']);
             return;
         }
 
-        $data = is_string($message['data']) ? json_decode($message['data'], true) : $message['data'];
+        if ($message['event'] === 'client-command-ack') {
+            $this->handleClientCommandAck($message['data']);
+            return;
+        }
+    }
 
-        if (! $data || ! isset($data['chip_id'])) {
-            Log::warning('Device sync event received without chip_id', ['message' => $message]);
+    public function handleClientDeviceStatus(array $data): void
+    {
+        if (! $data || ! isset($data['chip-id'])) {
+            Log::warning('Client device status event received without chip-id', ['message' => $data]);
             return;
         }
 
-        try {
-            $result = $this->deviceSyncService->syncDevice($data['chip_id'], $data);
+        $this->deviceService->updateStatus($data['chip-id'], $data);
+    }
 
-            Log::info('Device synced via broadcast', [
-                'chip_id' => $data['chip_id'],
-                'has_command' => $result['has_command'],
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to sync device via broadcast', [
-                'chip_id' => $data['chip_id'],
-                'error' => $e->getMessage(),
-            ]);
+    public function handleClientCommandAck(array $data): void
+    {
+        if (! $data || ! isset($data['chip-id'])) {
+            Log::warning('Client device status event received without chip-id', ['message' => $data]);
+            return;
         }
+
+        $device = Device::where('chip_id', $data['chip-id'])->firstOrFail();
+
+        $device->placeDevices
+            ->pluck('place_id')
+            ->unique()
+            ->each(fn ($placeId) =>
+                PlaceDeviceCommandAckEvent::dispatch(
+                    placeId: $placeId,
+                    deviceId: $device->id,
+                    command: $data['command'],
+                )
+            );
     }
 }
