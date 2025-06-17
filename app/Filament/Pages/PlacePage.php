@@ -37,6 +37,7 @@ class PlacePage extends BasePage
     {
         return [
             'echo-private:Place.Device.Status.' . $this->place->id . ',PlaceDeviceStatusEvent' => 'refreshDeviceStatus',
+            'echo-private:Place.Device.Command.Ack.' . $this->place->id . ',PlaceDeviceCommandAckEvent' => 'showDeviceCommandAck',
             'removeLoading' => 'removeLoading',
         ];
     }
@@ -101,6 +102,14 @@ class PlacePage extends BasePage
         // Refresh the place data to get updated device statuses
         $this->place->refresh();
         $this->place->load('placeDevices.device');
+    }
+
+    public function showDeviceCommandAck($deviceId, $command): void
+    {
+        Notification::make()
+            ->title(__('app.command_ack'))
+            ->success()
+            ->send();
     }
 
     public function userCanAccess(): bool

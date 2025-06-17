@@ -27,6 +27,7 @@ return [
 
     // Ações e notificações
     'command_sent' => 'Comando enviado.',
+    'command_ack' => 'Comando executado.',
     'sending' => 'Enviando...',
     'toggle_device' => 'Alternar dispositivo',
     'push_button' => 'Pressionar botão',
