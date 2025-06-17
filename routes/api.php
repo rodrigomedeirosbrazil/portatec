@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\SyncController;
+use App\Http\Controllers\DeviceController;
 
-Route::post('/sync/{chipId}', [SyncController::class, 'sync']);
-Route::get('/firmware', [SyncController::class, 'firmware']);
+Route::get('/firmware', [DeviceController::class, 'updateFirmware']);

@@ -8,7 +8,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class PlaceDeviceStatusEvent implements ShouldBroadcast
+class PlaceDeviceCommandAckEvent implements ShouldBroadcast
 {
     use Dispatchable;
     use InteractsWithSockets;
@@ -17,13 +17,13 @@ class PlaceDeviceStatusEvent implements ShouldBroadcast
     public function __construct(
         public int $placeId,
         public int $deviceId,
-        public bool $isAvailable,
+        public string $command,
     ) {}
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("Place.Device.Status.{$this->placeId}"),
+            new PrivateChannel("Place.Device.Command.Ack.{$this->placeId}"),
         ];
     }
 }
