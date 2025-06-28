@@ -75,12 +75,13 @@ class UserSeeder extends Seeder
 
         $portaoGaragem = Device::create([
             'name' => 'Portão garagem',
-            'type' => DeviceTypeEnum::Button,
             'chip_id' => '123123',
         ]);
 
         $portaoGaragem->placeDevices()->create([
             'place_id' => $place->id,
+            'type' => DeviceTypeEnum::Button,
+            'gpio' => 3,
         ]);
     }
 }
