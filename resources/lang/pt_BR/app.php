@@ -14,6 +14,7 @@ return [
     'device' => 'Dispositivo',
     'devices' => 'Dispositivos',
     'place' => 'Local',
+    'gpio' => 'GPIO',
     'places' => 'Locais',
     'place_device' => 'Dispositivo do Local',
     'place_devices' => 'Dispositivos do Local',
