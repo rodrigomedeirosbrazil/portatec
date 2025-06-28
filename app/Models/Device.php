@@ -18,14 +18,12 @@ class Device extends Model
 
     protected $fillable = [
         'name',
-        'type',
         'chip_id',
         'last_sync',
         'status',
     ];
 
     protected $casts = [
-        'type' => DeviceTypeEnum::class,
         'last_sync' => 'datetime',
     ];
 
