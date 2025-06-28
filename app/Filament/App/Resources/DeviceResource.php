@@ -50,7 +50,7 @@ class DeviceResource extends Resource
                                     ->maxLength(255)
                                     ->columnSpan(1),
 
-                                
+
                             ]),
 
                         TextInput::make('chip_id')
@@ -157,8 +157,6 @@ class DeviceResource extends Resource
                     ->label(__('app.name'))
                     ->searchable()
                     ->sortable(),
-
-                
 
                 TextColumn::make('chip_id')
                     ->label(__('app.chip_id'))
