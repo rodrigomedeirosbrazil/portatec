@@ -3,7 +3,6 @@
 namespace App\Filament\App\Resources;
 
 use App\Enums\DeviceTypeEnum;
-use App\Enums\DeviceTypeEnum;
 use App\Filament\App\Resources\DeviceResource\Pages;
 use App\Models\Device;
 use App\Models\User;
