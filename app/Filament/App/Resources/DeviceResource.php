@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources;
 
 use App\Enums\DeviceTypeEnum;
+use App\Enums\DeviceTypeEnum;
 use App\Filament\App\Resources\DeviceResource\Pages;
 use App\Models\Device;
 use App\Models\User;
@@ -50,12 +51,7 @@ class DeviceResource extends Resource
                                     ->maxLength(255)
                                     ->columnSpan(1),
 
-                                Select::make('type')
-                                    ->label(__('app.type'))
-                                    ->options(DeviceTypeEnum::toArray())
-                                    ->searchable()
-                                    ->required()
-                                    ->columnSpan(1),
+                                
                             ]),
 
                         TextInput::make('chip_id')
@@ -117,6 +113,17 @@ class DeviceResource extends Resource
                                     ->searchable()
                                     ->preload(false)
                                     ->required(),
+
+                                TextInput::make('gpio')
+                                    ->label(__('app.gpio'))
+                                    ->numeric()
+                                    ->required(),
+
+                                Select::make('type')
+                                    ->label(__('app.type'))
+                                    ->options(DeviceTypeEnum::toArray())
+                                    ->searchable()
+                                    ->required(),
                             ])
                             ->minItems(1)
                             ->defaultItems(1)
@@ -152,10 +159,7 @@ class DeviceResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('type')
-                    ->label(__('app.type'))
-                    ->searchable()
-                    ->sortable(),
+                
 
                 TextColumn::make('chip_id')
                     ->label(__('app.chip_id'))
