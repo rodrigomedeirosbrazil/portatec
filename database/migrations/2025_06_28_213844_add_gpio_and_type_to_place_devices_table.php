@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('place_devices', function (Blueprint $table) {
-            $table->integer('gpio')->after('device_id');
-            $table->string('type')->after('gpio');
+            $table->integer('gpio')->after('device_id')->nullable();
+            $table->string('type')->after('gpio')->nullable();
             $table->unique(['device_id', 'gpio']);
         });
     }
