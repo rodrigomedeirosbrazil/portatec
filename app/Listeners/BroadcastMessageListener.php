@@ -60,10 +60,10 @@ class BroadcastMessageListener
 
         $device = Device::where('chip_id', $data['chip-id'])->firstOrFail();
 
-        $device->placeDevices
+        $device->placeDeviceFunctions
             ->pluck('place_id')
             ->unique()
-            ->each(fn ($placeId) =>
+            ->each(fn (int $placeId) =>
                 PlaceDeviceCommandAckEvent::dispatch(
                     $placeId,
                     $device->id,
@@ -91,10 +91,10 @@ class BroadcastMessageListener
 
         $device = Device::where('chip_id', $data['chip-id'])->firstOrFail();
 
-        $device->placeDevices
+        $device->placeDeviceFunctions
             ->pluck('place_id')
             ->unique()
-            ->each(fn ($placeId) =>
+            ->each(fn (int $placeId) =>
                 PlaceDeviceStatusEvent::dispatch(
                     $placeId,
                     $device->id,
