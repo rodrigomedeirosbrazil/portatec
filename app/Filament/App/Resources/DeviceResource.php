@@ -5,11 +5,9 @@ namespace App\Filament\App\Resources;
 use App\Enums\DeviceTypeEnum;
 use App\Filament\App\Resources\DeviceResource\Pages;
 use App\Models\Device;
-use App\Models\User;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
@@ -23,7 +21,6 @@ use Filament\Tables\Filters\TrashedFilter;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\HtmlString;
 
 class DeviceResource extends Resource
 {
@@ -105,7 +102,7 @@ class DeviceResource extends Resource
                 $user = filament()->auth()->user();
 
                 $query->when(! $user->hasRole('super_admin'), function (Builder $query) use ($user) {
-                    $query->whereHas('users', function (Builder $query) use ($user) {
+                    $query->whereHas('deviceUsers', function (Builder $query) use ($user) {
                         $query->where('user_id', $user->id);
                     });
                 });
