@@ -13,10 +13,10 @@ class CommandLog extends Model
     protected $fillable = [
         'user_id',
         'place_id',
-        'device_id',
+        'device_function_id',
         'command_type',
         'command_payload',
-        'device_type',
+        'device_function_type',
         'ip_address',
         'user_agent',
     ];
@@ -40,8 +40,8 @@ class CommandLog extends Model
     /**
      * Get the device that was controlled by the command.
      */
-    public function device(): BelongsTo
+    public function deviceFunction(): BelongsTo
     {
-        return $this->belongsTo(Device::class);
+        return $this->belongsTo(DeviceFunction::class);
     }
 }
