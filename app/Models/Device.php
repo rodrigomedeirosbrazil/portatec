@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\DeviceTypeEnum;
 use App\Events\DeviceCreatedEvent;
 use App\Events\DeviceDeletedEvent;
 use App\Events\DeviceUpdatedEvent;
@@ -42,9 +41,9 @@ class Device extends Model
         });
     }
 
-    public function placeDevices(): HasMany
+    public function placeDeviceFunctions(): HasMany
     {
-        return $this->hasMany(PlaceDevice::class);
+        return $this->hasMany(PlaceDeviceFunction::class);
     }
 
     public function deviceFunctions(): HasMany
