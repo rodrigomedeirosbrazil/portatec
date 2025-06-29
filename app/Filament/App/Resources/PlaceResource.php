@@ -37,6 +37,7 @@ class PlaceResource extends Resource
                     ->maxLength(255),
 
                 Repeater::make('placeUsers')
+                    ->label(__('app.users'))
                     ->relationship()
                     ->columnSpanFull()
                     ->defaultItems(1)
