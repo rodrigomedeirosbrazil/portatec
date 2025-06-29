@@ -145,4 +145,14 @@ class PlacePage extends BasePage
     {
         return $this->place->name;
     }
+
+    public function getDeviceStatus($placeDevice): string
+    {
+        return $placeDevice->status ? $placeDevice->status->label() : 'N/A';
+    }
+
+    public function getDeviceAvailability($device): string
+    {
+        return $device->isAvailable() ? 'Online' : 'Offline';
+    }
 }

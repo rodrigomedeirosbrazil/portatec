@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Listeners;
 
 use App\Events\PlaceDeviceCommandAckEvent;
+use App\Events\PlaceDeviceStatusEvent;
 use App\Models\Device;
 use App\Services\DeviceService;
 use Laravel\Reverb\Events\MessageReceived;
@@ -87,5 +88,18 @@ class BroadcastMessageListener
                 'status' => $data['value'],
             ]
         );
+
+        $device = Device::where('chip_id', $data['chip-id'])->firstOrFail();
+
+        $device->placeDevices
+            ->pluck('place_id')
+            ->unique()
+            ->each(fn ($placeId) =>
+                PlaceDeviceStatusEvent::dispatch(
+                    $placeId,
+                    $device->id,
+                    $device->isAvailable(),
+                )
+            );
     }
 }
