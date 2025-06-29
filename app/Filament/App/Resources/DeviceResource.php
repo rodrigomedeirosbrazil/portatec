@@ -59,6 +59,22 @@ class DeviceResource extends Resource
                             ->columnSpanFull(),
                     ]),
 
+                Repeater::make('deviceUsers')
+                    ->label(__('app.users'))
+                    ->relationship()
+                    ->columnSpanFull()
+                    ->defaultItems(1)
+                    ->minItems(1)
+                    ->required()
+                    ->schema([
+                        Select::make('user_id')
+                            ->relationship('user', 'name')
+                            ->label(__('app.user'))
+                            ->searchable()
+                            ->preload(false)
+                            ->required(),
+                    ]),
+
                 Section::make(__('app.device_functions'))
                     ->description(__('app.device_functions_description'))
                     ->schema([
@@ -89,12 +105,8 @@ class DeviceResource extends Resource
                 $user = filament()->auth()->user();
 
                 $query->when(! $user->hasRole('super_admin'), function (Builder $query) use ($user) {
-                    $query->whereHas('placeDevices', function (Builder $query) use ($user) {
-                        $query->whereHas('place', function (Builder $query) use ($user) {
-                            $query->whereHas('placeUsers', function (Builder $query) use ($user) {
-                                $query->where('user_id', $user->id);
-                            });
-                        });
+                    $query->whereHas('users', function (Builder $query) use ($user) {
+                        $query->where('user_id', $user->id);
                     });
                 });
             })

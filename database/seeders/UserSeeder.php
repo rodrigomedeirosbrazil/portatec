@@ -6,6 +6,7 @@ use App\Enums\DeviceTypeEnum;
 use App\Enums\PlaceRoleEnum;
 use App\Models\Device;
 use App\Models\DeviceFunction;
+use App\Models\DeviceUser;
 use App\Models\Place;
 use App\Models\PlaceUser;
 use App\Models\User;
@@ -93,6 +94,11 @@ class UserSeeder extends Seeder
 
         $place->placeDeviceFunctions()->create([
             'device_function_id' => $portaoGaragemSensor->id,
+        ]);
+
+        DeviceUser::create([
+            'device_id' => $portaoGaragem->id,
+            'user_id' => $rodrigo->id,
         ]);
     }
 }

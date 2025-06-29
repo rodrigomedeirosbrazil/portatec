@@ -55,4 +55,9 @@ class Device extends Model
     {
         return $this->last_sync ? $this->last_sync->diffInMinutes(now()) < 10 : false;
     }
+
+    public function deviceUsers(): HasMany
+    {
+        return $this->hasMany(DeviceUser::class);
+    }
 }

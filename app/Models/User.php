@@ -43,4 +43,9 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->roles->pluck('name')->join(',');
     }
+
+    public function devices(): BelongsToMany
+    {
+        return $this->belongsToMany(Device::class);
+    }
 }

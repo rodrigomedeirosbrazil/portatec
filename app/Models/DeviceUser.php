@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DeviceUser extends Model
 {
+
+    protected $fillable = [
+        'device_id',
+        'user_id',
+    ];
+
     public function device(): BelongsTo
     {
         return $this->belongsTo(Device::class);
