@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Device;
-use App\Models\PlaceDevice;
-use App\Enums\DeviceTypeEnum;
 use Illuminate\Support\Facades\Log;
 
 class DeviceService
@@ -19,9 +17,6 @@ class DeviceService
 
         if ($gpio !== null) {
             $placeDevice = $device->placeDevices()->where('gpio', $gpio)->firstOrFail();
-            // A lógica específica para o tipo de componente (sensor, pulso, etc.)
-            // e a atualização do seu estado (status) viria aqui.
-            // Por exemplo, se $data contém 'value' para um sensor, atualize $placeDevice->value.
         }
 
         $millis = $data['millis'] ?? null;
@@ -30,7 +25,7 @@ class DeviceService
             Log::info(json_encode([
                 'device' => $device->id,
                 'uptime' => $uptime,
-                'gpio' => $gpio, // Adiciona gpio ao log
+                'gpio' => $gpio,
                 ...$data,
             ]));
         }
