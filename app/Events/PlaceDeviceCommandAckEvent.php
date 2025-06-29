@@ -18,6 +18,8 @@ class PlaceDeviceCommandAckEvent implements ShouldBroadcast
         public int $placeId,
         public int $deviceId,
         public string $command,
+        public int $gpio,
+        public string $type,
     ) {}
 
     public function broadcastOn(): array

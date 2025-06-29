@@ -69,9 +69,7 @@ class CommandLogResource extends Resource
                             ->disabled()
                             ->columnSpanFull(),
 
-                        Forms\Components\TextInput::make('device_type')
-                            ->label(static::getFieldLabel('device_type'))
-                            ->disabled(),
+                        
 
                         Forms\Components\TextInput::make('ip_address')
                             ->label(static::getFieldLabel('ip_address'))
@@ -129,10 +127,7 @@ class CommandLogResource extends Resource
                     ->searchable()
                     ->toggleable(),
 
-                TextColumn::make('command_type')
-                    ->label(static::getFieldLabel('command_type'))
-                    ->sortable()
-                    ->searchable(),
+                
 
                 TextColumn::make('command_payload')
                     ->label(static::getFieldLabel('command_payload'))

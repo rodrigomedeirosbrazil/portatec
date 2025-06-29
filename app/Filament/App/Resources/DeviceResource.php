@@ -50,12 +50,7 @@ class DeviceResource extends Resource
                                     ->maxLength(255)
                                     ->columnSpan(1),
 
-                                Select::make('type')
-                                    ->label(__('app.type'))
-                                    ->options(DeviceTypeEnum::toArray())
-                                    ->searchable()
-                                    ->required()
-                                    ->columnSpan(1),
+
                             ]),
 
                         TextInput::make('chip_id')
@@ -117,6 +112,17 @@ class DeviceResource extends Resource
                                     ->searchable()
                                     ->preload(false)
                                     ->required(),
+
+                                TextInput::make('gpio')
+                                    ->label(__('app.gpio'))
+                                    ->numeric()
+                                    ->required(),
+
+                                Select::make('type')
+                                    ->label(__('app.type'))
+                                    ->options(DeviceTypeEnum::toArray())
+                                    ->searchable()
+                                    ->required(),
                             ])
                             ->minItems(1)
                             ->defaultItems(1)
@@ -149,11 +155,6 @@ class DeviceResource extends Resource
 
                 TextColumn::make('name')
                     ->label(__('app.name'))
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('type')
-                    ->label(__('app.type'))
                     ->searchable()
                     ->sortable(),
 

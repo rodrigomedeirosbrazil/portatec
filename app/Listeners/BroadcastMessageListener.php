@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Listeners;
 
 use App\Events\PlaceDeviceCommandAckEvent;
+use App\Events\PlaceDeviceStatusEvent;
 use App\Models\Device;
 use App\Services\DeviceService;
 use Laravel\Reverb\Events\MessageReceived;
@@ -31,6 +32,11 @@ class BroadcastMessageListener
 
         if ($message['event'] === 'client-command-ack') {
             $this->handleClientCommandAck($message['data']);
+            return;
+        }
+
+        if ($message['event'] === 'client-sensor-status') {
+            $this->handleClientSensorStatus($message['data']);
             return;
         }
     }
@@ -62,6 +68,37 @@ class BroadcastMessageListener
                     $placeId,
                     $device->id,
                     $data['command'],
+                    $data['gpio'],
+                    $data['type'],
+                )
+            );
+    }
+
+    public function handleClientSensorStatus(array $data): void
+    {
+        if (! $data || ! isset($data['chip-id']) || ! isset($data['gpio']) || ! isset($data['value'])) {
+            Log::warning('Client sensor status event received with missing data', ['message' => $data]);
+            return;
+        }
+
+        $this->deviceService->updateStatus(
+            $data['chip-id'],
+            [
+                'gpio' => $data['gpio'],
+                'status' => $data['value'],
+            ]
+        );
+
+        $device = Device::where('chip_id', $data['chip-id'])->firstOrFail();
+
+        $device->placeDevices
+            ->pluck('place_id')
+            ->unique()
+            ->each(fn ($placeId) =>
+                PlaceDeviceStatusEvent::dispatch(
+                    $placeId,
+                    $device->id,
+                    $device->isAvailable(),
                 )
             );
     }
