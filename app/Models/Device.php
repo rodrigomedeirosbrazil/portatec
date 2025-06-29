@@ -48,6 +48,11 @@ class Device extends Model
         return $this->hasMany(PlaceDevice::class);
     }
 
+    public function functions(): HasMany
+    {
+        return $this->hasMany(DeviceFunction::class);
+    }
+
     public function isAvailable(): bool
     {
         return $this->last_sync ? $this->last_sync->diffInMinutes(now()) < 10 : false;
