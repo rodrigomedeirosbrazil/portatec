@@ -47,7 +47,7 @@ class Device extends Model
         return $this->hasMany(PlaceDevice::class);
     }
 
-    public function functions(): HasMany
+    public function deviceFunctions(): HasMany
     {
         return $this->hasMany(DeviceFunction::class);
     }
