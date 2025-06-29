@@ -68,7 +68,7 @@ class BroadcastMessageListener
                     $placeId,
                     $device->id,
                     $data['command'],
-                    $data['gpio'],
+                    $data['pin'],
                     $data['type'],
                 )
             );
@@ -76,7 +76,7 @@ class BroadcastMessageListener
 
     public function handleClientSensorStatus(array $data): void
     {
-        if (! $data || ! isset($data['chip-id']) || ! isset($data['gpio']) || ! isset($data['value'])) {
+        if (! $data || ! isset($data['chip-id']) || ! isset($data['pin']) || ! isset($data['value'])) {
             Log::warning('Client sensor status event received with missing data', ['message' => $data]);
             return;
         }
@@ -84,7 +84,7 @@ class BroadcastMessageListener
         $this->deviceService->updateStatus(
             $data['chip-id'],
             [
-                'gpio' => $data['gpio'],
+                'pin' => $data['pin'],
                 'status' => $data['value'],
             ]
         );
