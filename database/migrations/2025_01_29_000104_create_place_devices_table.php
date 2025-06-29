@@ -15,10 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('place_id')->constrained();
             $table->foreignId('device_id')->constrained();
-            $table->integer('gpio')->nullable();
-            $table->string('type')->nullable();
-            $table->string('status')->nullable();
-            $table->unique(['device_id', 'gpio']);
             $table->timestamps();
         });
     }
