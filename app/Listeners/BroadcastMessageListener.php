@@ -62,6 +62,8 @@ class BroadcastMessageListener
                     $placeId,
                     $device->id,
                     $data['command'],
+                    $data['gpio'],
+                    $data['type'],
                 )
             );
     }
