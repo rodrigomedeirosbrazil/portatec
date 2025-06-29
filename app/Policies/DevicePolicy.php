@@ -28,12 +28,9 @@ class DevicePolicy
             return true;
         }
 
-        return $device->placeDevices()
-            ->whereHas('place', fn ($query) =>
-                $query->whereHas('placeUsers', fn ($query) =>
-                    $query->where('user_id', $user->id)
-                )
-            )->exists();
+        return $device->deviceUsers()
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     /**
@@ -53,13 +50,9 @@ class DevicePolicy
             return true;
         }
 
-        return $device->placeDevices()
-            ->whereHas('place', fn ($query) =>
-                $query->whereHas('placeUsers', fn ($query) =>
-                    $query->where('user_id', $user->id)
-                        ->where('role', PlaceRoleEnum::Admin)
-                )
-            )->exists();
+        return $device->deviceUsers()
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     /**
