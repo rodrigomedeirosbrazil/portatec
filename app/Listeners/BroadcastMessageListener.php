@@ -33,6 +33,11 @@ class BroadcastMessageListener
             $this->handleClientCommandAck($message['data']);
             return;
         }
+
+        if ($message['event'] === 'client-sensor-status') {
+            $this->handleClientSensorStatus($message['data']);
+            return;
+        }
     }
 
     public function handleClientDeviceStatus(array $data): void
@@ -66,5 +71,21 @@ class BroadcastMessageListener
                     $data['type'],
                 )
             );
+    }
+
+    public function handleClientSensorStatus(array $data): void
+    {
+        if (! $data || ! isset($data['chip-id']) || ! isset($data['gpio']) || ! isset($data['value'])) {
+            Log::warning('Client sensor status event received with missing data', ['message' => $data]);
+            return;
+        }
+
+        $this->deviceService->updateStatus(
+            $data['chip-id'],
+            [
+                'gpio' => $data['gpio'],
+                'status' => $data['value'],
+            ]
+        );
     }
 }
