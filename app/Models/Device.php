@@ -20,7 +20,6 @@ class Device extends Model
         'name',
         'chip_id',
         'last_sync',
-        'status',
     ];
 
     protected $casts = [

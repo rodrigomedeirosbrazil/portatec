@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('devices', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('type');
+            
             $table->string('chip_id')->nullable();
             $table->timestamp('last_sync')->nullable();
-            $table->string('status')->nullable();
+            
             $table->timestamps();
             $table->softDeletes();
             $table->index(['chip_id']);
