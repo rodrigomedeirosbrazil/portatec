@@ -34,6 +34,7 @@ This project uses Laravel Sail for its local development environment. All comman
 
 ## 4. Dependencies
 
+- to use sail, use on ./vendor/bin/sail
 - **PHP Packages:** Manage with `sail composer`.
 - **JavaScript Packages:** Manage with `sail npm`.
 - Before adding a new dependency, check if similar functionality already exists within the project or Laravel framework.
