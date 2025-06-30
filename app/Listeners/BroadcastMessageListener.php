@@ -7,6 +7,7 @@ namespace App\Listeners;
 use App\Events\PlaceDeviceCommandAckEvent;
 use App\Events\PlaceDeviceStatusEvent;
 use App\Models\Device;
+use App\Models\DeviceFunction;
 use App\Services\DeviceService;
 use Laravel\Reverb\Events\MessageReceived;
 use Illuminate\Support\Facades\Log;
@@ -58,20 +59,55 @@ class BroadcastMessageListener
             return;
         }
 
-        $device = Device::where('chip_id', $data['chip-id'])->firstOrFail();
+        $device = Device::query()
+            ->where('chip_id', $data['chip-id'])
+            ->firstOrFail();
 
-        $device->placeDeviceFunctions
-            ->pluck('place_id')
-            ->unique()
-            ->each(fn (int $placeId) =>
-                PlaceDeviceCommandAckEvent::dispatch(
-                    $placeId,
-                    $device->id,
-                    $data['command'],
-                    $data['pin'],
-                    $data['type'],
-                )
-            );
+        $deviceFunction = $device->deviceFunctions()
+            ->where('pin', $data['pin'])
+            ->first();
+
+        if (isset($deviceFunction)) {
+            $placeDeviceFunctions = $deviceFunction->placeDeviceFunctions;
+
+            if ($placeDeviceFunctions && $placeDeviceFunctions->isNotEmpty()) {
+                $placeDeviceFunctions
+                    ->pluck('place_id')
+                    ->unique()
+                    ->each(fn (int $placeId) =>
+                        PlaceDeviceCommandAckEvent::dispatch(
+                            $placeId,
+                            $device->id,
+                            $data['command'],
+                            $deviceFunction->pin,
+                            $deviceFunction->type->value,
+                        )
+                    );
+            }
+            return;
+        }
+
+        $deviceFunctions = $device->deviceFunctions()
+            ->get();
+
+        $deviceFunctions->each(function (DeviceFunction $deviceFunction) use ($data, $device) {
+            $placeDeviceFunctions = $deviceFunction->placeDeviceFunctions;
+
+            if ($placeDeviceFunctions && $placeDeviceFunctions->isNotEmpty()) {
+                $placeDeviceFunctions
+                    ->pluck('place_id')
+                    ->unique()
+                    ->each(fn (int $placeId) =>
+                        PlaceDeviceCommandAckEvent::dispatch(
+                            $placeId,
+                            $device->id,
+                            $data['command'],
+                            $deviceFunction->pin,
+                            $deviceFunction->type->value,
+                        )
+                    );
+            }
+        });
     }
 
     public function handleClientSensorStatus(array $data): void
@@ -91,15 +127,40 @@ class BroadcastMessageListener
 
         $device = Device::where('chip_id', $data['chip-id'])->firstOrFail();
 
-        $device->placeDeviceFunctions
-            ->pluck('place_id')
-            ->unique()
-            ->each(fn (int $placeId) =>
-                PlaceDeviceStatusEvent::dispatch(
-                    $placeId,
-                    $device->id,
-                    $device->isAvailable(),
-                )
-            );
+        $deviceFunction = $device->deviceFunctions()
+            ->where('pin', $data['pin'])
+            ->first();
+
+        if (isset($deviceFunction)) {
+            $placeDeviceFunctions = $deviceFunction->placeDeviceFunctions;
+
+            if ($placeDeviceFunctions && $placeDeviceFunctions->isNotEmpty()) {
+                $placeDeviceFunctions
+                    ->pluck('place_id')
+                    ->unique()
+                    ->each(fn (int $placeId) =>
+                        PlaceDeviceStatusEvent::dispatch(
+                        $placeId,
+                        $device->id,
+                        $device->isAvailable(),
+                    ));
+            }
+            return;
+        }
+
+        $placeDeviceFunctions = $device->placeDeviceFunctions;
+
+        if ($placeDeviceFunctions && $placeDeviceFunctions->isNotEmpty()) {
+            $placeDeviceFunctions
+                ->pluck('place_id')
+                ->unique()
+                ->each(fn (int $placeId) =>
+                    PlaceDeviceStatusEvent::dispatch(
+                        $placeId,
+                        $device->id,
+                        $device->isAvailable(),
+                    )
+                );
+        }
     }
 }

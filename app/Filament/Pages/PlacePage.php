@@ -86,7 +86,7 @@ class PlacePage extends BasePage
 
         } catch (\Exception $e) {
             Notification::make()
-                ->title('Error sending command.')
+                ->title('Error sending command. ' . $e->getMessage())
                 ->danger()
                 ->send();
         } finally {

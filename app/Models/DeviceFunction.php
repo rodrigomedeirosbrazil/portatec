@@ -25,4 +25,9 @@ class DeviceFunction extends Model
     {
         return $this->belongsTo(Device::class);
     }
+
+    public function placeDeviceFunctions()
+    {
+        return $this->hasMany(PlaceDeviceFunction::class);
+    }
 }
