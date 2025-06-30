@@ -66,6 +66,7 @@ return [
     'device_functions' => 'Funções do Dispositivo',
     'device_functions_description' => 'Gerencie as funções e capacidades específicas deste dispositivo.',
     'add_device_function' => 'Adicionar Função do Dispositivo',
+    'device_function' => 'Função do Dispositivo',
     'device_status_description' => 'Visualize o status atual e última sincronização do dispositivo.',
     'device_places_description' => 'Associe o dispositivo aos locais onde ele está instalado.',
 

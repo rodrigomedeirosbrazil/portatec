@@ -4,6 +4,7 @@ namespace App\Filament\App\Resources;
 
 use App\Enums\PlaceRoleEnum;
 use App\Filament\App\Resources\PlaceResource\Pages;
+use App\Models\DeviceFunction;
 use App\Models\Place;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -56,7 +57,42 @@ class PlaceResource extends Resource
                             ->options(PlaceRoleEnum::class)
                             ->default(PlaceRoleEnum::Admin)
                             ->required(),
-                    ])
+                    ]),
+
+                Repeater::make('placeDeviceFunctions')
+                    ->minItems(1)
+                    ->defaultItems(1)
+                    ->required()
+                    ->columnSpanFull()
+                    ->relationship()
+                    ->schema([
+                        Select::make('device_function_id')
+                            ->relationship(
+                                name: 'deviceFunction',
+                            )
+                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->device->name} - {$record->type->value} {$record->pin}")
+                            ->label(__('app.device_function'))
+                            ->searchable()
+                            ->getSearchResultsUsing(function (string $search) {
+                                return DeviceFunction::query()
+                                    ->whereHas('device', fn ($query) =>
+                                        $query->where('name', 'like', "%{$search}%")
+                                    )
+                                    ->whereHas('device', fn (Builder $query) =>
+                                        $query->whereHas('deviceUsers', fn (Builder $query) =>
+                                            $query->where('user_id', filament()->auth()->user()->id)
+                                        )
+                                    )
+                                    ->limit(10)
+                                    ->get()
+                                    ->mapWithKeys(fn ($record) => [
+                                        $record->getKey() => "{$record->device->name} - {$record->type->value} {$record->pin}"
+                                    ]);
+                            })
+                            ->preload(false)
+                            ->required(),
+                    ]),
+
             ]);
     }
 
