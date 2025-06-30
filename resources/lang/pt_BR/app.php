@@ -44,6 +44,9 @@ return [
     // Campos
     'name' => 'Nome',
     'type' => 'Tipo',
+    'description' => 'Descrição',
+    'value' => 'Valor',
+    'pin' => 'PIN',
     'chip_id' => 'Chip ID',
     'topic' => 'Tópico',
     'status' => 'Status',
@@ -60,6 +63,9 @@ return [
     // Seções e descrições do formulário
     'device_information' => 'Informações do Dispositivo',
     'device_information_description' => 'Configure as informações básicas do dispositivo.',
+    'device_functions' => 'Funções do Dispositivo',
+    'device_functions_description' => 'Gerencie as funções e capacidades específicas deste dispositivo.',
+    'add_device_function' => 'Adicionar Função do Dispositivo',
     'device_status_description' => 'Visualize o status atual e última sincronização do dispositivo.',
     'device_places_description' => 'Associe o dispositivo aos locais onde ele está instalado.',
 

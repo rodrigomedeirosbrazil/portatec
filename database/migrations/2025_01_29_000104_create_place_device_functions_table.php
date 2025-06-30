@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('devices', function (Blueprint $table) {
-            $table->dropColumn('type');
+        Schema::create('place_device_functions', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('place_id')->constrained();
+            $table->foreignId('device_function_id')->constrained();
+            $table->timestamps();
         });
     }
 
@@ -21,8 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('devices', function (Blueprint $table) {
-            $table->string('type')->nullable();
-        });
+        Schema::dropIfExists('place_device_functions');
     }
 };

@@ -4,14 +4,12 @@ namespace Database\Seeders;
 
 use App\Enums\DeviceTypeEnum;
 use App\Enums\PlaceRoleEnum;
-use App\Enums\PropertyRoleEnum;
 use App\Models\Device;
+use App\Models\DeviceFunction;
+use App\Models\DeviceUser;
 use App\Models\Place;
 use App\Models\PlaceUser;
-use App\Models\Property;
-use App\Models\PropertyUser;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -78,10 +76,29 @@ class UserSeeder extends Seeder
             'chip_id' => '123123',
         ]);
 
-        $portaoGaragem->placeDevices()->create([
-            'place_id' => $place->id,
+        $portaoGaragemPulse = DeviceFunction::create([
+            'device_id' => $portaoGaragem->id,
             'type' => DeviceTypeEnum::Button,
-            'gpio' => 3,
+            'pin' => 3,
+        ]);
+
+        $portaoGaragemSensor = DeviceFunction::create([
+            'device_id' => $portaoGaragem->id,
+            'type' => DeviceTypeEnum::Sensor,
+            'pin' => 0,
+        ]);
+
+        $place->placeDeviceFunctions()->create([
+            'device_function_id' => $portaoGaragemPulse->id,
+        ]);
+
+        $place->placeDeviceFunctions()->create([
+            'device_function_id' => $portaoGaragemSensor->id,
+        ]);
+
+        DeviceUser::create([
+            'device_id' => $portaoGaragem->id,
+            'user_id' => $rodrigo->id,
         ]);
     }
 }

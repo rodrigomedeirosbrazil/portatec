@@ -27,9 +27,9 @@ class Place extends Model
         return $this->hasMany(PlaceUser::class);
     }
 
-    public function placeDevices(): HasMany
+    public function placeDeviceFunctions(): HasMany
     {
-        return $this->hasMany(PlaceDevice::class);
+        return $this->hasMany(PlaceDeviceFunction::class);
     }
 
     public function hasAccessToPlace(User $user): bool

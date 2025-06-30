@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\DeviceTypeEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,10 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('place_devices', function (Blueprint $table) {
+        Schema::create('device_functions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('place_id')->constrained();
-            $table->foreignId('device_id')->constrained();
+            $table->foreignId('device_id')->constrained()->onDelete('cascade');
+            $table->string('type')->default(DeviceTypeEnum::Switch->value);
+            $table->string('pin');
+            $table->boolean('status')->nullable();
             $table->timestamps();
         });
     }
@@ -24,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('place_devices');
+        Schema::dropIfExists('device_functions');
     }
 };

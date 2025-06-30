@@ -15,10 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('place_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('device_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('device_function_id')->nullable()->constrained()->nullOnDelete();
             $table->string('command_type');
             $table->text('command_payload')->nullable();
-            $table->string('device_type')->nullable();
+            $table->string('device_function_type')->nullable();
             $table->string('ip_address')->nullable();
             $table->string('user_agent')->nullable();
             $table->timestamps();

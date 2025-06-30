@@ -5,11 +5,9 @@ namespace App\Filament\App\Resources;
 use App\Enums\DeviceTypeEnum;
 use App\Filament\App\Resources\DeviceResource\Pages;
 use App\Models\Device;
-use App\Models\User;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
@@ -23,7 +21,6 @@ use Filament\Tables\Filters\TrashedFilter;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\HtmlString;
 
 class DeviceResource extends Resource
 {
@@ -59,74 +56,40 @@ class DeviceResource extends Resource
                             ->columnSpanFull(),
                     ]),
 
-                Section::make(__('app.device_status'))
-                    ->description(__('app.device_status_description'))
+                Repeater::make('deviceUsers')
+                    ->label(__('app.users'))
+                    ->relationship()
+                    ->columnSpanFull()
+                    ->defaultItems(1)
+                    ->minItems(1)
+                    ->required()
                     ->schema([
-                        Grid::make(2)
-                            ->schema([
-                                Placeholder::make('status_display')
-                                    ->label(__('app.current_status'))
-                                    ->content(function (?Device $record): HtmlString|string {
-                                        if (!$record) {
-                                            return __('app.new_device');
-                                        }
+                        Select::make('user_id')
+                            ->relationship('user', 'name')
+                            ->label(__('app.user'))
+                            ->searchable()
+                            ->preload(false)
+                            ->required(),
+                    ]),
 
-                                        $isAvailable = $record->isAvailable();
-                                        $status = $isAvailable ? __('app.online') : __('app.offline');
-                                        $color = $isAvailable ? 'success' : 'danger';
-
-                                        return new HtmlString("<span class='fi-badge fi-color-{$color} inline-flex items-center justify-center gap-x-1 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset'>{$status}</span>");
-                                    })
-                                    ->columnSpan(1),
-
-                                Placeholder::make('last_sync_display')
-                                    ->label(__('app.last_sync'))
-                                    ->content(function (?Device $record): string {
-                                        if (!$record || !$record->last_sync) {
-                                            return __('app.never_synced');
-                                        }
-
-                                        return $record->last_sync->diffForHumans();
-                                    })
-                                    ->columnSpan(1),
-                            ]),
-                    ])
-                    ->visible(fn (?Device $record): bool => $record !== null),
-
-                Section::make(__('app.places'))
-                    ->description(__('app.device_places_description'))
+                Section::make(__('app.device_functions'))
+                    ->description(__('app.device_functions_description'))
                     ->schema([
-                        Repeater::make('placeDevices')
+                        Repeater::make('deviceFunctions')
                             ->relationship()
                             ->schema([
-                                Select::make('place_id')
-                                    ->relationship(
-                                        'place',
-                                        'name',
-                                        fn ($query) => $query->whereHas('placeUsers', fn ($query) =>
-                                            $query->where('user_id', filament()->auth()->user()->id)
-                                                ->where('role', 'admin')
-                                        )
-                                    )
-                                    ->label(__('app.place'))
-                                    ->searchable()
-                                    ->preload(false)
-                                    ->required(),
-
-                                TextInput::make('gpio')
-                                    ->label(__('app.gpio'))
-                                    ->numeric()
-                                    ->required(),
-
                                 Select::make('type')
                                     ->label(__('app.type'))
-                                    ->options(DeviceTypeEnum::toArray())
-                                    ->searchable()
+                                    ->options(DeviceTypeEnum::class)
                                     ->required(),
+                                TextInput::make('pin')
+                                    ->label(__('app.pin'))
+                                    ->required()
+                                    ->numeric(),
                             ])
-                            ->minItems(1)
+                            ->columns(2)
                             ->defaultItems(1)
-                            ->required()
+                            ->addActionLabel(__('app.add_device_function'))
                             ->columnSpanFull(),
                     ]),
             ]);
@@ -139,12 +102,8 @@ class DeviceResource extends Resource
                 $user = filament()->auth()->user();
 
                 $query->when(! $user->hasRole('super_admin'), function (Builder $query) use ($user) {
-                    $query->whereHas('placeDevices', function (Builder $query) use ($user) {
-                        $query->whereHas('place', function (Builder $query) use ($user) {
-                            $query->whereHas('placeUsers', function (Builder $query) use ($user) {
-                                $query->where('user_id', $user->id);
-                            });
-                        });
+                    $query->whereHas('deviceUsers', function (Builder $query) use ($user) {
+                        $query->where('user_id', $user->id);
                     });
                 });
             })
@@ -162,37 +121,6 @@ class DeviceResource extends Resource
                     ->label(__('app.chip_id'))
                     ->searchable()
                     ->sortable(),
-
-                TextColumn::make('status')
-                    ->label(__('app.status'))
-                    ->badge()
-                    ->getStateUsing(fn (Device $record): string => $record->isAvailable() ? 'online' : 'offline')
-                    ->colors([
-                        'success' => 'online',
-                        'danger' => 'offline',
-                    ])
-                    ->formatStateUsing(fn (string $state): string => match($state) {
-                        'online' => __('app.online'),
-                        'offline' => __('app.offline'),
-                        default => $state,
-                    })
-                    ->tooltip(fn (Device $record): string =>
-                        $record->last_sync
-                            ? __('app.last_sync') . ': ' . $record->last_sync->format('d/m/Y H:i:s')
-                            : __('app.never_synced')
-                    ),
-
-                TextColumn::make('created_at')
-                    ->label(__('app.created_at'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                TextColumn::make('updated_at')
-                    ->label(__('app.updated_at'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 TrashedFilter::make(),

@@ -18,7 +18,7 @@ class PlaceDeviceCommandAckEvent implements ShouldBroadcast
         public int $placeId,
         public int $deviceId,
         public string $command,
-        public int $gpio,
+        public int $pin,
         public string $type,
     ) {}
 

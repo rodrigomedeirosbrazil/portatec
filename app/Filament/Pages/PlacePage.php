@@ -37,26 +37,26 @@ class PlacePage extends BasePage
     public function getListeners(): array
     {
         return [
-            'echo-private:Place.Device.Status.' . $this->place->id . ',PlaceDeviceStatusEvent' => 'refreshDeviceStatus',
+            'echo-private:Place.Device.Status.' . $this->place->id . ',PlaceDeviceStatusEvent' => 'refreshDeviceFunctionStatus',
             'echo-private:Place.Device.Command.Ack.' . $this->place->id . ',PlaceDeviceCommandAckEvent' => 'showDeviceCommandAck',
             'removeLoading' => 'removeLoading',
         ];
     }
 
-    public function toggleDevice($deviceId): void
+    public function toggleDeviceFunction($deviceFunctionId): void
     {
         return;
     }
 
-    public function pushButton($deviceId): void
+    public function pushButton($deviceFunctionId): void
     {
-        $this->loadingDevices[$deviceId] = true;
+        $this->loadingDevices[$deviceFunctionId] = true;
 
         try {
-            $placeDevice = $this->place->placeDevices->firstWhere('device_id', $deviceId);
-            $device = $placeDevice->device;
+            $placeDeviceFunction = $this->place->placeDeviceFunctions->firstWhere('device_function_id', $deviceFunctionId);
+            $deviceFunction = $placeDeviceFunction->deviceFunction;
 
-            if (! $device) {
+            if (! $deviceFunction) {
                 Notification::make()
                     ->title('Device not found.')
                     ->danger()
@@ -64,15 +64,17 @@ class PlacePage extends BasePage
                 return;
             }
 
-            broadcast(new DevicePulseEvent($device->chip_id));
+            broadcast(new DevicePulseEvent($deviceFunction->device->chip_id, [
+                'pin' => $deviceFunction->pin,
+            ]));
 
             // Log the command
             CommandLog::create([
                 'user_id' => auth()->id(),
                 'place_id' => $this->place->id,
-                'device_id' => $device->id,
+                'device_function_id' => $deviceFunction->id,
                 'command_type' => 'push_button',
-                'device_type' => $device->type->value ?? null,
+                'device_function_type' => $deviceFunction->type->value ?? null,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
             ]);
@@ -84,25 +86,25 @@ class PlacePage extends BasePage
 
         } catch (\Exception $e) {
             Notification::make()
-                ->title('Error sending command.')
+                ->title('Error sending command. ' . $e->getMessage())
                 ->danger()
                 ->send();
         } finally {
             // Remove loading state after a short delay to show feedback
-            $this->dispatch('remove-loading', deviceId: $deviceId);
+            $this->dispatch('remove-loading', deviceFunctionId: $deviceFunctionId);
         }
     }
 
-    public function removeLoading($deviceId): void
+    public function removeLoading($deviceFunctionId): void
     {
-        unset($this->loadingDevices[$deviceId]);
+        unset($this->loadingDevices[$deviceFunctionId]);
     }
 
-    public function refreshDeviceStatus(): void
+    public function refreshDeviceFunctionStatus(): void
     {
         // Refresh the place data to get updated device statuses
         $this->place->refresh();
-        $this->place->load('placeDevices.device');
+        $this->place->load('placeDeviceFunctions.deviceFunction');
     }
 
     public function showDeviceCommandAck(): void
@@ -144,15 +146,5 @@ class PlacePage extends BasePage
     public function getTitle(): string | Htmlable
     {
         return $this->place->name;
-    }
-
-    public function getDeviceStatus($placeDevice): string
-    {
-        return $placeDevice->status ? $placeDevice->status->label() : 'N/A';
-    }
-
-    public function getDeviceAvailability($device): string
-    {
-        return $device->isAvailable() ? 'Online' : 'Offline';
     }
 }

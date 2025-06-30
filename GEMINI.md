@@ -30,9 +30,11 @@ This project uses Laravel Sail for its local development environment. All comman
 - **Security:** Be mindful of security best practices, especially regarding SQL injection (use Eloquent/Query Builder), Cross-Site Scripting (XSS), and Cross-Site Request Forgery (CSRF).
 - **Commit Messages:** Write clear and concise commit messages, following the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
 - Avoid use IF ELSE, use early return.
+- During development of a commit, avoid to create migrations that changes the migrations created on same commit or branch.
 
 ## 4. Dependencies
 
+- to use sail, use on ./vendor/bin/sail
 - **PHP Packages:** Manage with `sail composer`.
 - **JavaScript Packages:** Manage with `sail npm`.
 - Before adding a new dependency, check if similar functionality already exists within the project or Laravel framework.
