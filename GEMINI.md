@@ -23,6 +23,8 @@ This project uses Laravel Sail for its local development environment. All comman
 
 ## 3. Coding Standards & Best Practices
 
+- **Filament:** This project uses Filament PHP version 3. Ensure all components and code adhere to this version's standards and practices.
+
 - **Style Guide:** Adhere strictly to the [PSR-12](https://www.php-fig.org/psr/psr-12/) coding style guide and Laravel's own coding standards.
 - **Object Calisthenics:** Follow the Object Calisthenics rules for object-oriented programming.
 - **Testing:** All new features must be accompanied by relevant feature or unit tests. Bug fixes should include a regression test to prevent future issues.
