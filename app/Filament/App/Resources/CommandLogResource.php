@@ -32,7 +32,7 @@ class CommandLogResource extends Resource
 
     protected static function getFieldLabel(string $field): string
     {
-        return __('app.command_log_fields.' . $field);
+        return __('app.command_log_fields.'.$field);
     }
 
     public static function form(Form $form): Form
@@ -55,9 +55,14 @@ class CommandLogResource extends Resource
                             ->label(static::getFieldLabel('place'))
                             ->disabled(),
 
-                        Forms\Components\Select::make('device_id')
-                            ->relationship('device', 'name')
-                            ->label(static::getFieldLabel('device'))
+                        Forms\Components\Select::make('device_function_id')
+                            ->relationship('deviceFunction')
+                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->device->name} - {$record->type->value} {$record->pin}")
+                            ->label(static::getFieldLabel('device_function'))
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('device_function_type')
+                            ->label(static::getFieldLabel('device_function_type'))
                             ->disabled(),
 
                         Forms\Components\TextInput::make('command_type')
@@ -68,8 +73,6 @@ class CommandLogResource extends Resource
                             ->label(static::getFieldLabel('command_payload'))
                             ->disabled()
                             ->columnSpanFull(),
-
-                        
 
                         Forms\Components\TextInput::make('ip_address')
                             ->label(static::getFieldLabel('ip_address'))
@@ -96,10 +99,14 @@ class CommandLogResource extends Resource
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-                $query->when(! auth()?->user()->hasRole('super_admin'), fn (Builder $query) =>
-                    $query->whereHas('place', fn (Builder $query) =>
-                        $query->whereHas('placeUsers', fn (Builder $query) =>
-                            $query->where('user_id', auth()?->user()->id)
+                $user = auth()->user();
+                $query->when(
+                    $user && ! $user->hasRole('super_admin'),
+                    fn (Builder $query) => $query->whereHas(
+                        'place',
+                        fn (Builder $query) => $query->whereHas(
+                            'placeUsers',
+                            fn (Builder $query) => $query->where('user_id', $user->id)
                         )
                     )
                 );
@@ -121,18 +128,17 @@ class CommandLogResource extends Resource
                     ->sortable()
                     ->searchable(),
 
-                TextColumn::make('device.name')
-                    ->label(static::getFieldLabel('device'))
+                TextColumn::make('deviceFunction.device.name')
+                    ->label(static::getFieldLabel('device_function'))
                     ->sortable()
                     ->searchable()
                     ->toggleable(),
 
-                
-
-                TextColumn::make('command_payload')
-                    ->label(static::getFieldLabel('command_payload'))
+                TextColumn::make('device_function_type')
+                    ->label(static::getFieldLabel('device_function_type'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->label(static::getFieldLabel('created_at'))
@@ -149,8 +155,8 @@ class CommandLogResource extends Resource
                     ->relationship('user', 'name')
                     ->searchable()
                     ->preload(),
-                SelectFilter::make('device')
-                    ->relationship('device', 'name')
+                SelectFilter::make('deviceFunction.device')
+                    ->relationship('deviceFunction.device', 'name')
                     ->searchable()
                     ->preload(),
                 Filter::make('created_at')
