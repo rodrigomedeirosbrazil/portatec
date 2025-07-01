@@ -12,7 +12,7 @@ class TuyaService
 
     public function __construct()
     {
-        $this->client = new Client();
+        $this->client = new Client;
     }
 
     public function getDevices(string $uid)
@@ -33,6 +33,7 @@ class TuyaService
 
         if ($response->successful() && boolval($response->json('success', false))) {
             $data = json_decode($response->body(), true);
+
             return $data;
         }
 
@@ -104,6 +105,7 @@ class TuyaService
 
         if ($response->successful() && boolval($response->json('success', false))) {
             $data = json_decode($response->body(), true);
+
             return new TuyaTicketDTO(
                 ticketId: data_get($data, 'result.ticket_id'),
                 ticketKey: data_get($data, 'result.ticket_key'),
@@ -122,10 +124,11 @@ class TuyaService
     public function decryptTicketKey(string $clientSecret, TuyaTicketDTO $ticket)
     {
         $data = hex2bin($ticket->ticketKey);
-		$cipherMethod = 'aes-256-ecb';
-		$options = OPENSSL_RAW_DATA;
-		$keyUtf8 = mb_convert_encoding($clientSecret, 'UTF-8', 'ISO-8859-1');
-		return openssl_decrypt($data, $cipherMethod, $keyUtf8, $options);
+        $cipherMethod = 'aes-256-ecb';
+        $options = OPENSSL_RAW_DATA;
+        $keyUtf8 = mb_convert_encoding($clientSecret, 'UTF-8', 'ISO-8859-1');
+
+        return openssl_decrypt($data, $cipherMethod, $keyUtf8, $options);
     }
 
     public function encryptPasswordWithTicket(string $clientSecret, string $password, TuyaTicketDTO $ticket): ?string
@@ -133,18 +136,18 @@ class TuyaService
         $decriptedKey = $this->decryptTicketKey($clientSecret, $ticket);
         $decryptKeyHex = bin2hex($decriptedKey);
 
-		$cipherMethod = 'aes-128-ecb';
-		$options = OPENSSL_RAW_DATA;
+        $cipherMethod = 'aes-128-ecb';
+        $options = OPENSSL_RAW_DATA;
 
-		$binaryPassword = openssl_encrypt($password, $cipherMethod, hex2bin($decryptKeyHex), $options);
+        $binaryPassword = openssl_encrypt($password, $cipherMethod, hex2bin($decryptKeyHex), $options);
 
-		if ($binaryPassword === false) {
-			return null;
-		}
+        if ($binaryPassword === false) {
+            return null;
+        }
 
-		$encryptedPassword = bin2hex($binaryPassword);
+        $encryptedPassword = bin2hex($binaryPassword);
 
-		return $encryptedPassword;
+        return $encryptedPassword;
     }
 
     public function createTemporaryPassword(
@@ -154,7 +157,7 @@ class TuyaService
         ?int $effectiveTime = null,
         ?int $invalidTime = null,
         ?int $type = null,
-    ) : ?int {
+    ): ?int {
         if (
             ! $this->client->isAuthenticated()
             && ! $this->client->authenticate()
@@ -199,6 +202,7 @@ class TuyaService
 
         if ($response->successful() && boolval($response->json('success', false))) {
             $data = json_decode($response->body(), true);
+
             return data_get($data, 'result.id');
         }
 
@@ -213,7 +217,7 @@ class TuyaService
     public function deleteTemporaryPassword(
         string $deviceId,
         int $passwordId,
-    ) : bool {
+    ): bool {
         if (
             ! $this->client->isAuthenticated()
             && ! $this->client->authenticate()

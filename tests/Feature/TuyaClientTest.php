@@ -2,20 +2,20 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Services\Tuya\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
 
 class TuyaClientTest extends TestCase
 {
-    public function testStringRequest(): void
+    public function test_string_request(): void
     {
         $uid = '12345678901234567890';
-        $expectedStringRequest = 'GET' . PHP_EOL . 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' . PHP_EOL . '' . PHP_EOL . "/v1.0/users/{$uid}/devices";
+        $expectedStringRequest = 'GET'.PHP_EOL.'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'.PHP_EOL.''.PHP_EOL."/v1.0/users/{$uid}/devices";
 
         Http::fake();
-        $client = new Client();
+        $client = new Client;
 
         $stringRequest = $client->getStringRequest(
             method: Request::METHOD_GET,
@@ -30,7 +30,7 @@ class TuyaClientTest extends TestCase
         );
     }
 
-    public function testSignString(): void
+    public function test_sign_string(): void
     {
         $clientId = '12345678901234567890';
         $clientSecret = '12345678901234567890123456789012';
@@ -40,15 +40,15 @@ class TuyaClientTest extends TestCase
         $expectedSign = 'EB4B380CA7851EF26CECA0A277A2B57442233653DB0A1CCB25864C2C4547896D';
 
         $stringRequest = 'GET'
-            . PHP_EOL
-            . 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-            . PHP_EOL
-            . ''
-            . PHP_EOL
-            . "/v1.0/users/{$uid}/devices";
+            .PHP_EOL
+            .'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+            .PHP_EOL
+            .''
+            .PHP_EOL
+            ."/v1.0/users/{$uid}/devices";
 
         Http::fake();
-        $client = new Client();
+        $client = new Client;
 
         $timestamp = '1743034828181';
         $nonce = '';

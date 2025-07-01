@@ -12,9 +12,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -75,18 +75,15 @@ class PlaceResource extends Resource
                             ->searchable()
                             ->getSearchResultsUsing(function (string $search) {
                                 return DeviceFunction::query()
-                                    ->whereHas('device', fn ($query) =>
-                                        $query->where('name', 'like', "%{$search}%")
+                                    ->whereHas('device', fn ($query) => $query->where('name', 'like', "%{$search}%")
                                     )
-                                    ->whereHas('device', fn (Builder $query) =>
-                                        $query->whereHas('deviceUsers', fn (Builder $query) =>
-                                            $query->where('user_id', filament()->auth()->user()->id)
-                                        )
+                                    ->whereHas('device', fn (Builder $query) => $query->whereHas('deviceUsers', fn (Builder $query) => $query->where('user_id', filament()->auth()->user()->id)
+                                    )
                                     )
                                     ->limit(10)
                                     ->get()
                                     ->mapWithKeys(fn ($record) => [
-                                        $record->getKey() => "{$record->device->name} - {$record->type->value} {$record->pin}"
+                                        $record->getKey() => "{$record->device->name} - {$record->type->value} {$record->pin}",
                                     ]);
                             })
                             ->preload(false)
@@ -100,10 +97,8 @@ class PlaceResource extends Resource
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-                $query->when(! auth()->user()->hasRole('super_admin'), fn (Builder $query) =>
-                    $query->whereHas('placeUsers', fn (Builder $query) =>
-                        $query->where('user_id', filament()->auth()->user()->id)
-                    )
+                $query->when(! auth()->user()->hasRole('super_admin'), fn (Builder $query) => $query->whereHas('placeUsers', fn (Builder $query) => $query->where('user_id', filament()->auth()->user()->id)
+                )
                 );
             })
             ->columns([
@@ -126,8 +121,7 @@ class PlaceResource extends Resource
                     ->url(fn ($record): string => route('place', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make()
-                    ->visible(fn (Place $record): bool =>
-                        auth()->user()->hasRole('super_admin') ||
+                    ->visible(fn (Place $record): bool => auth()->user()->hasRole('super_admin') ||
                         $record->placeUsers()
                             ->where('user_id', auth()->user()->id)
                             ->where('role', PlaceRoleEnum::Admin)

@@ -13,7 +13,7 @@ enum PlaceRoleEnum: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::Admin => __('app.place_roles.admin'),
             self::Host => __('app.place_roles.host'),
         };

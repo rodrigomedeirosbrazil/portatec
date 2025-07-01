@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\PlaceRoleEnum;
 use App\Models\Device;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;

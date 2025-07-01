@@ -3,19 +3,22 @@
 namespace App\Filament\Pages;
 
 use App\Events\DevicePulseEvent;
-use App\Models\Place;
-use Illuminate\Contracts\Support\Htmlable;
-use Filament\Notifications\Notification;
 use App\Models\CommandLog;
+use App\Models\Place;
+use Filament\Notifications\Notification;
 use Filament\Pages\BasePage;
+use Illuminate\Contracts\Support\Htmlable;
 
 class PlacePage extends BasePage
 {
     public Place $place;
+
     public ?string $token;
+
     public array $loadingDevices = [];
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
+
     protected static string $view = 'filament.pages.place';
 
     public function mount(int $id, ?string $token = null): void
@@ -23,6 +26,7 @@ class PlacePage extends BasePage
         if (! auth()->check()) {
             session()->put('url.intended', url()->current());
             redirect('/main/login');
+
             return;
         }
 
@@ -37,16 +41,13 @@ class PlacePage extends BasePage
     public function getListeners(): array
     {
         return [
-            'echo-private:Place.Device.Status.' . $this->place->id . ',PlaceDeviceStatusEvent' => 'refreshDeviceFunctionStatus',
-            'echo-private:Place.Device.Command.Ack.' . $this->place->id . ',PlaceDeviceCommandAckEvent' => 'showDeviceCommandAck',
+            'echo-private:Place.Device.Status.'.$this->place->id.',PlaceDeviceStatusEvent' => 'refreshDeviceFunctionStatus',
+            'echo-private:Place.Device.Command.Ack.'.$this->place->id.',PlaceDeviceCommandAckEvent' => 'showDeviceCommandAck',
             'removeLoading' => 'removeLoading',
         ];
     }
 
-    public function toggleDeviceFunction($deviceFunctionId): void
-    {
-        return;
-    }
+    public function toggleDeviceFunction($deviceFunctionId): void {}
 
     public function pushButton($deviceFunctionId): void
     {
@@ -61,6 +62,7 @@ class PlacePage extends BasePage
                     ->title('Device not found.')
                     ->danger()
                     ->send();
+
                 return;
             }
 
@@ -86,7 +88,7 @@ class PlacePage extends BasePage
 
         } catch (\Exception $e) {
             Notification::make()
-                ->title('Error sending command. ' . $e->getMessage())
+                ->title('Error sending command. '.$e->getMessage())
                 ->danger()
                 ->send();
         } finally {
@@ -143,7 +145,7 @@ class PlacePage extends BasePage
         return true;
     }
 
-    public function getTitle(): string | Htmlable
+    public function getTitle(): string|Htmlable
     {
         return $this->place->name;
     }

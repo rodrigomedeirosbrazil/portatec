@@ -17,7 +17,7 @@ enum DeviceStatusEnum: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::Open => __('app.device_statuses.open'),
             self::Closed => __('app.device_statuses.closed'),
             self::On => __('app.device_statuses.on'),

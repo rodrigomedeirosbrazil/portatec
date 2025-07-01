@@ -8,6 +8,5 @@ class TuyaTicketDTO
         public string $ticketId,
         public string $ticketKey,
         public string $expireTime,
-    ) {
-    }
+    ) {}
 }

@@ -3,9 +3,9 @@
 namespace App\Filament\App\Resources\PlaceResource\Pages;
 
 use App\Filament\App\Resources\PlaceResource;
+use App\Models\Place;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
-use App\Models\Place;
 use Illuminate\Support\Facades\DB;
 
 class EditPlace extends EditRecord
@@ -22,7 +22,7 @@ class EditPlace extends EditRecord
                     return DB::transaction(function () use ($record) {
                         // Create a copy of the place
                         $newPlace = $record->replicate();
-                        $newPlace->name = $record->name . ' (Cópia)';
+                        $newPlace->name = $record->name.' (Cópia)';
                         $newPlace->save();
 
                         foreach ($record->placeUsers as $placeUser) {

@@ -9,8 +9,8 @@ use App\Events\PlaceDeviceStatusEvent;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Services\DeviceService;
-use Laravel\Reverb\Events\MessageReceived;
 use Illuminate\Support\Facades\Log;
+use Laravel\Reverb\Events\MessageReceived;
 
 class BroadcastMessageListener
 {
@@ -28,16 +28,19 @@ class BroadcastMessageListener
 
         if ($message['event'] === 'client-device-status') {
             $this->handleClientDeviceStatus($message['data']);
+
             return;
         }
 
         if ($message['event'] === 'client-command-ack') {
             $this->handleClientCommandAck($message['data']);
+
             return;
         }
 
         if ($message['event'] === 'client-sensor-status') {
             $this->handleClientSensorStatus($message['data']);
+
             return;
         }
     }
@@ -46,6 +49,7 @@ class BroadcastMessageListener
     {
         if (! $data || ! isset($data['chip-id'])) {
             Log::warning('Client device status event received without chip-id', ['message' => $data]);
+
             return;
         }
 
@@ -56,6 +60,7 @@ class BroadcastMessageListener
     {
         if (! $data || ! isset($data['chip-id'])) {
             Log::warning('Client device status event received without chip-id', ['message' => $data]);
+
             return;
         }
 
@@ -74,16 +79,16 @@ class BroadcastMessageListener
                 $placeDeviceFunctions
                     ->pluck('place_id')
                     ->unique()
-                    ->each(fn (int $placeId) =>
-                        PlaceDeviceCommandAckEvent::dispatch(
-                            $placeId,
-                            $device->id,
-                            $data['command'],
-                            $deviceFunction->pin,
-                            $deviceFunction->type->value,
-                        )
+                    ->each(fn (int $placeId) => PlaceDeviceCommandAckEvent::dispatch(
+                        $placeId,
+                        $device->id,
+                        $data['command'],
+                        $deviceFunction->pin,
+                        $deviceFunction->type->value,
+                    )
                     );
             }
+
             return;
         }
 
@@ -97,14 +102,13 @@ class BroadcastMessageListener
                 $placeDeviceFunctions
                     ->pluck('place_id')
                     ->unique()
-                    ->each(fn (int $placeId) =>
-                        PlaceDeviceCommandAckEvent::dispatch(
-                            $placeId,
-                            $device->id,
-                            $data['command'],
-                            $deviceFunction->pin,
-                            $deviceFunction->type->value,
-                        )
+                    ->each(fn (int $placeId) => PlaceDeviceCommandAckEvent::dispatch(
+                        $placeId,
+                        $device->id,
+                        $data['command'],
+                        $deviceFunction->pin,
+                        $deviceFunction->type->value,
+                    )
                     );
             }
         });
@@ -114,6 +118,7 @@ class BroadcastMessageListener
     {
         if (! $data || ! isset($data['chip-id']) || ! isset($data['pin']) || ! isset($data['value'])) {
             Log::warning('Client sensor status event received with missing data', ['message' => $data]);
+
             return;
         }
 
@@ -138,13 +143,13 @@ class BroadcastMessageListener
                 $placeDeviceFunctions
                     ->pluck('place_id')
                     ->unique()
-                    ->each(fn (int $placeId) =>
-                        PlaceDeviceStatusEvent::dispatch(
+                    ->each(fn (int $placeId) => PlaceDeviceStatusEvent::dispatch(
                         $placeId,
                         $device->id,
                         $device->isAvailable(),
                     ));
             }
+
             return;
         }
 
@@ -154,12 +159,11 @@ class BroadcastMessageListener
             $placeDeviceFunctions
                 ->pluck('place_id')
                 ->unique()
-                ->each(fn (int $placeId) =>
-                    PlaceDeviceStatusEvent::dispatch(
-                        $placeId,
-                        $device->id,
-                        $device->isAvailable(),
-                    )
+                ->each(fn (int $placeId) => PlaceDeviceStatusEvent::dispatch(
+                    $placeId,
+                    $device->id,
+                    $device->isAvailable(),
+                )
                 );
         }
     }

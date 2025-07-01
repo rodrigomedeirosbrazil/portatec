@@ -14,7 +14,7 @@ enum DeviceTypeEnum: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::Switch => __('app.device_types.switch'),
             self::Sensor => __('app.device_types.sensor'),
             self::Button => __('app.device_types.button'),

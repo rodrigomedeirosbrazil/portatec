@@ -4,17 +4,21 @@ namespace App\Services\Tuya;
 
 use App\Services\Tuya\DTOs\TuyaAuthenticationDTO;
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class Client
 {
     private $http;
+
     private string $clientId;
+
     private string $clientSecret;
+
     private ?TuyaAuthenticationDTO $authenticationDTO;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->http = Http::baseUrl('https://openapi.tuyaus.com');
         $this->clientId = env('TUYA_CLIENT_ID');
         $this->clientSecret = env('TUYA_CLIENT_SECRET');
@@ -127,6 +131,7 @@ class Client
         ]);
 
         $hash = hash_hmac('sha256', $str, $clientSecret, false);
+
         return strtoupper($hash);
     }
 

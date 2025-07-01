@@ -9,6 +9,5 @@ class TuyaAuthenticationDTO
         public string $refreshToken,
         public string $expireTime,
         public string $uid,
-    ) {
-    }
+    ) {}
 }

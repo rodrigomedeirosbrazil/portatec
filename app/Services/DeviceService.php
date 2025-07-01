@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\Device;
-use App\Enums\DeviceTypeEnum;
 use App\Enums\DeviceStatusEnum;
+use App\Enums\DeviceTypeEnum;
+use App\Models\Device;
 use Illuminate\Support\Facades\Log;
 
 class DeviceService

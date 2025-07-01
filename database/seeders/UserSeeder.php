@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
     {
         $superAdminRole = Role::create([
             'name' => 'super_admin',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
         ]);
 
         User::create([
@@ -36,7 +36,7 @@ class UserSeeder extends Seeder
 
         $hostRole = Role::create([
             'name' => 'host',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
         ]);
 
         $rodrigo = User::create([
@@ -102,4 +102,3 @@ class UserSeeder extends Seeder
         ]);
     }
 }
-

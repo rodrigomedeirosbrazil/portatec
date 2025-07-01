@@ -41,6 +41,7 @@ class BroadcastEventCommand extends Command
                 $pulseData = json_decode($customData, true, 512, JSON_THROW_ON_ERROR);
             } catch (\JsonException $e) {
                 $this->error("Dados JSON inválidos: {$e->getMessage()}");
+
                 return self::FAILURE;
             }
         }
@@ -49,8 +50,9 @@ class BroadcastEventCommand extends Command
             return $this->sendPulseToAllDevices($pulseData);
         }
 
-        if (!$chipId) {
+        if (! $chipId) {
             $this->error('É necessário fornecer um chip_id ou usar a opção --all');
+
             return self::FAILURE;
         }
 
@@ -63,7 +65,7 @@ class BroadcastEventCommand extends Command
             // Verificar se o dispositivo existe
             $device = Device::where('chip_id', $chipId)->first();
 
-            if (!$device) {
+            if (! $device) {
                 $this->warn("Dispositivo com chip_id '{$chipId}' não encontrado no banco de dados, mas o pulse será enviado mesmo assim.");
             }
 
@@ -99,6 +101,7 @@ class BroadcastEventCommand extends Command
 
             if ($devices->isEmpty()) {
                 $this->warn('Nenhum dispositivo com chip_id encontrado.');
+
                 return self::SUCCESS;
             }
 
