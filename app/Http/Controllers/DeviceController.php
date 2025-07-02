@@ -17,10 +17,10 @@ class DeviceController extends Controller
         $firmwareVersion = $request->input('version');
 
         $firmwareParts = explode(' ', $firmwareVersion);
-        $firmwareDate = $firmwareParts[0];
-        $firmwareNumber = $firmwareParts[1];
+        $firmwareDate = data_get($firmwareParts, 0);
+        $firmwareNumber = data_get($firmwareParts, 1, 0);
 
-        if (! $firmwareDate || ! $firmwareNumber) {
+        if (! isset($firmwareDate)) {
             return response()->json(['error' => 'Invalid firmware version'], 400);
         }
 
