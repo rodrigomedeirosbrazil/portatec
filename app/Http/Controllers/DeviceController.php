@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Device;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class DeviceController extends Controller
 {
@@ -40,7 +41,22 @@ class DeviceController extends Controller
         $lastFirmwareUrl = cache()->get('last-firmware-url');
 
         if ($lastFirmwareUrl) {
-            return redirect()->away($lastFirmwareUrl);
+            try {
+                $response = Http::timeout(30)->get($lastFirmwareUrl);
+
+                if ($response->successful()) {
+                    $filename = basename(parse_url($lastFirmwareUrl, PHP_URL_PATH)) ?: 'firmware.bin';
+
+                    return response($response->body())
+                        ->header('Content-Type', $response->header('Content-Type') ?: 'application/octet-stream')
+                        ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                        ->header('Content-Length', strlen($response->body()));
+                }
+
+                return response()->json(['message' => 'Failed to download firmware'], 500);
+            } catch (\Exception $e) {
+                return response()->json(['message' => 'Error downloading firmware: ' . $e->getMessage()], 500);
+            }
         }
 
         return response()->json(['message' => 'Firmware not found'], 404);
