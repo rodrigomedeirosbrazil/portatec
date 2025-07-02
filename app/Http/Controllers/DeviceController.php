@@ -40,7 +40,7 @@ class DeviceController extends Controller
         $lastFirmwareUrl = cache()->get('last-firmware-url');
 
         if ($lastFirmwareUrl) {
-            return response()->redirectTo($lastFirmwareUrl);
+            return redirect()->away($lastFirmwareUrl);
         }
 
         return response()->json(['message' => 'Firmware not found'], 404);
