@@ -25,10 +25,11 @@ class DeviceController extends Controller
         }
 
         $lastFirmwareVersion = cache()->get('last-firmware-version');
-        $lastFirmwareDate = $lastFirmwareVersion ? explode(' ', $lastFirmwareVersion)[0] : null;
-        $lastFirmwareNumber = $lastFirmwareVersion ? explode(' ', $lastFirmwareVersion)[1] : 0;
+        $lastFirmwareParts = explode(' ', $lastFirmwareVersion);
+        $lastFirmwareDate = data_get($lastFirmwareParts, 0);
+        $lastFirmwareNumber = data_get($lastFirmwareParts, 1, 0);
 
-        if (! $lastFirmwareVersion) {
+        if (! isset($lastFirmwareDate)) {
             return response()->json(['message' => 'No firmware version found'], 404);
         }
 
