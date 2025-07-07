@@ -9,7 +9,7 @@ use App\Models\Device;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class BroadcastEventCommand extends Command
+class BroadcastPulseEventCommand extends Command
 {
     /**
      * The name and signature of the console command.
