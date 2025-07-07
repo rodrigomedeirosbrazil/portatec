@@ -78,11 +78,7 @@
                         @if ($placeDeviceFunction->deviceFunction->type === DeviceTypeEnum::Sensor)
                             <div class="flex items-center space-x-2">
                                 <span class="text-2xl font-semibold text-gray-900 dark:text-white">
-                                    @if (! empty($placeDeviceFunction->deviceFunction->device->status))
-                                        {{ $placeDeviceFunction->deviceFunction->device->status }}
-                                    @else
-                                        Not available
-                                    @endif
+                                    {{ $placeDeviceFunction->deviceFunction->status ? __('app.device_statuses.open') : __('app.device_statuses.closed') }}
                                 </span>
                             </div>
                         @endif

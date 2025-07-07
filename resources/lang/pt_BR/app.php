@@ -104,4 +104,12 @@ return [
         'admin' => 'Administrador',
         'host' => 'Anfitrião',
     ],
+
+    // Status do dispositivo
+    'device_statuses' => [
+        'open' => 'Aberto',
+        'closed' => 'Fechado',
+        'on' => 'Ligado',
+        'off' => 'Desligado',
+    ],
 ];

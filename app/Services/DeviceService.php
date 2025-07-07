@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\DeviceStatusEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Models\Device;
 use Illuminate\Support\Facades\Log;
@@ -15,27 +14,24 @@ class DeviceService
     {
         $device = Device::where('chip_id', $chipId)->firstOrFail();
 
-        $gpio = $data['gpio'] ?? null;
+        $pin = data_get($data, 'pin');
 
-        if ($gpio !== null) {
-            $placeDevice = $device->placeDevices()->where('gpio', $gpio)->firstOrFail();
+        if ($pin !== null) {
+            $deviceFunction = $device->deviceFunctions()->where('pin', $pin)->firstOrFail();
 
-            if ($placeDevice->type === DeviceTypeEnum::Sensor && isset($data['status'])) {
-                $status = DeviceStatusEnum::tryFrom($data['status']);
-                if ($status) {
-                    $placeDevice->status = $status;
-                    $placeDevice->save();
-                }
+            if ($deviceFunction->type === DeviceTypeEnum::Sensor && isset($data['status'])) {
+                $deviceFunction->status = $data['status'];
+                $deviceFunction->save();
             }
         }
 
-        $millis = $data['millis'] ?? null;
-        if ($millis) {
+        $millis = data_get($data, 'millis');
+        if ($millis !== null) {
             $uptime = now()->subMilliseconds($millis)->diffForHumans();
             Log::info(json_encode([
                 'device' => $device->id,
                 'uptime' => $uptime,
-                'gpio' => $gpio,
+                'pin' => $pin,
                 ...$data,
             ]));
         }
