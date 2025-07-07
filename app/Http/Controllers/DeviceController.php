@@ -10,8 +10,7 @@ class DeviceController extends Controller
 {
     public function updateFirmware(Request $request)
     {
-        $chipId = $request->input('chip-id')
-            ?? $request->input('deviceId'); // to support old firmware
+        $chipId = $request->input('chip-id');
 
         Device::where('chip_id', $chipId)->firstOrFail();
 
