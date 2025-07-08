@@ -22,6 +22,8 @@ class BroadcastMessageListener
     {
         $message = json_decode($event->message, true);
 
+        Log::info('Received message', ['message' => $message]);
+
         if (! $message || ! isset($message['event']) || ! isset($message['data'])) {
             return;
         }
