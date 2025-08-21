@@ -2,11 +2,11 @@
 
 namespace App\Http\Responses;
 
-use Filament\Http\Responses\Auth\Contracts\LoginResponse as Responsable;
+use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Illuminate\Http\RedirectResponse;
 use Livewire\Features\SupportRedirects\Redirector;
 
-class CustomLoginResponse implements Responsable
+class CustomLoginResponse implements LoginResponse
 {
     public function toResponse($request): RedirectResponse|Redirector
     {

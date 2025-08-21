@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use App\Models\Device;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -53,7 +54,7 @@ class DeviceController extends Controller
                 }
 
                 return response()->json(['message' => 'Failed to download firmware'], 500);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return response()->json(['message' => 'Error downloading firmware: ' . $e->getMessage()], 500);
             }
         }

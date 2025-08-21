@@ -2,13 +2,19 @@
 
 namespace App\Filament\App\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Actions\ViewAction;
+use App\Filament\App\Resources\CommandLogResource\Pages\ListCommandLogs;
 use App\Filament\App\Resources\CommandLogResource\Pages;
 use App\Models\CommandLog;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -20,9 +26,9 @@ class CommandLogResource extends Resource
 {
     protected static ?string $model = CommandLog::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static ?string $navigationGroup = 'Monitoring';
+    protected static string | \UnitEnum | null $navigationGroup = 'Monitoring';
 
     protected static ?int $navigationSort = 3;
 
@@ -35,59 +41,59 @@ class CommandLogResource extends Resource
         return __('app.command_log_fields.'.$field);
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make()
+        return $schema
+            ->components([
+                Section::make()
                     ->schema([
-                        Forms\Components\TextInput::make('id')
+                        TextInput::make('id')
                             ->label(static::getFieldLabel('id'))
                             ->disabled(),
 
-                        Forms\Components\Select::make('user_id')
+                        Select::make('user_id')
                             ->relationship('user', 'name')
                             ->label(static::getFieldLabel('user'))
                             ->disabled(),
 
-                        Forms\Components\Select::make('place_id')
+                        Select::make('place_id')
                             ->relationship('place', 'name')
                             ->label(static::getFieldLabel('place'))
                             ->disabled(),
 
-                        Forms\Components\Select::make('device_function_id')
+                        Select::make('device_function_id')
                             ->relationship('deviceFunction')
                             ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->device->name} - {$record->type->value} {$record->pin}")
                             ->label(static::getFieldLabel('device_function'))
                             ->disabled(),
 
-                        Forms\Components\TextInput::make('device_function_type')
+                        TextInput::make('device_function_type')
                             ->label(static::getFieldLabel('device_function_type'))
                             ->disabled(),
 
-                        Forms\Components\TextInput::make('command_type')
+                        TextInput::make('command_type')
                             ->label(static::getFieldLabel('command_type'))
                             ->disabled(),
 
-                        Forms\Components\Textarea::make('command_payload')
+                        Textarea::make('command_payload')
                             ->label(static::getFieldLabel('command_payload'))
                             ->disabled()
                             ->columnSpanFull(),
 
-                        Forms\Components\TextInput::make('ip_address')
+                        TextInput::make('ip_address')
                             ->label(static::getFieldLabel('ip_address'))
                             ->disabled(),
 
-                        Forms\Components\TextInput::make('user_agent')
+                        TextInput::make('user_agent')
                             ->label(static::getFieldLabel('user_agent'))
                             ->disabled()
                             ->columnSpanFull(),
 
-                        Forms\Components\DateTimePicker::make('created_at')
+                        DateTimePicker::make('created_at')
                             ->label(static::getFieldLabel('created_at'))
                             ->disabled(),
 
-                        Forms\Components\DateTimePicker::make('updated_at')
+                        DateTimePicker::make('updated_at')
                             ->label(static::getFieldLabel('updated_at'))
                             ->disabled(),
                     ])
@@ -160,7 +166,7 @@ class CommandLogResource extends Resource
                     ->searchable()
                     ->preload(),
                 Filter::make('created_at')
-                    ->form([
+                    ->schema([
                         DatePicker::make('created_from'),
                         DatePicker::make('created_until'),
                     ])
@@ -176,10 +182,10 @@ class CommandLogResource extends Resource
                             );
                     }),
             ])
-            ->actions([
+            ->recordActions([
                 ViewAction::make(),
             ])
-            ->bulkActions([])
+            ->toolbarActions([])
             ->defaultSort('created_at', 'desc');
     }
 
@@ -191,7 +197,7 @@ class CommandLogResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCommandLogs::route('/'),
+            'index' => ListCommandLogs::route('/'),
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Services\Tuya;
 
+use Exception;
 use App\Services\Tuya\DTOs\TuyaTicketDTO;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -21,7 +22,7 @@ class TuyaService
             ! $this->client->isAuthenticated()
             && ! $this->client->authenticate()
         ) {
-            throw new \Exception('Failed to authenticate');
+            throw new Exception('Failed to authenticate');
         }
 
         $urlPath = "/v1.0/users/{$uid}/devices";
@@ -51,7 +52,7 @@ class TuyaService
             ! $this->client->isAuthenticated()
             && ! $this->client->authenticate()
         ) {
-            throw new \Exception('Failed to authenticate');
+            throw new Exception('Failed to authenticate');
         }
 
         $urlPath = "/v1.0/iot-03/devices/{$deviceId}/commands";
@@ -93,7 +94,7 @@ class TuyaService
             ! $this->client->isAuthenticated()
             && ! $this->client->authenticate()
         ) {
-            throw new \Exception('Failed to authenticate');
+            throw new Exception('Failed to authenticate');
         }
 
         $urlPath = "/v1.0/devices/{$deviceId}/door-lock/password-ticket";
@@ -162,7 +163,7 @@ class TuyaService
             ! $this->client->isAuthenticated()
             && ! $this->client->authenticate()
         ) {
-            throw new \Exception('Failed to authenticate');
+            throw new Exception('Failed to authenticate');
         }
 
         $ticket = $this->getPasswordTicket($deviceId);
@@ -222,7 +223,7 @@ class TuyaService
             ! $this->client->isAuthenticated()
             && ! $this->client->authenticate()
         ) {
-            throw new \Exception('Failed to authenticate');
+            throw new Exception('Failed to authenticate');
         }
 
         $urlPath = "/v1.0/devices/{$deviceId}/door-lock/temp-passwords/{$passwordId}";
