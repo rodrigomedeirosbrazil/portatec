@@ -67,7 +67,7 @@ class DeviceResource extends Resource
                                     return 'Nunca sincronizado';
                                 }
 
-                                $lastSync = is_string($state) ? Carbon::createFromFormat('d/m/Y H:i:s', $state) : $state;
+                                $lastSync = $state instanceof Carbon ? $state : Carbon::parse($state);
                                 return $lastSync->format('d/m/Y H:i:s');
                             })
                             ->helperText(function ($state) {
@@ -75,7 +75,7 @@ class DeviceResource extends Resource
                                     return 'Este dispositivo nunca foi sincronizado';
                                 }
 
-                                $lastSync = is_string($state) ? Carbon::createFromFormat('d/m/Y H:i:s', $state) : $state;
+                                $lastSync = $state instanceof Carbon ? $state : Carbon::parse($state);
                                 $diff = $lastSync->diffForHumans();
                                 return "Último sync: {$diff}";
                             })
