@@ -56,6 +56,29 @@ class DeviceResource extends Resource
                             ->label(__('app.chip_id'))
                             ->maxLength(255)
                             ->columnSpanFull(),
+
+                        TextInput::make('last_sync')
+                            ->label(__('app.last_sync'))
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(function ($state) {
+                                if (!$state) {
+                                    return 'Nunca sincronizado';
+                                }
+
+                                $lastSync = is_string($state) ? \Carbon\Carbon::parse($state) : $state;
+                                return $lastSync->format('d/m/Y H:i:s');
+                            })
+                            ->helperText(function ($state) {
+                                if (!$state) {
+                                    return 'Este dispositivo nunca foi sincronizado';
+                                }
+
+                                $lastSync = is_string($state) ? \Carbon\Carbon::parse($state) : $state;
+                                $diff = $lastSync->diffForHumans();
+                                return "Último sync: {$diff}";
+                            })
+                            ->columnSpanFull(),
                     ]),
 
                 Repeater::make('deviceUsers')
@@ -131,7 +154,15 @@ class DeviceResource extends Resource
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-x-circle')
                     ->trueColor('success')
-                    ->falseColor('danger'),
+                    ->falseColor('danger')
+                    ->tooltip(function (Device $record): string {
+                        if (! $record->last_sync) {
+                            return 'Nunca sincronizado';
+                        }
+
+                        $diff = $record->last_sync->diffForHumans();
+                        return "Último sync: {$diff}";
+                    }),
             ])
             ->filters([
                 TrashedFilter::make(),
