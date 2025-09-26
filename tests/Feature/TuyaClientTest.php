@@ -9,6 +9,16 @@ use Tests\TestCase;
 
 class TuyaClientTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Set Tuya configuration for testing
+        config(['tuya.client_id' => 'test_client_id']);
+        config(['tuya.client_secret' => 'test_client_secret']);
+        config(['tuya.base_url' => 'https://openapi.tuyaus.com']);
+    }
+
     public function test_string_request(): void
     {
         $uid = '12345678901234567890';

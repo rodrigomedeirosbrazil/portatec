@@ -19,9 +19,9 @@ class Client
 
     public function __construct()
     {
-        $this->http = Http::baseUrl('https://openapi.tuyaus.com');
-        $this->clientId = env('TUYA_CLIENT_ID');
-        $this->clientSecret = env('TUYA_CLIENT_SECRET');
+        $this->http = Http::baseUrl(config('tuya.base_url'));
+        $this->clientId = config('tuya.client_id');
+        $this->clientSecret = config('tuya.client_secret');
         $this->authenticationDTO = null;
     }
 
