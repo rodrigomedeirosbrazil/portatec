@@ -62,21 +62,19 @@ class DeviceResource extends Resource
                             ->label(__('app.last_sync'))
                             ->disabled()
                             ->dehydrated(false)
-                            ->formatStateUsing(function ($state) {
-                                if (! $state) {
+                            ->formatStateUsing(function ($state, $record) {
+                                if (! $record?->last_sync) {
                                     return 'Nunca sincronizado';
                                 }
 
-                                $lastSync = $state instanceof \DateTime ? $state : Carbon::parse($state);
-                                return $lastSync->format('d/m/Y H:i:s');
+                                return $record->last_sync->format('d/m/Y H:i:s');
                             })
-                            ->helperText(function ($state) {
-                                if (! $state) {
+                            ->helperText(function ($state, $record) {
+                                if (! $record?->last_sync) {
                                     return 'Este dispositivo nunca foi sincronizado';
                                 }
 
-                                $lastSync = $state instanceof \DateTime ? $state : Carbon::parse($state);
-                                $diff = $lastSync->diffForHumans();
+                                $diff = $record->last_sync->diffForHumans();
                                 return "Último sync: {$diff}";
                             })
                             ->columnSpanFull(),
