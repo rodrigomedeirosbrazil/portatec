@@ -14,6 +14,7 @@ use App\Filament\App\Resources\DeviceResource\Pages\EditDevice;
 use App\Enums\DeviceTypeEnum;
 use App\Filament\App\Resources\DeviceResource\Pages;
 use App\Models\Device;
+use Carbon\Carbon;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -62,19 +63,19 @@ class DeviceResource extends Resource
                             ->disabled()
                             ->dehydrated(false)
                             ->formatStateUsing(function ($state) {
-                                if (!$state) {
+                                if (! $state) {
                                     return 'Nunca sincronizado';
                                 }
 
-                                $lastSync = is_string($state) ? \Carbon\Carbon::parse($state) : $state;
+                                $lastSync = is_string($state) ? Carbon::createFromFormat('d/m/Y H:i:s', $state) : $state;
                                 return $lastSync->format('d/m/Y H:i:s');
                             })
                             ->helperText(function ($state) {
-                                if (!$state) {
+                                if (! $state) {
                                     return 'Este dispositivo nunca foi sincronizado';
                                 }
 
-                                $lastSync = is_string($state) ? \Carbon\Carbon::parse($state) : $state;
+                                $lastSync = is_string($state) ? Carbon::createFromFormat('d/m/Y H:i:s', $state) : $state;
                                 $diff = $lastSync->diffForHumans();
                                 return "Último sync: {$diff}";
                             })
