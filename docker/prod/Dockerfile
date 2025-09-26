@@ -34,6 +34,9 @@ RUN mkdir -p storage/app \
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer && composer install --no-dev
 
+# Install npm dependencies and build assets
+RUN npm ci && npm run build
+
 RUN php artisan optimize
 
 COPY ./docker/prod/supervisord.conf /etc/supervisord.conf
