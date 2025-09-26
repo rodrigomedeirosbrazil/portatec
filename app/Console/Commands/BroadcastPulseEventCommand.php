@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use JsonException;
+use Exception;
 use App\Events\DevicePulseEvent;
 use App\Models\Device;
 use Illuminate\Console\Command;
@@ -39,7 +41,7 @@ class BroadcastPulseEventCommand extends Command
         if ($customData) {
             try {
                 $pulseData = json_decode($customData, true, 512, JSON_THROW_ON_ERROR);
-            } catch (\JsonException $e) {
+            } catch (JsonException $e) {
                 $this->error("Dados JSON inválidos: {$e->getMessage()}");
 
                 return self::FAILURE;
@@ -81,7 +83,7 @@ class BroadcastPulseEventCommand extends Command
             ]);
 
             return self::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error("❌ Erro ao enviar pulse: {$e->getMessage()}");
 
             Log::error('Erro ao enviar pulse via comando', [
@@ -115,7 +117,7 @@ class BroadcastPulseEventCommand extends Command
                     broadcast(new DevicePulseEvent($device->chip_id, $pulseData));
                     $this->line("✅ Pulse enviado para: {$device->chip_id} ({$device->name})");
                     $successCount++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->line("❌ Erro ao enviar para {$device->chip_id}: {$e->getMessage()}");
                     $failCount++;
                 }
@@ -131,7 +133,7 @@ class BroadcastPulseEventCommand extends Command
             ]);
 
             return self::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error("❌ Erro ao enviar pulse para todos os dispositivos: {$e->getMessage()}");
 
             Log::error('Erro ao enviar pulse para múltiplos dispositivos', [

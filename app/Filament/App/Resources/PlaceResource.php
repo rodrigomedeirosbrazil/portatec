@@ -2,6 +2,14 @@
 
 namespace App\Filament\App\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\App\Resources\PlaceResource\Pages\ListPlaces;
+use App\Filament\App\Resources\PlaceResource\Pages\CreatePlace;
+use App\Filament\App\Resources\PlaceResource\Pages\EditPlace;
 use App\Enums\PlaceRoleEnum;
 use App\Filament\App\Resources\PlaceResource\Pages;
 use App\Models\DeviceFunction;
@@ -9,10 +17,8 @@ use App\Models\Place;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Pagination\CursorPaginator;
@@ -22,16 +28,16 @@ class PlaceResource extends Resource
 {
     protected static ?string $model = Place::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     protected static ?string $modelLabel = 'Local';
 
     protected static ?string $pluralModelLabel = 'Locais';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 TextInput::make('name')
                     ->label(__('app.name'))
                     ->required()
@@ -115,12 +121,12 @@ class PlaceResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([
+            ->recordActions([
                 Action::make('view')
                     ->label(__('app.view'))
                     ->url(fn ($record): string => route('place', $record))
                     ->openUrlInNewTab(),
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->visible(fn (Place $record): bool => auth()->user()->hasRole('super_admin') ||
                         $record->placeUsers()
                             ->where('user_id', auth()->user()->id)
@@ -128,9 +134,9 @@ class PlaceResource extends Resource
                             ->exists()
                     ),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -138,9 +144,9 @@ class PlaceResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListPlaces::route('/'),
-            'create' => Pages\CreatePlace::route('/create'),
-            'edit' => Pages\EditPlace::route('/{record}/edit'),
+            'index' => ListPlaces::route('/'),
+            'create' => CreatePlace::route('/create'),
+            'edit' => EditPlace::route('/{record}/edit'),
         ];
     }
 

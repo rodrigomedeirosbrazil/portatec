@@ -1,68 +1,70 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
-use App\Enums\PlaceRoleEnum;
+use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Place;
-use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PlacePolicy
 {
     use HandlesAuthorization;
-
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
+    
+    public function viewAny(AuthUser $authUser): bool
     {
-        return true; // All authenticated users can view places
+        return $authUser->can('view_any_place');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Place $place): bool
+    public function view(AuthUser $authUser, Place $place): bool
     {
-        return $user->hasRole('super_admin') || $place->hasAccessToPlace($user);
+        return $authUser->can('view_place');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
+    public function create(AuthUser $authUser): bool
     {
-        return true; // All authenticated users can create places
+        return $authUser->can('create_place');
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, Place $place): bool
+    public function update(AuthUser $authUser, Place $place): bool
     {
-        if ($user->hasRole('super_admin')) {
-            return true;
-        }
-
-        return $place->placeUsers()
-            ->where('user_id', $user->id)
-            ->where('role', PlaceRoleEnum::Admin)
-            ->exists();
+        return $authUser->can('update_place');
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, Place $place): bool
+    public function delete(AuthUser $authUser, Place $place): bool
     {
-        return $this->update($user, $place);
+        return $authUser->can('delete_place');
     }
 
-    /**
-     * Determine whether the user can bulk delete.
-     */
-    public function deleteAny(User $user): bool
+    public function restore(AuthUser $authUser, Place $place): bool
     {
-        return $user->hasRole('super_admin');
+        return $authUser->can('restore_place');
     }
+
+    public function forceDelete(AuthUser $authUser, Place $place): bool
+    {
+        return $authUser->can('force_delete_place');
+    }
+
+    public function forceDeleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('force_delete_any_place');
+    }
+
+    public function restoreAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('restore_any_place');
+    }
+
+    public function replicate(AuthUser $authUser, Place $place): bool
+    {
+        return $authUser->can('replicate_place');
+    }
+
+    public function reorder(AuthUser $authUser): bool
+    {
+        return $authUser->can('reorder_place');
+    }
+
 }

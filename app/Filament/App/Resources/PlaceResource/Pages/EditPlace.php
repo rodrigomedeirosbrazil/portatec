@@ -2,6 +2,8 @@
 
 namespace App\Filament\App\Resources\PlaceResource\Pages;
 
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use App\Filament\App\Resources\PlaceResource;
 use App\Models\Place;
 use Filament\Actions;
@@ -15,7 +17,7 @@ class EditPlace extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('duplicate')
+            Action::make('duplicate')
                 ->label('Duplicar')
                 ->icon('heroicon-o-document-duplicate')
                 ->action(function (Place $record) {
@@ -40,7 +42,7 @@ class EditPlace extends EditRecord
                         return redirect()->route('filament.app.resources.places.edit', ['record' => $newPlace]);
                     });
                 }),
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 }

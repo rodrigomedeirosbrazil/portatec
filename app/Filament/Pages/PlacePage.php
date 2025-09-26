@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Exception;
 use App\Events\DevicePulseEvent;
 use App\Models\CommandLog;
 use App\Models\Place;
@@ -19,7 +20,7 @@ class PlacePage extends BasePage
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static string $view = 'filament.pages.place';
+    protected string $view = 'filament.pages.place';
 
     public function mount(int $id, ?string $token = null): void
     {
@@ -86,7 +87,7 @@ class PlacePage extends BasePage
                 ->success()
                 ->send();
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Error sending command. '.$e->getMessage())
                 ->danger()

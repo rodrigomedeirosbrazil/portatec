@@ -2,19 +2,22 @@
 
 namespace App\Filament\App\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Grid;
+use Filament\Actions\EditAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\App\Resources\DeviceResource\Pages\ListDevices;
+use App\Filament\App\Resources\DeviceResource\Pages\CreateDevice;
+use App\Filament\App\Resources\DeviceResource\Pages\EditDevice;
 use App\Enums\DeviceTypeEnum;
 use App\Filament\App\Resources\DeviceResource\Pages;
 use App\Models\Device;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables\Actions\BulkActionGroup;
-use Filament\Tables\Actions\DeleteBulkAction;
-use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
@@ -27,16 +30,16 @@ class DeviceResource extends Resource
 {
     protected static ?string $model = Device::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     protected static ?string $modelLabel = 'Dispositivo';
 
     protected static ?string $pluralModelLabel = 'Dispositivos';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Section::make(__('app.device_information'))
                     ->description(__('app.device_information_description'))
                     ->schema([
@@ -133,10 +136,10 @@ class DeviceResource extends Resource
             ->filters([
                 TrashedFilter::make(),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
@@ -153,9 +156,9 @@ class DeviceResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListDevices::route('/'),
-            'create' => Pages\CreateDevice::route('/create'),
-            'edit' => Pages\EditDevice::route('/{record}/edit'),
+            'index' => ListDevices::route('/'),
+            'create' => CreateDevice::route('/create'),
+            'edit' => EditDevice::route('/{record}/edit'),
         ];
     }
 

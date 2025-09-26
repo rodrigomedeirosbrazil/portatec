@@ -1,72 +1,70 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
+use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Device;
-use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class DevicePolicy
 {
     use HandlesAuthorization;
-
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
+    
+    public function viewAny(AuthUser $authUser): bool
     {
-        return true; // All authenticated users can view devices
+        return $authUser->can('view_any_device');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Device $device): bool
+    public function view(AuthUser $authUser, Device $device): bool
     {
-        if ($user->hasRole('super_admin')) {
-            return true;
-        }
-
-        return $device->deviceUsers()
-            ->where('user_id', $user->id)
-            ->exists();
+        return $authUser->can('view_device');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
+    public function create(AuthUser $authUser): bool
     {
-        return true; // All authenticated users can create devices
+        return $authUser->can('create_device');
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, Device $device): bool
+    public function update(AuthUser $authUser, Device $device): bool
     {
-        if ($user->hasRole('super_admin')) {
-            return true;
-        }
-
-        return $device->deviceUsers()
-            ->where('user_id', $user->id)
-            ->exists();
+        return $authUser->can('update_device');
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, Device $device): bool
+    public function delete(AuthUser $authUser, Device $device): bool
     {
-        return $this->update($user, $device);
+        return $authUser->can('delete_device');
     }
 
-    /**
-     * Determine whether the user can bulk delete.
-     */
-    public function deleteAny(User $user): bool
+    public function restore(AuthUser $authUser, Device $device): bool
     {
-        return $user->hasRole('super_admin');
+        return $authUser->can('restore_device');
     }
+
+    public function forceDelete(AuthUser $authUser, Device $device): bool
+    {
+        return $authUser->can('force_delete_device');
+    }
+
+    public function forceDeleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('force_delete_any_device');
+    }
+
+    public function restoreAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('restore_any_device');
+    }
+
+    public function replicate(AuthUser $authUser, Device $device): bool
+    {
+        return $authUser->can('replicate_device');
+    }
+
+    public function reorder(AuthUser $authUser): bool
+    {
+        return $authUser->can('reorder_device');
+    }
+
 }
