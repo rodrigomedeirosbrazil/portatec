@@ -115,9 +115,14 @@ return new class extends Migration
             $table->primary([$pivotPermission, $pivotRole], 'role_has_permissions_permission_id_role_id_primary');
         });
 
-        app('cache')
-            ->store(config('permission.cache.store') != 'default' ? config('permission.cache.store') : null)
-            ->forget(config('permission.cache.key'));
+        try {
+            app('cache')
+                ->store(config('permission.cache.store') != 'default' ? config('permission.cache.store') : null)
+                ->forget(config('permission.cache.key'));
+        } catch (\Exception $e) {
+            // Cache clearing failed (e.g., Redis not available in CI environment)
+            // This is not critical for the migration to succeed
+        }
     }
 
     /**
