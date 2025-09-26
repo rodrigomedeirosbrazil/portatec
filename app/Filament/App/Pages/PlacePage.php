@@ -20,6 +20,17 @@ class PlacePage extends BasePage
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
+    protected string $view = 'filament.pages.place';
+
+    protected static ?string $slug = 'place';
+
+    protected static bool $shouldRegisterNavigation = false;
+
+    public function getLayout(): string
+    {
+        return 'filament-panels::components.layout.app';
+    }
+
     public function mount(int $id, ?string $token = null): void
     {
         if (! auth()->check()) {
