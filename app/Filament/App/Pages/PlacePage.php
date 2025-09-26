@@ -26,10 +26,9 @@ class PlacePage extends BasePage
 
     protected static bool $shouldRegisterNavigation = false;
 
-    public function getLayout(): string
-    {
-        return 'filament-panels::components.layout.app';
-    }
+    protected static bool $isSimple = false;
+
+    protected static bool $isLazy = false;
 
     public function mount(int $id, ?string $token = null): void
     {
