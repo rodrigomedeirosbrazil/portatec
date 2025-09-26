@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace App\Filament\App\Pages;
 
 use Exception;
 use App\Events\DevicePulseEvent;
@@ -19,8 +19,6 @@ class PlacePage extends BasePage
     public array $loadingDevices = [];
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-
-    protected string $view = 'filament.pages.place';
 
     public function mount(int $id, ?string $token = null): void
     {
