@@ -8,6 +8,8 @@ use Filament\Resources\Resource;
 use Filament\Widgets\Widget;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Livewire\Livewire;
+use App\Filament\App\Pages\PlacePage;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Register Livewire components explicitly
+        Livewire::component('app.filament.app.pages.place-page', PlacePage::class);
+        Livewire::component('place-page', PlacePage::class);
+
         FilamentShield::buildPermissionKeyUsing(
             function (string $entity, string $affix, string $subject, string $case, string $separator) {
                 return match(true) {

@@ -9,6 +9,7 @@ use App\Models\Place;
 use Filament\Notifications\Notification;
 use Filament\Pages\BasePage;
 use Illuminate\Contracts\Support\Htmlable;
+use Livewire\Attributes\On;
 
 class PlacePage extends BasePage
 {
@@ -56,8 +57,62 @@ class PlacePage extends BasePage
         ];
     }
 
-    public function toggleDeviceFunction($deviceFunctionId): void {}
+    #[On('toggleDeviceFunction')]
+    public function toggleDeviceFunction($deviceFunctionId): void
+    {
+        $this->loadingDevices[$deviceFunctionId] = true;
 
+        try {
+            $placeDeviceFunction = $this->place->placeDeviceFunctions->firstWhere('device_function_id', $deviceFunctionId);
+            $deviceFunction = $placeDeviceFunction->deviceFunction;
+
+            if (! $deviceFunction) {
+                Notification::make()
+                    ->title('Device not found.')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
+
+            // Toggle the device function status
+            $newStatus = $deviceFunction->device->status === $deviceFunction->device->payload_on
+                ? $deviceFunction->device->payload_off
+                : $deviceFunction->device->payload_on;
+
+            broadcast(new DevicePulseEvent($deviceFunction->device->chip_id, [
+                'pin' => $deviceFunction->pin,
+                'status' => $newStatus,
+            ]));
+
+            // Log the command
+            CommandLog::create([
+                'user_id' => auth()->id(),
+                'place_id' => $this->place->id,
+                'device_function_id' => $deviceFunction->id,
+                'command_type' => 'toggle_device',
+                'device_function_type' => $deviceFunction->type->value ?? null,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            Notification::make()
+                ->title(__('app.command_sent'))
+                ->success()
+                ->send();
+
+        } catch (Exception $e) {
+            Notification::make()
+                ->title('Error sending command. '.$e->getMessage())
+                ->danger()
+                ->send();
+        } finally {
+            // Remove loading state after a short delay to show feedback
+            $this->dispatch('remove-loading', deviceFunctionId: $deviceFunctionId);
+        }
+    }
+
+    #[On('pushButton')]
     public function pushButton($deviceFunctionId): void
     {
         $this->loadingDevices[$deviceFunctionId] = true;
@@ -106,6 +161,7 @@ class PlacePage extends BasePage
         }
     }
 
+    #[On('removeLoading')]
     public function removeLoading($deviceFunctionId): void
     {
         unset($this->loadingDevices[$deviceFunctionId]);
