@@ -37,7 +37,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ 
 # Install npm dependencies and build assets
 RUN npm ci && npm run build
 
-RUN php artisan optimize
+RUN su www-data -s /bin/bash -c "php artisan optimize"
 
 COPY ./docker/prod/supervisord.conf /etc/supervisord.conf
 COPY ./docker/prod/nginx.conf /etc/nginx/nginx.conf
