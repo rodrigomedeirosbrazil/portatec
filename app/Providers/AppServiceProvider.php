@@ -10,6 +10,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use App\Filament\App\Pages\PlacePage;
+use Filament\Notifications\Livewire\Notifications;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
         // Register Livewire components explicitly
         Livewire::component('app.filament.app.pages.place-page', PlacePage::class);
         Livewire::component('place-page', PlacePage::class);
+
+        // Register Filament Livewire components
+        Livewire::component('filament.livewire.notifications', Notifications::class);
 
         FilamentShield::buildPermissionKeyUsing(
             function (string $entity, string $affix, string $subject, string $case, string $separator) {

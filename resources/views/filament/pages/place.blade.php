@@ -2,6 +2,10 @@
     use App\Enums\DeviceTypeEnum;
 ?>
 
+<div>
+@livewireStyles
+@filamentStyles
+
 <x-filament::card>
 <div class="mb-4">
     <h2 class="text-2xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-3xl">
@@ -99,3 +103,9 @@
     });
 </script>
 </x-filament::card>
+
+@livewire('filament.livewire.notifications')
+
+@livewireScripts
+@filamentScripts
+</div>
