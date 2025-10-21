@@ -1,6 +1,9 @@
 services:
     portatec:
         image: portatec
+        dns:
+            - 9.9.9.9
+            - 8.8.8.8
         build:
             context: ./
             dockerfile: ./docker/prod/Dockerfile
