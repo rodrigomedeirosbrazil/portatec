@@ -11,7 +11,9 @@ use App\Models\Place;
 use App\Models\PlaceUser;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
@@ -21,39 +23,62 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $superAdminRole = Role::create([
+        // Gera as permissões do Filament Shield
+        // Usa --panel para evitar prompt interativo e --option para evitar confirm
+        Artisan::call('shield:generate', [
+            '--all' => true,
+            '--panel' => 'app',
+            '--option' => 'policies_and_permissions',
+        ]);
+
+        $superAdminRole = Role::firstOrCreate([
             'name' => 'super_admin',
             'guard_name' => 'web',
         ]);
 
-        User::create([
-            'name' => 'Super Admin',
-            'email' => 'contato@medeirostec.com.br',
-            'password' => Hash::make('123'),
-            'email_verified_at' => now(),
-        ])
-            ->assignRole($superAdminRole);
+        // Atribui todas as permissões ao super_admin
+        $permissions = Permission::where('guard_name', 'web')->get();
+        $superAdminRole->syncPermissions($permissions);
 
-        $hostRole = Role::create([
+        User::firstOrCreate(
+            ['email' => 'contato@medeirostec.com.br'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make('123'),
+                'email_verified_at' => now(),
+            ]
+        )->assignRole($superAdminRole);
+
+        $hostRole = Role::firstOrCreate([
             'name' => 'host',
             'guard_name' => 'web',
         ]);
 
-        $rodrigo = User::create([
-            'name' => 'Rodrigo',
-            'email' => 'rodrigo@medeirostec.com.br',
-            'password' => Hash::make('123'),
-            'email_verified_at' => now(),
-        ])
-            ->assignRole($hostRole);
+        $rodrigo = User::firstOrCreate(
+            ['email' => 'rodrigo@medeirostec.com.br'],
+            [
+                'name' => 'Rodrigo',
+                'password' => Hash::make('123'),
+                'email_verified_at' => now(),
+            ]
+        );
 
-        $maitte = User::create([
-            'name' => 'Maittê',
-            'email' => 'maitte.andrade@gmail.com',
-            'password' => Hash::make('123'),
-            'email_verified_at' => now(),
-        ])
-            ->assignRole($hostRole);
+        if (!$rodrigo->hasRole($hostRole)) {
+            $rodrigo->assignRole($hostRole);
+        }
+
+        $maitte = User::firstOrCreate(
+            ['email' => 'maitte.andrade@gmail.com'],
+            [
+                'name' => 'Maittê',
+                'password' => Hash::make('123'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        if (!$maitte->hasRole($hostRole)) {
+            $maitte->assignRole($hostRole);
+        }
 
         $place = Place::create([
             'name' => 'Beach House',
