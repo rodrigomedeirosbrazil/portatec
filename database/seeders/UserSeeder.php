@@ -23,11 +23,18 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Gera as permissões do Filament Shield
+        // Gera as permissões do Filament Shield para ambos os painéis
         // Usa --panel para evitar prompt interativo e --option para evitar confirm
         Artisan::call('shield:generate', [
             '--all' => true,
             '--panel' => 'app',
+            '--option' => 'policies_and_permissions',
+        ]);
+
+        // Gera também para o painel admin (onde está o UserResource)
+        Artisan::call('shield:generate', [
+            '--all' => true,
+            '--panel' => 'admin',
             '--option' => 'policies_and_permissions',
         ]);
 
