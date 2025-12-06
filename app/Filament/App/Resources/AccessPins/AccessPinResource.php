@@ -25,6 +25,10 @@ class AccessPinResource extends Resource
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-key';
 
+    protected static ?string $modelLabel = 'PIN de Acesso';
+
+    protected static ?string $pluralModelLabel = 'PINs de Acesso';
+
     protected static ?string $recordTitleAttribute = 'pin';
 
     public static function form(Schema $schema): Schema
@@ -32,26 +36,27 @@ class AccessPinResource extends Resource
         return $schema
             ->components([
                 Select::make('place_id')
-                    ->label('Place')
+                    ->label(__('app.place'))
                     ->options(Place::all()->pluck('name', 'id'))
                     ->required()
                     ->searchable(),
                 Select::make('user_id')
-                    ->label('User')
+                    ->label(__('app.user'))
                     ->options(User::all()->pluck('name', 'id'))
                     ->required()
                     ->searchable(),
                 TextInput::make('pin')
+                    ->label(__('app.pin'))
                     ->required()
                     ->numeric()
                     ->minLength(6)
                     ->maxLength(6)
                     ->mask('999999'),
                 DateTimePicker::make('start')
-                    ->label('Start')
+                    ->label(__('app.start'))
                     ->required(),
                 DateTimePicker::make('end')
-                    ->label('End')
+                    ->label(__('app.end'))
                     ->required(),
             ]);
     }
@@ -61,17 +66,22 @@ class AccessPinResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('place.name')
+                    ->label(__('app.place'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('user.name')
+                    ->label(__('app.user'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('pin')
+                    ->label(__('app.pin'))
                     ->searchable(),
                 TextColumn::make('start')
+                    ->label(__('app.start'))
                     ->dateTime()
                     ->sortable(),
                 TextColumn::make('end')
+                    ->label(__('app.end'))
                     ->dateTime()
                     ->sortable(),
             ])
