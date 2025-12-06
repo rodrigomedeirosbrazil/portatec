@@ -73,24 +73,42 @@ class PlaceResource extends Resource
                     ->relationship()
                     ->schema([
                         Select::make('device_function_id')
-                            ->relationship(
-                                name: 'deviceFunction',
-                            )
-                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->device->name} - {$record->type->value} {$record->pin}")
                             ->label(__('app.device_function'))
                             ->searchable()
                             ->getSearchResultsUsing(function (string $search) {
-                                return DeviceFunction::query()
-                                    ->whereHas('device', fn ($query) => $query->where('name', 'like', "%{$search}%")
-                                    )
-                                    ->whereHas('device', fn (Builder $query) => $query->whereHas('deviceUsers', fn (Builder $query) => $query->where('user_id', filament()->auth()->user()->id)
-                                    )
-                                    )
+                                $user = filament()->auth()->user();
+
+                                $query = DeviceFunction::query()
+                                    ->with('device');
+
+                                $searchTerm = trim($search);
+                                if (!empty($searchTerm)) {
+                                    $query->whereHas('device', function (Builder $query) use ($searchTerm) {
+                                        $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($searchTerm) . '%']);
+                                    });
+                                }
+
+                                if (!$user->hasRole('super_admin')) {
+                                    $query->whereHas('device', function (Builder $query) use ($user) {
+                                        $query->whereHas('deviceUsers', function (Builder $query) use ($user) {
+                                            $query->where('user_id', $user->id);
+                                        });
+                                    });
+                                }
+
+                                $results = $query
                                     ->limit(10)
-                                    ->get()
-                                    ->mapWithKeys(fn ($record) => [
-                                        $record->getKey() => "{$record->device->name} - {$record->type->value} {$record->pin}",
-                                    ]);
+                                    ->get();
+
+                                return $results->mapWithKeys(fn ($record) => [
+                                    $record->getKey() => "{$record->device->name} - {$record->type->value} {$record->pin}",
+                                ]);
+                            })
+                            ->getOptionLabelUsing(function ($value) {
+                                $deviceFunction = DeviceFunction::with('device')->find($value);
+                                return $deviceFunction
+                                    ? "{$deviceFunction->device->name} - {$deviceFunction->type->value} {$deviceFunction->pin}"
+                                    : '';
                             })
                             ->preload(false)
                             ->required(),

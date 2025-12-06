@@ -11,7 +11,9 @@ use App\Models\Place;
 use App\Models\PlaceUser;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
@@ -21,39 +23,101 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $superAdminRole = Role::create([
+        // Gera as permissões do Filament Shield para ambos os painéis
+        // Usa --panel para evitar prompt interativo e --option para evitar confirm
+        Artisan::call('shield:generate', [
+            '--all' => true,
+            '--panel' => 'app',
+            '--option' => 'policies_and_permissions',
+        ]);
+
+        // Gera também para o painel admin (onde está o UserResource)
+        Artisan::call('shield:generate', [
+            '--all' => true,
+            '--panel' => 'admin',
+            '--option' => 'policies_and_permissions',
+        ]);
+
+        $superAdminRole = Role::firstOrCreate([
             'name' => 'super_admin',
             'guard_name' => 'web',
         ]);
 
-        User::create([
-            'name' => 'Super Admin',
-            'email' => 'contato@medeirostec.com.br',
-            'password' => Hash::make('123'),
-            'email_verified_at' => now(),
-        ])
-            ->assignRole($superAdminRole);
+        // Atribui todas as permissões ao super_admin
+        $permissions = Permission::where('guard_name', 'web')->get();
+        $superAdminRole->syncPermissions($permissions);
 
-        $hostRole = Role::create([
+        User::firstOrCreate(
+            ['email' => 'contato@medeirostec.com.br'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make('123'),
+                'email_verified_at' => now(),
+            ]
+        )->assignRole($superAdminRole);
+
+        $hostRole = Role::firstOrCreate([
             'name' => 'host',
             'guard_name' => 'web',
         ]);
 
-        $rodrigo = User::create([
-            'name' => 'Rodrigo',
-            'email' => 'rodrigo@medeirostec.com.br',
-            'password' => Hash::make('123'),
-            'email_verified_at' => now(),
-        ])
-            ->assignRole($hostRole);
+        // Atribui permissões ao role host (acesso aos recursos do painel app)
+        // Host pode visualizar places, devices, command logs e access pins
+        $hostPermissions = Permission::where('guard_name', 'web')
+            ->where(function ($query) {
+                // Permissões de visualização para places
+                $query->where('name', 'view_any_place')
+                    ->orWhere('name', 'view_place')
+                    // Permissões de visualização para devices
+                    ->orWhere('name', 'view_any_device')
+                    ->orWhere('name', 'view_device')
+                    // Permissões de visualização para command logs
+                    ->orWhere('name', 'view_any_command::log')
+                    ->orWhere('name', 'view_command::log')
+                    // Permissões de visualização para access pins
+                    ->orWhere('name', 'view_any_access::pin')
+                    ->orWhere('name', 'view_access::pin');
+            })
+            ->get();
 
-        $maitte = User::create([
-            'name' => 'Maittê',
-            'email' => 'maitte.andrade@gmail.com',
-            'password' => Hash::make('123'),
-            'email_verified_at' => now(),
-        ])
-            ->assignRole($hostRole);
+        $hostRole->syncPermissions($hostPermissions);
+
+        // Cria/atualiza o role panel_user (já é criado pelo Shield, mas garantimos que existe)
+        $panelUserRole = Role::firstOrCreate([
+            'name' => 'panel_user',
+            'guard_name' => 'web',
+        ]);
+
+        // Panel User não precisa de permissões explícitas, apenas acesso básico ao painel
+        // As permissões são gerenciadas pelo Filament Shield automaticamente
+        // Garantimos que não tem permissões atribuídas (apenas acesso ao painel)
+        $panelUserRole->syncPermissions([]);
+
+        $rodrigo = User::firstOrCreate(
+            ['email' => 'rodrigo@medeirostec.com.br'],
+            [
+                'name' => 'Rodrigo',
+                'password' => Hash::make('123'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        if (!$rodrigo->hasRole($hostRole)) {
+            $rodrigo->assignRole($hostRole);
+        }
+
+        $maitte = User::firstOrCreate(
+            ['email' => 'maitte.andrade@gmail.com'],
+            [
+                'name' => 'Maittê',
+                'password' => Hash::make('123'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        if (!$maitte->hasRole($hostRole)) {
+            $maitte->assignRole($hostRole);
+        }
 
         $place = Place::create([
             'name' => 'Beach House',

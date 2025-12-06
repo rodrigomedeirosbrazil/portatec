@@ -20,6 +20,8 @@ return [
     'place_devices' => 'Dispositivos do Local',
     'command_log' => 'Registro de Comando',
     'command_logs' => 'Registros de Comandos',
+    'access_pin' => 'PIN de Acesso',
+    'access_pins' => 'PINs de Acesso',
     'user' => 'Usuário',
     'users' => 'Usuários',
     'role' => 'Função',
@@ -59,6 +61,8 @@ return [
     'created_at' => 'Criado em',
     'updated_at' => 'Atualizado em',
     'deleted_at' => 'Excluído em',
+    'start' => 'Início',
+    'end' => 'Fim',
 
     // Seções e descrições do formulário
     'device_information' => 'Informações do Dispositivo',
