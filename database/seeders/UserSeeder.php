@@ -61,6 +61,38 @@ class UserSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        // Atribui permissões ao role host (acesso aos recursos do painel app)
+        // Host pode visualizar places, devices, command logs e access pins
+        $hostPermissions = Permission::where('guard_name', 'web')
+            ->where(function ($query) {
+                // Permissões de visualização para places
+                $query->where('name', 'view_any_place')
+                    ->orWhere('name', 'view_place')
+                    // Permissões de visualização para devices
+                    ->orWhere('name', 'view_any_device')
+                    ->orWhere('name', 'view_device')
+                    // Permissões de visualização para command logs
+                    ->orWhere('name', 'view_any_command::log')
+                    ->orWhere('name', 'view_command::log')
+                    // Permissões de visualização para access pins
+                    ->orWhere('name', 'view_any_access::pin')
+                    ->orWhere('name', 'view_access::pin');
+            })
+            ->get();
+
+        $hostRole->syncPermissions($hostPermissions);
+
+        // Cria/atualiza o role panel_user (já é criado pelo Shield, mas garantimos que existe)
+        $panelUserRole = Role::firstOrCreate([
+            'name' => 'panel_user',
+            'guard_name' => 'web',
+        ]);
+
+        // Panel User não precisa de permissões explícitas, apenas acesso básico ao painel
+        // As permissões são gerenciadas pelo Filament Shield automaticamente
+        // Garantimos que não tem permissões atribuídas (apenas acesso ao painel)
+        $panelUserRole->syncPermissions([]);
+
         $rodrigo = User::firstOrCreate(
             ['email' => 'rodrigo@medeirostec.com.br'],
             [
