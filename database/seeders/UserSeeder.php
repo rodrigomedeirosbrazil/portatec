@@ -120,7 +120,7 @@ class UserSeeder extends Seeder
         }
 
         $place = Place::create([
-            'name' => 'Beach House',
+            'name' => 'Teste',
         ]);
 
         PlaceUser::create([
@@ -136,8 +136,8 @@ class UserSeeder extends Seeder
         ]);
 
         $portaoGaragem = Device::create([
-            'name' => 'Portão garagem',
-            'chip_id' => '123123',
+            'name' => 'Dispositivo de teste',
+            'chip_id' => '37feb9',
         ]);
 
         $portaoGaragemPulse = DeviceFunction::create([
