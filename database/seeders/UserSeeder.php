@@ -63,6 +63,7 @@ class UserSeeder extends Seeder
 
         // Atribui permissões ao role host (acesso aos recursos do painel app)
         // Host pode visualizar places, devices, command logs e access pins
+        // Host pode criar, editar e excluir access pins
         $hostPermissions = Permission::where('guard_name', 'web')
             ->where(function ($query) {
                 // Permissões de visualização para places
@@ -74,9 +75,12 @@ class UserSeeder extends Seeder
                     // Permissões de visualização para command logs
                     ->orWhere('name', 'view_any_command::log')
                     ->orWhere('name', 'view_command::log')
-                    // Permissões de visualização para access pins
+                    // Permissões para access pins (visualizar, criar, editar, excluir)
                     ->orWhere('name', 'view_any_access::pin')
-                    ->orWhere('name', 'view_access::pin');
+                    ->orWhere('name', 'view_access::pin')
+                    ->orWhere('name', 'create_access::pin')
+                    ->orWhere('name', 'update_access::pin')
+                    ->orWhere('name', 'delete_access::pin');
             })
             ->get();
 
