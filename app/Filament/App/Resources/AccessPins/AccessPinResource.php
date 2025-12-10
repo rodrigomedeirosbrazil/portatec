@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\AccessPins;
 
+use App\Filament\App\Resources\AccessPins\Pages\CreateAccessPin;
 use App\Filament\App\Resources\AccessPins\Pages\ManageAccessPins;
 use App\Models\AccessPin;
 use App\Models\Place;
@@ -109,6 +110,7 @@ class AccessPinResource extends Resource
     {
         return [
             'index' => ManageAccessPins::route('/'),
+            'create' => CreateAccessPin::route('/create'),
         ];
     }
 }
