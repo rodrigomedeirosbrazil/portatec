@@ -157,10 +157,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('place_id')->constrained()->cascadeOnDelete();
             $table->foreignId('integration_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('guest_name');
-            $table->timestamp('check_in');
-            $table->timestamp('check_out');
-            $table->enum('status', ['confirmed', 'cancelled'])->default('confirmed');
+            $table->string('guest_name')->nullable();
+            $table->datetime('check_in');
+            $table->datetime('check_out');
             $table->timestamps();
 
             // Índices
@@ -199,7 +198,6 @@ class Booking extends Model
         'guest_name',
         'check_in',
         'check_out',
-        'status',
     ];
 
     protected $casts = [
@@ -315,13 +313,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('platform_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('external_id'); // URL completa do iCal ou ID da API
             $table->timestamps();
             $table->softDeletes();
 
             // Índices
             $table->index(['platform_id', 'user_id']);
-            $table->index(['external_id']);
         });
     }
 
@@ -332,15 +328,7 @@ return new class extends Migration
 };
 ```
 
-### 5.2 Nota sobre o Campo `external_id`
-
-**Importante**: O campo `external_id` na tabela `integrations` armazena:
-- **Para iCal**: A URL completa do iCal quando a sincronização for feita via iCal
-- **Para APIs**: O ID específico da plataforma quando houver integração por API (ex: Airbnb API, Booking.com API)
-
-Esta estrutura permite que um usuário tenha múltiplas integrações com a mesma plataforma (ex: múltiplos listings do Airbnb), cada uma com seu próprio `external_id`.
-
-### 5.3 Model
+### 5.2 Model
 
 **Arquivo**: `app/Models/Integration.php`
 
@@ -353,6 +341,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -363,7 +352,6 @@ class Integration extends Model
     protected $fillable = [
         'platform_id',
         'user_id',
-        'external_id',
     ];
 
     public function platform(): BelongsTo
@@ -376,12 +364,69 @@ class Integration extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function places(): BelongsToMany
+    {
+        return $this->belongsToMany(Place::class, 'place_integration')
+            ->withPivot('external_id')
+            ->withTimestamps();
+    }
+
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
     }
 }
 ```
+
+---
+
+## 5.3 CRIAR TABELA DE RELACIONAMENTO PLACE_INTEGRATION
+
+### 5.3.1 Migration
+
+**Arquivo**: `database/migrations/XXXX_XX_XX_XXXXXX_create_place_integration_table.php`
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('place_integration', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('place_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('integration_id')->constrained()->cascadeOnDelete();
+            $table->string('external_id'); // URL completa do iCal ou ID da API
+            $table->timestamps();
+
+            // Índices
+            $table->unique(['place_id', 'integration_id']);
+            $table->index(['external_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('place_integration');
+    }
+};
+```
+
+### 5.3.2 Nota sobre o Campo `external_id`
+
+**Importante**: O campo `external_id` na tabela `place_integration` armazena:
+- **Para iCal**: A URL completa do iCal quando a sincronização for feita via iCal. Cada iCal recebe um calendário de um lugar/place/propriedade específico.
+- **Para APIs**: O ID específico da plataforma quando houver integração por API (ex: Airbnb API, Booking.com API)
+
+Esta estrutura permite que:
+- Uma Integration possa estar associada a múltiplos Places (cada um com seu próprio `external_id`)
+- Um Place possa ter múltiplas Integrations (ex: Airbnb e Booking.com ao mesmo tempo)
+- Cada relacionamento Place-Integration tenha seu próprio identificador externo (URL do iCal ou ID da API)
 
 ---
 
@@ -507,7 +552,7 @@ public function place(): BelongsTo
 
 ## 7. ATUALIZAR MODELO PLACE
 
-### 6.1 Adicionar Relacionamentos
+### 7.1 Adicionar Relacionamentos
 
 ```php
 public function devices(): HasMany
@@ -525,25 +570,19 @@ public function bookings(): HasMany
     return $this->hasMany(Booking::class);
 }
 
+public function integrations(): BelongsToMany
+{
+    return $this->belongsToMany(Integration::class, 'place_integration')
+        ->withPivot('external_id')
+        ->withTimestamps();
+}
+
 public function getValidAccessCodes()
 {
     return $this->accessCodes()
         ->where('start', '<=', now())
         ->where('end', '>=', now())
         ->get();
-}
-```
-
----
-
-## 6. ATUALIZAR MODELO USER
-
-### 6.1 Adicionar Relacionamento
-
-```php
-public function integrations(): HasMany
-{
-    return $this->hasMany(Integration::class);
 }
 ```
 
@@ -611,11 +650,16 @@ enum PlaceRoleEnum: string
 - [ ] Criar seeder (opcional)
 
 ### Integration
-- [ ] Criar migration (platform_id, user_id, external_id, soft deletes)
+- [ ] Criar migration (platform_id, user_id, soft deletes - sem external_id)
 - [ ] Criar model Integration
-- [ ] Adicionar relacionamentos (Platform, User, Bookings)
+- [ ] Adicionar relacionamentos (Platform, User, Places, Bookings)
 - [ ] Criar factory (opcional)
 - [ ] Criar seeder (opcional)
+
+### Place Integration (Tabela Pivot)
+- [ ] Criar migration place_integration (place_id, integration_id, external_id)
+- [ ] Adicionar relacionamento many-to-many em Place
+- [ ] Adicionar relacionamento many-to-many em Integration
 
 ### Device
 - [ ] Criar migration para novos campos
@@ -647,8 +691,9 @@ enum PlaceRoleEnum: string
 1. Renomear `access_pins` → `access_codes`
 2. Adicionar `booking_id` em `access_codes`
 3. Criar tabela `platforms` (id, name, slug)
-4. Criar tabela `integrations` (platform_id, user_id, external_id, soft deletes)
-5. Criar tabela `bookings` (sem external_id, com integration_id)
-6. Adicionar campos em `devices` (place_id, integration_type, etc.)
+4. Criar tabela `integrations` (platform_id, user_id, soft deletes - sem external_id)
+5. Criar tabela `place_integration` (place_id, integration_id, external_id)
+6. Criar tabela `bookings` (place_id, integration_id, guest_name nullable, check_in, check_out - sem status)
+7. Adicionar campos em `devices` (place_id, integration_type, etc.)
 
 **Importante**: Executar migrations em ordem e testar cada uma antes de prosseguir.

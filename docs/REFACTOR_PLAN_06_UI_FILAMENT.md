@@ -304,8 +304,7 @@ Action::make('manage-devices')
 - Editar booking
 - Visualizar AccessCode associado
 - Visualizar Integration associada
-- Filtrar por Place, Integration, status
-- Mostrar status (confirmed/cancelled)
+- Filtrar por Place, Integration
 
 ### 4.3 Estrutura
 
@@ -389,7 +388,8 @@ class PlatformResource extends Resource
 
 - Listar integrations do usuário
 - Criar/editar integration
-- Configurar external_id (URL do iCal ou ID da API)
+- Gerenciar relacionamentos com Places
+- Configurar external_id por Place (URL do iCal ou ID da API)
 - Sincronizar bookings manualmente (action)
 - Mostrar última sincronização
 - Filtrar por platform
@@ -633,7 +633,9 @@ Criar policy para AccessEvent:
 - [ ] Criar ListIntegrations.php
 - [ ] Criar CreateIntegration.php
 - [ ] Criar EditIntegration.php
-- [ ] Implementar form (platform_id, external_id)
+- [ ] Implementar form (platform_id)
+- [ ] Implementar gerenciamento de Places relacionados (many-to-many)
+- [ ] Implementar form para external_id por Place (pivot table)
 - [ ] Implementar table
 - [ ] Adicionar action de sincronização
 - [ ] Criar IntegrationPolicy

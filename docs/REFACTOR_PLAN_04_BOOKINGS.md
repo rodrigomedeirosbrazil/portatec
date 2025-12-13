@@ -32,18 +32,17 @@ Este documento detalha a integração com bookings e sincronização iCal.
 ```php
 public function created(Booking $booking): void
 {
-    if ($booking->status === 'confirmed') {
-        $pin = $this->generateUniquePin($booking->place_id);
+    // Criar AccessCode para todos os bookings (não há mais status)
+    $pin = $this->generateUniquePin($booking->place_id);
 
-        AccessCode::create([
-            'place_id' => $booking->place_id,
-            'booking_id' => $booking->id,
-            'pin' => $pin,
-            'start' => $booking->check_in,
-            'end' => $booking->check_out,
-            'user_id' => $booking->integration?->user_id,
-        ]);
-    }
+    AccessCode::create([
+        'place_id' => $booking->place_id,
+        'booking_id' => $booking->id,
+        'pin' => $pin,
+        'start' => $booking->check_in,
+        'end' => $booking->check_out,
+        'user_id' => $booking->integration?->user_id,
+    ]);
 }
 
 private function generateUniquePin(int $placeId): string
@@ -78,9 +77,9 @@ composer require kigkonsult/icalcreator
 
 ### 2.3 Responsabilidades
 
-- Baixar arquivo iCal da URL (de `Integration.external_id`)
+- Para cada relacionamento Place-Integration, baixar arquivo iCal da URL (de `place_integration.external_id`)
 - Parsear eventos
-- Criar/atualizar Bookings
+- Criar/atualizar Bookings para o Place específico
 - Associar com Integration
 - Tratar erros e logs
 
@@ -89,9 +88,36 @@ composer require kigkonsult/icalcreator
 ```php
 public function syncIntegration(Integration $integration): void
 {
-    // Baixar iCal de $integration->external_id
-    // Parsear
-    // Criar/atualizar bookings associados a esta integration
+    // Para cada Place relacionado à Integration
+    foreach ($integration->places as $place) {
+        $externalId = $place->pivot->external_id;
+
+        // Baixar iCal de $externalId
+        $icalContent = $this->downloadICal($externalId);
+
+        // Parsear
+        $events = $this->parseICal($icalContent);
+
+        // Criar/atualizar bookings para este Place
+        foreach ($events as $event) {
+            $this->createOrUpdateBooking($event, $integration, $place);
+        }
+    }
+}
+
+public function syncPlaceIntegration(int $placeId, int $integrationId): void
+{
+    // Sincronizar um relacionamento específico Place-Integration
+    $place = Place::findOrFail($placeId);
+    $integration = Integration::findOrFail($integrationId);
+    $externalId = $place->integrations()->where('integration_id', $integrationId)->first()->pivot->external_id;
+
+    $icalContent = $this->downloadICal($externalId);
+    $events = $this->parseICal($icalContent);
+
+    foreach ($events as $event) {
+        $this->createOrUpdateBooking($event, $integration, $place);
+    }
 }
 
 public function parseICal(string $icalContent): array
@@ -99,10 +125,10 @@ public function parseICal(string $icalContent): array
     // Retorna array de eventos
 }
 
-private function createOrUpdateBooking(array $event, Integration $integration): Booking
+private function createOrUpdateBooking(array $event, Integration $integration, Place $place): Booking
 {
     // Cria ou atualiza booking baseado em external_id do evento iCal
-    // Associa com $integration
+    // Associa com $integration e $place
 }
 ```
 

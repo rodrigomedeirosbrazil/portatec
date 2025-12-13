@@ -58,13 +58,31 @@ New entity to manage user-specific integrations with platforms.
     - `id`
     - `platform_id` (FK to `platforms`)
     - `user_id` (FK to `users`)
-    - `external_id` (String - URL completa do iCal ou ID da API)
     - `timestamps`
     - `soft_deletes`
 - **Relationships**:
     - BelongsTo `Platform`
     - BelongsTo `User`
+    - BelongsToMany `Places` (via `place_integration` pivot table)
     - HasMany `Bookings`
+
+## 3.2. Place Integration (Pivot Table)
+
+Relationship table between Places and Integrations, storing the external identifier.
+
+### Implementation:
+- **Table**: `place_integration`
+- **Fields**:
+    - `id`
+    - `place_id` (FK to `places`)
+    - `integration_id` (FK to `integrations`)
+    - `external_id` (String - URL completa do iCal ou ID da API)
+    - `timestamps`
+- **Relationships**:
+    - BelongsTo `Place`
+    - BelongsTo `Integration`
+
+**Note**: Each iCal receives a calendar for a specific place/property. For API integrations (future), we'll receive an ID instead of a URL. The `external_id` is stored in this pivot table because it's specific to the Place-Integration relationship.
 
 ## 4. Bookings
 
@@ -77,10 +95,9 @@ New entity to manage reservations and trigger AccessCode generation.
     - `id`
     - `place_id` (FK to `places`)
     - `integration_id` (FK to `integrations`, nullable for manual bookings)
-    - `guest_name` (String)
+    - `guest_name` (String, nullable)
     - `check_in` (DateTime)
     - `check_out` (DateTime)
-    - `status` (Enum: 'confirmed', 'cancelled')
 - **Relationships**:
     - BelongsTo `Place`
     - BelongsTo `Integration` (not Platform directly)
@@ -94,7 +111,7 @@ New entity to manage reservations and trigger AccessCode generation.
     - Implement endpoint/websocket event `GET /api/device/sync` or `ws:sync`.
     - Returns: List of valid `AccessCodes` for the Device's `Place`.
 - **iCal Sync**:
-    - Scheduled Job (`SyncIntegrationsJob`) to fetch iCal from `Integration.external_id`, parse events, and create/update `Bookings`.
+    - Scheduled Job (`SyncIntegrationsJob`) to fetch iCal from `place_integration.external_id` for each Place-Integration relationship, parse events, and create/update `Bookings`.
 
 ## 6. Execution Order
 
