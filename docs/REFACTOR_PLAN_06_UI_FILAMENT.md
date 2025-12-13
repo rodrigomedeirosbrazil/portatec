@@ -303,8 +303,8 @@ Action::make('manage-devices')
 - Criar booking manual
 - Editar booking
 - Visualizar AccessCode associado
-- Sincronizar com Platform
-- Filtrar por Place, Platform, status
+- Visualizar Integration associada
+- Filtrar por Place, Integration, status
 - Mostrar status (confirmed/cancelled)
 
 ### 4.3 Estrutura
@@ -337,7 +337,7 @@ class BookingResource extends Resource
 ### 4.5 Relacionamentos a Exibir
 
 - Place (com link para PlaceResource)
-- Platform (com link para PlatformResource)
+- Integration (com link para IntegrationResource)
 - AccessCode (se existir, com link para AccessCodeResource)
 
 ---
@@ -350,12 +350,9 @@ class BookingResource extends Resource
 
 ### 5.2 Funcionalidades
 
-- Listar platforms
-- Criar/editar platform
-- Configurar iCal URL
-- Sincronizar bookings manualmente (action)
-- Mostrar última sincronização
-- Filtrar por tipo (airbnb, booking_com, other)
+- Listar platforms (somente leitura, são entidades do sistema)
+- Visualizar detalhes da platform
+- Mostrar integrações relacionadas
 
 ### 5.3 Estrutura
 
@@ -374,19 +371,59 @@ class PlatformResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-globe-alt';
 
+    // Table, Pages (somente visualização)
+}
+```
+
+**Nota**: Platforms são entidades do sistema, não editáveis por usuários. Usuários criam Integrations que referenciam Platforms.
+
+---
+
+## 5.1 CRIAR RESOURCE PARA INTEGRATION
+
+### 5.1.1 Arquivo Principal
+
+**Arquivo**: `app/Filament/App/Resources/IntegrationResource.php`
+
+### 5.1.2 Funcionalidades
+
+- Listar integrations do usuário
+- Criar/editar integration
+- Configurar external_id (URL do iCal ou ID da API)
+- Sincronizar bookings manualmente (action)
+- Mostrar última sincronização
+- Filtrar por platform
+
+### 5.1.3 Estrutura
+
+```php
+<?php
+
+namespace App\Filament\App\Resources;
+
+use App\Filament\App\Resources\IntegrationResource\Pages;
+use App\Models\Integration;
+use Filament\Resources\Resource;
+
+class IntegrationResource extends Resource
+{
+    protected static ?string $model = Integration::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-link';
+
     // Form, Table, Pages...
 }
 ```
 
-### 5.4 Action de Sincronização
+### 5.1.4 Action de Sincronização
 
 Adicionar action customizada para sincronizar bookings:
 ```php
 Action::make('sync')
     ->label(__('app.sync_bookings'))
     ->icon('heroicon-o-arrow-path')
-    ->action(function (Platform $record) {
-        // Chamar ICalSyncService
+    ->action(function (Integration $record) {
+        // Chamar ICalSyncService::syncIntegration($record)
         // Mostrar notificação de sucesso/erro
     })
     ->requiresConfirmation()
@@ -535,8 +572,14 @@ Criar policy para Booking:
 ### 9.3 PlatformPolicy
 
 Criar policy para Platform:
-- Usuários podem ver apenas suas próprias platforms
-- Usuários podem criar/editar/deletar suas próprias platforms
+- Todos os usuários podem ver platforms (são entidades do sistema)
+- Apenas super_admin pode criar/editar/deletar platforms
+
+### 9.4 IntegrationPolicy
+
+Criar policy para Integration:
+- Usuários podem ver apenas suas próprias integrations
+- Usuários podem criar/editar/deletar suas próprias integrations
 
 ### 9.4 AccessEventPolicy
 
@@ -581,13 +624,19 @@ Criar policy para AccessEvent:
 
 ### Platform Resource
 - [ ] Criar PlatformResource.php
-- [ ] Criar ListPlatforms.php
-- [ ] Criar CreatePlatform.php
-- [ ] Criar EditPlatform.php
-- [ ] Implementar form
+- [ ] Criar ListPlatforms.php (somente visualização)
+- [ ] Implementar table
+- [ ] Criar PlatformPolicy
+
+### Integration Resource
+- [ ] Criar IntegrationResource.php
+- [ ] Criar ListIntegrations.php
+- [ ] Criar CreateIntegration.php
+- [ ] Criar EditIntegration.php
+- [ ] Implementar form (platform_id, external_id)
 - [ ] Implementar table
 - [ ] Adicionar action de sincronização
-- [ ] Criar PlatformPolicy
+- [ ] Criar IntegrationPolicy
 
 ### AccessCode Resource
 - [ ] Renomear AccessPinResource → AccessCodeResource
@@ -612,6 +661,7 @@ Criar policy para AccessEvent:
 - [ ] Atualizar PlacePolicy
 - [ ] Criar BookingPolicy
 - [ ] Criar PlatformPolicy
+- [ ] Criar IntegrationPolicy
 - [ ] Criar AccessEventPolicy
 
 ---

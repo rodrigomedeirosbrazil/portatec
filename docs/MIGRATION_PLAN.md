@@ -40,12 +40,29 @@ New entity to manage external booking platforms (Airbnb, Booking.com).
 - **Table**: `platforms`
 - **Fields**:
     - `id`
-    - `user_id` (Owner of the integration)
-    - `name` (e.g., "My Airbnb Listing")
-    - `type` (Enum: 'airbnb', 'booking_com', 'other')
-    - `ical_url` (URL for calendar synchronization)
-    - `refresh_rate` (Integer, minutes - optional)
+    - `name` (e.g., "Airbnb", "Booking.com")
+    - `slug` (unique identifier, e.g., "airbnb", "booking_com")
 - **Relationships**:
+    - HasMany `Integrations`
+
+**Note**: Platforms are system-wide entities. User-specific integrations are managed through the `Integration` entity.
+
+## 3.1. Integrations
+
+New entity to manage user-specific integrations with platforms.
+
+### Implementation:
+- **Model**: `Integration`
+- **Table**: `integrations`
+- **Fields**:
+    - `id`
+    - `platform_id` (FK to `platforms`)
+    - `user_id` (FK to `users`)
+    - `external_id` (String - URL completa do iCal ou ID da API)
+    - `timestamps`
+    - `soft_deletes`
+- **Relationships**:
+    - BelongsTo `Platform`
     - BelongsTo `User`
     - HasMany `Bookings`
 
@@ -59,15 +76,14 @@ New entity to manage reservations and trigger AccessCode generation.
 - **Fields**:
     - `id`
     - `place_id` (FK to `places`)
-    - `platform_id` (FK to `platforms`, nullable for manual bookings)
-    - `external_id` (String, unique per platform - for iCal UID)
+    - `integration_id` (FK to `integrations`, nullable for manual bookings)
     - `guest_name` (String)
     - `check_in` (DateTime)
     - `check_out` (DateTime)
     - `status` (Enum: 'confirmed', 'cancelled')
 - **Relationships**:
     - BelongsTo `Place`
-    - BelongsTo `Platform`
+    - BelongsTo `Integration` (not Platform directly)
     - HasOne `AccessCode`
 - **Logic**:
     - **Observer**: On `Booking` creation/update (if confirmed), generate or update an `AccessCode` for the `check_in` - `check_out` period.
@@ -78,12 +94,12 @@ New entity to manage reservations and trigger AccessCode generation.
     - Implement endpoint/websocket event `GET /api/device/sync` or `ws:sync`.
     - Returns: List of valid `AccessCodes` for the Device's `Place`.
 - **iCal Sync**:
-    - Scheduled Job (`SyncPlatformsJob`) to fetch `ical_url`, parse events, and create/update `Bookings`.
+    - Scheduled Job (`SyncIntegrationsJob`) to fetch iCal from `Integration.external_id`, parse events, and create/update `Bookings`.
 
 ## 6. Execution Order
 
-1.  **Create Bookings & Platforms**:
-    - Create migrations for `platforms` and `bookings`.
+1.  **Create Platforms, Integrations & Bookings**:
+    - Create migrations for `platforms`, `integrations`, and `bookings`.
     - Create Models.
 2.  **Refactor AccessCode**:
     - Create migration to rename table and add columns.
@@ -92,5 +108,5 @@ New entity to manage reservations and trigger AccessCode generation.
     - Add migration for `place_id`, `type`, `default_pin`.
 4.  **Implement Logic**:
     - `BookingObserver` for AccessCode generation.
-    - `PlatformService` for iCal parsing.
+    - `IntegrationService` (ou `ICalSyncService`) for iCal parsing.
 

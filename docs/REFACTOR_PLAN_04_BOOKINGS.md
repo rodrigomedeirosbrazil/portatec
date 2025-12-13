@@ -41,7 +41,7 @@ public function created(Booking $booking): void
             'pin' => $pin,
             'start' => $booking->check_in,
             'end' => $booking->check_out,
-            'user_id' => null, // ou booking->platform->user_id
+            'user_id' => $booking->integration?->user_id,
         ]);
     }
 }
@@ -78,20 +78,20 @@ composer require kigkonsult/icalcreator
 
 ### 2.3 Responsabilidades
 
-- Baixar arquivo iCal da URL
+- Baixar arquivo iCal da URL (de `Integration.external_id`)
 - Parsear eventos
 - Criar/atualizar Bookings
-- Associar com Platform
+- Associar com Integration
 - Tratar erros e logs
 
 ### 2.4 Métodos
 
 ```php
-public function syncPlatform(Platform $platform): void
+public function syncIntegration(Integration $integration): void
 {
-    // Baixar iCal
+    // Baixar iCal de $integration->external_id
     // Parsear
-    // Criar/atualizar bookings
+    // Criar/atualizar bookings associados a esta integration
 }
 
 public function parseICal(string $icalContent): array
@@ -99,9 +99,10 @@ public function parseICal(string $icalContent): array
     // Retorna array de eventos
 }
 
-private function createOrUpdateBooking(array $event, Platform $platform): Booking
+private function createOrUpdateBooking(array $event, Integration $integration): Booking
 {
-    // Cria ou atualiza booking baseado em external_id
+    // Cria ou atualiza booking baseado em external_id do evento iCal
+    // Associa com $integration
 }
 ```
 
@@ -117,7 +118,7 @@ private function createOrUpdateBooking(array $event, Platform $platform): Bookin
 
 ```bash
 php artisan bookings:sync-ical
-php artisan bookings:sync-ical --platform=1
+php artisan bookings:sync-ical --integration=1
 ```
 
 ### 3.3 Agendamento

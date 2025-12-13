@@ -156,8 +156,7 @@ return new class extends Migration
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('place_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('platform_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('external_id')->nullable(); // Para iCal UID
+            $table->foreignId('integration_id')->nullable()->constrained()->nullOnDelete();
             $table->string('guest_name');
             $table->timestamp('check_in');
             $table->timestamp('check_out');
@@ -166,7 +165,7 @@ return new class extends Migration
 
             // Índices
             $table->index(['place_id', 'check_in', 'check_out']);
-            $table->index(['platform_id', 'external_id']);
+            $table->index(['integration_id']);
         });
     }
 
@@ -196,8 +195,7 @@ class Booking extends Model
 {
     protected $fillable = [
         'place_id',
-        'platform_id',
-        'external_id',
+        'integration_id',
         'guest_name',
         'check_in',
         'check_out',
@@ -214,9 +212,9 @@ class Booking extends Model
         return $this->belongsTo(Place::class);
     }
 
-    public function platform(): BelongsTo
+    public function integration(): BelongsTo
     {
-        return $this->belongsTo(Platform::class);
+        return $this->belongsTo(Integration::class);
     }
 
     public function accessCode(): HasOne
@@ -253,13 +251,8 @@ return new class extends Migration
     {
         Schema::create('platforms', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->enum('type', ['airbnb', 'booking_com', 'other'])->default('other');
-            $table->string('ical_url')->nullable();
-            $table->integer('refresh_rate')->nullable(); // em minutos
-            $table->timestamp('last_sync')->nullable();
-            $table->json('credentials')->nullable();
+            $table->string('slug')->unique();
             $table->timestamps();
         });
     }
@@ -283,25 +276,100 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Platform extends Model
 {
     protected $fillable = [
-        'user_id',
         'name',
-        'type',
-        'ical_url',
-        'refresh_rate',
-        'last_sync',
-        'credentials',
+        'slug',
     ];
 
-    protected $casts = [
-        'last_sync' => 'datetime',
-        'credentials' => 'array',
+    public function integrations(): HasMany
+    {
+        return $this->hasMany(Integration::class);
+    }
+}
+```
+
+---
+
+## 5. CRIAR MODELO INTEGRATION
+
+### 5.1 Migration
+
+**Arquivo**: `database/migrations/XXXX_XX_XX_XXXXXX_create_integrations_table.php`
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('integrations', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('platform_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('external_id'); // URL completa do iCal ou ID da API
+            $table->timestamps();
+            $table->softDeletes();
+
+            // Índices
+            $table->index(['platform_id', 'user_id']);
+            $table->index(['external_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('integrations');
+    }
+};
+```
+
+### 5.2 Nota sobre o Campo `external_id`
+
+**Importante**: O campo `external_id` na tabela `integrations` armazena:
+- **Para iCal**: A URL completa do iCal quando a sincronização for feita via iCal
+- **Para APIs**: O ID específico da plataforma quando houver integração por API (ex: Airbnb API, Booking.com API)
+
+Esta estrutura permite que um usuário tenha múltiplas integrações com a mesma plataforma (ex: múltiplos listings do Airbnb), cada uma com seu próprio `external_id`.
+
+### 5.3 Model
+
+**Arquivo**: `app/Models/Integration.php`
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Integration extends Model
+{
+    use SoftDeletes;
+
+    protected $fillable = [
+        'platform_id',
+        'user_id',
+        'external_id',
     ];
+
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
+    }
 
     public function user(): BelongsTo
     {
@@ -437,7 +505,7 @@ public function place(): BelongsTo
 
 ---
 
-## 6. ATUALIZAR MODELO PLACE
+## 7. ATUALIZAR MODELO PLACE
 
 ### 6.1 Adicionar Relacionamentos
 
@@ -468,20 +536,33 @@ public function getValidAccessCodes()
 
 ---
 
-## 7. ATUALIZAR MODELO USER
+## 6. ATUALIZAR MODELO USER
 
-### 7.1 Adicionar Relacionamento
+### 6.1 Adicionar Relacionamento
 
 ```php
-public function platforms(): HasMany
+public function integrations(): HasMany
 {
-    return $this->hasMany(Platform::class);
+    return $this->hasMany(Integration::class);
 }
 ```
 
 ---
 
-## 8. ATUALIZAR PLACEROLEENUM
+## 8. ATUALIZAR MODELO USER
+
+### 8.1 Adicionar Relacionamento
+
+```php
+public function integrations(): HasMany
+{
+    return $this->hasMany(Integration::class);
+}
+```
+
+---
+
+## 9. ATUALIZAR PLACEROLEENUM
 
 ### 8.1 Adicionar Casos
 
@@ -501,7 +582,7 @@ enum PlaceRoleEnum: string
 
 ---
 
-## 9. CHECKLIST DE IMPLEMENTAÇÃO
+## 10. CHECKLIST DE IMPLEMENTAÇÃO
 
 ### AccessPin → AccessCode
 - [ ] Criar migration para renomear tabela
@@ -515,17 +596,24 @@ enum PlaceRoleEnum: string
 - [ ] Testar migração
 
 ### Booking
-- [ ] Criar migration
+- [ ] Criar migration (sem external_id, com integration_id)
 - [ ] Criar model Booking
 - [ ] Criar observer BookingObserver
-- [ ] Adicionar relacionamentos
+- [ ] Adicionar relacionamento com Integration (não Platform)
 - [ ] Criar factory (opcional)
 - [ ] Criar seeder (opcional)
 
 ### Platform
-- [ ] Criar migration
+- [ ] Criar migration (apenas id, name, slug)
 - [ ] Criar model Platform
-- [ ] Adicionar relacionamentos
+- [ ] Adicionar relacionamento com Integration
+- [ ] Criar factory (opcional)
+- [ ] Criar seeder (opcional)
+
+### Integration
+- [ ] Criar migration (platform_id, user_id, external_id, soft deletes)
+- [ ] Criar model Integration
+- [ ] Adicionar relacionamentos (Platform, User, Bookings)
 - [ ] Criar factory (opcional)
 - [ ] Criar seeder (opcional)
 
@@ -544,7 +632,7 @@ enum PlaceRoleEnum: string
 - [ ] Adicionar método getValidAccessCodes()
 
 ### User
-- [ ] Adicionar relacionamento platforms()
+- [ ] Adicionar relacionamento integrations() (remover platforms() se existir)
 
 ### PlaceRoleEnum
 - [ ] Adicionar caso Owner
@@ -554,12 +642,13 @@ enum PlaceRoleEnum: string
 
 ---
 
-## 10. ORDEM DE EXECUÇÃO DAS MIGRATIONS
+## 11. ORDEM DE EXECUÇÃO DAS MIGRATIONS
 
 1. Renomear `access_pins` → `access_codes`
 2. Adicionar `booking_id` em `access_codes`
-3. Criar tabela `platforms`
-4. Criar tabela `bookings`
-5. Adicionar campos em `devices` (place_id, integration_type, etc.)
+3. Criar tabela `platforms` (id, name, slug)
+4. Criar tabela `integrations` (platform_id, user_id, external_id, soft deletes)
+5. Criar tabela `bookings` (sem external_id, com integration_id)
+6. Adicionar campos em `devices` (place_id, integration_type, etc.)
 
 **Importante**: Executar migrations em ordem e testar cada uma antes de prosseguir.
