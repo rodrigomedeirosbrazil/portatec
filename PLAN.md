@@ -1,8 +1,3 @@
-Perfeito. Vou **organizar, clarear responsabilidades e melhorar a nomenclatura**, mantendo sua ideia original, mas deixando o planejamento mais “arquitetural” e pronto para evoluir.
-
-Vou dividir em **Visão Geral**, **Fluxos principais**, **Arquitetura de comunicação** e **Modelo de entidades** (com sugestões de nomes).
-
----
 
 # PORTATEC — Planejamento da Plataforma de Controle de Acesso
 
