@@ -6,9 +6,12 @@ namespace App\Listeners;
 
 use App\Events\PlaceDeviceCommandAckEvent;
 use App\Events\PlaceDeviceStatusEvent;
+use App\Models\AccessCode;
+use App\Models\AccessEvent;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Services\DeviceService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Laravel\Reverb\Events\MessageReceived;
 
@@ -42,6 +45,12 @@ class BroadcastMessageListener
 
         if ($message['event'] === 'client-sensor-status') {
             $this->handleClientSensorStatus($message['data']);
+
+            return;
+        }
+
+        if ($message['event'] === 'client-access-event') {
+            $this->handleClientAccessEvent($message['data']);
 
             return;
         }
@@ -168,5 +177,36 @@ class BroadcastMessageListener
                 )
                 );
         }
+    }
+
+    public function handleClientAccessEvent(array $data): void
+    {
+        if (! $data || ! isset($data['external-device-id']) || ! isset($data['pin']) || ! isset($data['result'])) {
+            Log::warning('Client access event received with missing data', ['message' => $data]);
+
+            return;
+        }
+
+        $device = Device::where('external_device_id', $data['external-device-id'])->first();
+
+        if (! $device) {
+            Log::warning('Device not found for access event', ['external_device_id' => $data['external-device-id']]);
+
+            return;
+        }
+
+        $accessCode = AccessCode::where('pin', $data['pin'])
+            ->where('place_id', $device->place_id)
+            ->first();
+
+        AccessEvent::create([
+            'device_id' => $device->id,
+            'access_code_id' => $accessCode?->id,
+            'pin' => $data['pin'],
+            'result' => $data['result'],
+            'device_timestamp' => isset($data['timestamp'])
+                ? Carbon::createFromTimestamp($data['timestamp'])
+                : null,
+        ]);
     }
 }
