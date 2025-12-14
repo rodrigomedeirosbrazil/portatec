@@ -53,7 +53,7 @@ class PlaceDeviceControl extends Component
 
             if (!$deviceFunction) {
                 Notification::make()
-                    ->title('Device not found.')
+                    ->title(__('app.device_not_found'))
                     ->danger()
                     ->send();
                 return;
@@ -82,7 +82,7 @@ class PlaceDeviceControl extends Component
 
         } catch (\Exception $e) {
             Notification::make()
-                ->title('Error sending command. '.$e->getMessage())
+                ->title(__('app.error_sending_command', ['message' => $e->getMessage()]))
                 ->danger()
                 ->send();
         } finally {
