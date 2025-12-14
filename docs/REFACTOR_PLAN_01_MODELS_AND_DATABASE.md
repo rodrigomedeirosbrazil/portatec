@@ -29,10 +29,8 @@ return new class extends Migration
     {
         Schema::rename('access_pins', 'access_codes');
 
-        // Renomear foreign keys
-        Schema::table('access_codes', function (Blueprint $table) {
-            $table->renameColumn('access_pin_id', 'access_code_id'); // se existir
-        });
+        // Nota: Foreign keys em outras tabelas que referenciam access_pins
+        // devem ser atualizadas em migrations separadas
     }
 
     public function down(): void
@@ -89,11 +87,11 @@ grep -r "accessPin" app/
 
 ---
 
-## 2. ADICIONAR RELACIONAMENTO BOOKING EM ACCESSCODE
+## 2. ATUALIZAR ACCESSCODE (BOOKING_ID E USER_ID NULLABLE)
 
-### 2.1 Migration
+### 2.1 Migration para Adicionar booking_id e Tornar user_id Nullable
 
-**Arquivo**: `database/migrations/XXXX_XX_XX_XXXXXX_add_booking_id_to_access_codes.php`
+**Arquivo**: `database/migrations/XXXX_XX_XX_XXXXXX_add_booking_id_and_make_user_id_nullable_in_access_codes.php`
 
 ```php
 <?php
@@ -107,6 +105,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('access_codes', function (Blueprint $table) {
+            // Tornar user_id nullable (AccessCodes criados a partir de Bookings podem não ter user_id)
+            $table->foreignId('user_id')->nullable()->change();
+
+            // Adicionar booking_id
             $table->foreignId('booking_id')
                 ->nullable()
                 ->after('place_id')
@@ -120,6 +122,9 @@ return new class extends Migration
         Schema::table('access_codes', function (Blueprint $table) {
             $table->dropForeign(['booking_id']);
             $table->dropColumn('booking_id');
+
+            // Reverter user_id para NOT NULL (pode causar problemas se houver registros null)
+            // $table->foreignId('user_id')->nullable(false)->change();
         });
     }
 };
@@ -128,11 +133,27 @@ return new class extends Migration
 ### 2.2 Atualizar Model AccessCode
 
 ```php
+protected $fillable = [
+    'place_id',
+    'user_id', // Agora nullable
+    'booking_id', // Novo campo
+    'pin',
+    'start',
+    'end',
+];
+
 public function booking(): BelongsTo
 {
     return $this->belongsTo(Booking::class);
 }
+
+public function user(): BelongsTo
+{
+    return $this->belongsTo(User::class);
+}
 ```
+
+**Nota**: `user_id` agora é nullable porque AccessCodes criados a partir de Bookings podem não ter um user_id direto (o user vem da Integration).
 
 ---
 
@@ -624,6 +645,12 @@ public function integrations(): BelongsToMany
         ->withTimestamps();
 }
 
+// Relacionamento mantido para uso na view Livewire
+public function placeDeviceFunctions(): HasMany
+{
+    return $this->hasMany(PlaceDeviceFunction::class);
+}
+
 public function getValidAccessCodes()
 {
     return $this->accessCodes()
@@ -632,6 +659,8 @@ public function getValidAccessCodes()
         ->get();
 }
 ```
+
+**Nota**: O relacionamento `placeDeviceFunctions()` é mantido e será usado na view Livewire para listar e acionar dispositivos do Place.
 
 ---
 
@@ -699,7 +728,10 @@ enum PlaceRoleEnum: string
 
 ### AccessPin → AccessCode
 - [ ] Criar migration para renomear tabela
+- [ ] Criar migration para tornar user_id nullable e adicionar booking_id
+- [ ] Verificar e atualizar foreign keys em outras tabelas que referenciam access_pins
 - [ ] Renomear model AccessPin → AccessCode
+- [ ] Atualizar fillable do model (adicionar booking_id, user_id nullable)
 - [ ] Renomear observer
 - [ ] Renomear event
 - [ ] Renomear policy
@@ -772,8 +804,9 @@ enum PlaceRoleEnum: string
 ## 12. ORDEM DE EXECUÇÃO DAS MIGRATIONS
 
 1. Renomear `access_pins` → `access_codes`
-2. Adicionar `booking_id` em `access_codes`
-3. Criar tabela `platforms` (id, name, slug)
+2. Tornar `user_id` nullable e adicionar `booking_id` em `access_codes`
+3. Verificar e atualizar foreign keys em outras tabelas que referenciam `access_pins`/`access_codes`
+4. Criar tabela `platforms` (id, name, slug)
 4. Criar tabela `integrations` (platform_id, user_id, soft deletes - sem external_id)
 5. Criar tabela `place_integration` (place_id, integration_id, external_id)
 6. Criar tabela `bookings` (place_id, integration_id, guest_name nullable, check_in, check_out, external_id, deletion_reason, soft deletes)

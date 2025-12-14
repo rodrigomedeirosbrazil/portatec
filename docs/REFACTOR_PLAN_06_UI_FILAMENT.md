@@ -221,10 +221,14 @@ class PlaceDeviceControl extends Component
 **Arquivo**: `routes/web.php`
 
 ```php
-Route::get('/places/{place}/devices', App\Livewire\PlaceDeviceControl::class)
+use App\Livewire\PlaceDeviceControl;
+
+Route::get('/places/{place}/devices', PlaceDeviceControl::class)
     ->middleware(['auth'])
     ->name('places.devices');
 ```
+
+**Nota**: A rota usa o middleware `auth` do Filament. O componente Livewire também verifica permissões internamente.
 
 ### 2.3 Funcionalidades a Implementar
 
@@ -677,7 +681,9 @@ Criar policy para AccessEvent:
 ### View para Acionar Dispositivos
 - [ ] Criar componente Livewire PlaceDeviceControl.php
 - [ ] Criar view blade livewire/place-device-control.blade.php
-- [ ] Criar rota places.devices
+- [ ] Criar rota places.devices (com middleware auth)
+- [ ] Adicionar action "Control Devices" na lista de Places
+- [ ] Adicionar action "Control Devices" na view do Place
 - [ ] Implementar pushButton (pulse)
 - [ ] Implementar exibição de status para Sensors
 - [ ] Implementar listeners WebSocket

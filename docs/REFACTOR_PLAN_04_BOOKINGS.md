@@ -127,8 +127,10 @@ namespace App\Services;
 use App\DTOs\BookingDTO;
 use App\Models\Integration;
 use App\Models\Place;
+use App\Models\Booking;
 use App\Enums\BookingDeletionReasonEnum;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
 
 class ICalSyncService
 {
@@ -141,11 +143,16 @@ class ICalSyncService
         // Sincronizar um relacionamento específico Place-Integration
         $place = Place::findOrFail($placeId);
         $integration = Integration::findOrFail($integrationId);
-        $externalId = $place->integrations()
+
+        $placeIntegration = $place->integrations()
             ->where('integration_id', $integrationId)
-            ->first()
-            ->pivot
-            ->external_id;
+            ->first();
+
+        if (!$placeIntegration) {
+            throw new \Exception("Place-Integration relationship not found");
+        }
+
+        $externalId = $placeIntegration->pivot->external_id;
 
         // Baixar iCal via HTTP
         $icalContent = $this->downloadICal($externalId);
@@ -170,9 +177,8 @@ class ICalSyncService
         // Soft delete bookings que não estão mais no iCal
         $removedBookings = $existingBookings->whereNotIn('external_id', $currentExternalIds);
         foreach ($removedBookings as $booking) {
-            $booking->delete();
             $booking->deletion_reason = BookingDeletionReasonEnum::Canceled;
-            $booking->save();
+            $booking->delete();
         }
     }
 
@@ -213,10 +219,9 @@ class ICalSyncService
             }
 
             if ($hasChanges) {
-                // Soft delete o booking antigo
-                $booking->delete();
+                // Soft delete o booking antigo com reason
                 $booking->deletion_reason = $deletionReason;
-                $booking->save();
+                $booking->delete();
 
                 // Criar novo booking
                 return Booking::create([
@@ -276,6 +281,21 @@ interface ICalParserInterface
 ```
 
 **Nota**: A classe concreta que implementa esta interface será fornecida externamente e registrada no service container.
+
+**Registro no Service Container**:
+
+**Arquivo**: `app/Providers/AppServiceProvider.php` (ou ServiceProvider dedicado)
+
+```php
+use App\Contracts\ICalParserInterface;
+
+public function register(): void
+{
+    // Registrar implementação concreta do parser
+    // A classe concreta será fornecida externamente
+    $this->app->bind(ICalParserInterface::class, ICalParser::class);
+}
+```
 
 ---
 
@@ -433,13 +453,15 @@ $schedule->command('bookings:sync')
 - [ ] Implementar criação automática de AccessCode
 - [ ] Criar BookingDTO
 - [ ] Criar ICalParserInterface
+- [ ] Registrar implementação concreta do ICalParserInterface no service container
 - [ ] Criar ICalSyncService
-- [ ] Implementar download de iCal via HTTP
+- [ ] Implementar download de iCal via HTTP (usar Http facade)
 - [ ] Implementar lógica de create/update com soft delete
 - [ ] Implementar detecção de mudanças (date, guest)
+- [ ] Corrigir ordem de soft delete (deletion_reason antes de delete())
 - [ ] Criar SyncIntegrationBookingsJob
 - [ ] Criar comando SyncBookingsCommand
-- [ ] Agendar comando para executar a cada 3 horas
+- [ ] Agendar comando para executar a cada 3 horas (everyThreeHours)
 - [ ] Testar sincronização
 - [ ] Testar criação de AccessCode
 - [ ] Testar soft delete com reason

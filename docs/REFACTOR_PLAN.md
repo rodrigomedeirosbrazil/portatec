@@ -6,6 +6,8 @@ Este documento é o índice principal do plano de refatoração. Os detalhes de 
 
 Este plano detalha as mudanças necessárias na codebase atual para alcançar o estado desejado descrito em `MIGRATION_PLAN.md`.
 
+**⚠️ IMPORTANTE**: Antes de começar a implementação, consulte o documento [REFACTOR_PLAN_REVIEW.md](./REFACTOR_PLAN_REVIEW.md) que contém uma revisão completa do plano com problemas encontrados e correções necessárias.
+
 ## 📚 Documentos Detalhados
 
 ### 1. [Modelos e Banco de Dados](./REFACTOR_PLAN_01_MODELS_AND_DATABASE.md)
@@ -41,8 +43,8 @@ Este plano detalha as mudanças necessárias na codebase atual para alcançar o 
 
 ### 6. [UI e Filament](./REFACTOR_PLAN_06_UI_FILAMENT.md)
 - **Remover PlacePage e place.blade.php**
-- **Criar Resource Filament para acionar dispositivos**
-- Criar Resources Filament (Booking, Platform, AccessEvent)
+- **Criar view Livewire para acionar dispositivos**
+- Criar Resources Filament (Booking, Platform, AccessEvent, Integration)
 - Atualizar Resources existentes
 - Atualizar Policies
 
@@ -91,8 +93,8 @@ Este plano detalha as mudanças necessárias na codebase atual para alcançar o 
 
 ### Fase 6: UI e Políticas
 1. **Remover PlacePage e place.blade.php**
-2. **Criar Resource Filament para acionar dispositivos**
-3. Criar Resources Filament (Booking, Platform, AccessEvent)
+2. **Criar view Livewire para acionar dispositivos**
+3. Criar Resources Filament (Booking, Platform, AccessEvent, Integration)
 4. Atualizar Resources existentes
 5. Atualizar Policies
 6. Testar permissões

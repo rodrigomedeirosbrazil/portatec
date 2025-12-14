@@ -102,19 +102,33 @@ class DeviceAccessCodeSyncEvent implements ShouldBroadcast
 **Arquivo**: `app/Observers/AccessCodeObserver.php`
 
 ```php
-public function created(AccessCode $accessCode): void
-{
-    AccessCodeSyncService::syncNewAccessCode($accessCode);
-}
+<?php
 
-public function updated(AccessCode $accessCode): void
-{
-    AccessCodeSyncService::syncUpdatedAccessCode($accessCode);
-}
+namespace App\Observers;
 
-public function deleted(AccessCode $accessCode): void
+use App\Models\AccessCode;
+use App\Services\AccessCodeSyncService;
+
+class AccessCodeObserver
 {
-    AccessCodeSyncService::syncDeletedAccessCode($accessCode);
+    public function __construct(
+        private AccessCodeSyncService $syncService
+    ) {}
+
+    public function created(AccessCode $accessCode): void
+    {
+        $this->syncService->syncNewAccessCode($accessCode);
+    }
+
+    public function updated(AccessCode $accessCode): void
+    {
+        $this->syncService->syncUpdatedAccessCode($accessCode);
+    }
+
+    public function deleted(AccessCode $accessCode): void
+    {
+        $this->syncService->syncDeletedAccessCode($accessCode);
+    }
 }
 ```
 
@@ -150,7 +164,7 @@ $schedule->command('access-codes:sync')
 
 - [ ] Criar AccessCodeSyncService
 - [ ] Criar DeviceAccessCodeSyncEvent
-- [ ] Atualizar AccessCodeObserver
+- [ ] Atualizar AccessCodeObserver (usar injeção de dependência)
 - [ ] Criar comando SyncAccessCodesCommand
 - [ ] Agendar comando
 - [ ] Testar sincronização completa

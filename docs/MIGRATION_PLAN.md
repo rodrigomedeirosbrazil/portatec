@@ -1,6 +1,6 @@
 # PORTATEC - Migration Plan
 
-This document outlines the steps required to migrate the current codebase to the architecture defined in `NEW_PORTATEC_PLAN.md`.
+This document outlines the steps required to migrate the current codebase to the new architecture.
 
 ## 1. AccessCodes (Refactoring AccessPin)
 
