@@ -11,9 +11,11 @@ use Filament\Actions\DeleteBulkAction;
 use App\Filament\App\Resources\DeviceResource\Pages\ListDevices;
 use App\Filament\App\Resources\DeviceResource\Pages\CreateDevice;
 use App\Filament\App\Resources\DeviceResource\Pages\EditDevice;
+use App\Enums\DeviceBrandEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Filament\App\Resources\DeviceResource\Pages;
 use App\Models\Device;
+use App\Models\Place;
 use Carbon\Carbon;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -49,14 +51,32 @@ class DeviceResource extends Resource
                                 TextInput::make('name')
                                     ->label(__('app.name'))
                                     ->required()
-                                    ->maxLength(255)
-                                    ->columnSpan(1),
+                                    ->maxLength(255),
+                                Select::make('place_id')
+                                    ->label(__('app.place'))
+                                    ->relationship('place', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->nullable(),
                             ]),
 
-                        TextInput::make('external_device_id')
-                            ->label(__('app.external_device_id'))
-                            ->maxLength(255)
-                            ->columnSpanFull(),
+                        Grid::make(3)
+                            ->schema([
+                                TextInput::make('external_device_id')
+                                    ->label(__('app.external_device_id'))
+                                    ->maxLength(255),
+                                Select::make('brand')
+                                    ->label(__('app.brand'))
+                                    ->options(DeviceBrandEnum::class)
+                                    ->default(DeviceBrandEnum::Portatec)
+                                    ->required(),
+                                TextInput::make('default_pin')
+                                    ->label(__('app.default_pin'))
+                                    ->numeric()
+                                    ->minLength(6)
+                                    ->maxLength(6)
+                                    ->mask('999999'),
+                            ]),
 
                         TextInput::make('last_sync')
                             ->label(__('app.last_sync'))
@@ -141,11 +161,22 @@ class DeviceResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('place.name')
+                    ->label(__('app.place'))
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('external_device_id')
                     ->label(__('app.external_device_id'))
                     ->searchable()
                     ->sortable(),
-
+                TextColumn::make('brand')
+                    ->label(__('app.brand'))
+                    ->badge()
+                    ->sortable(),
+                TextColumn::make('device_functions_count')
+                    ->label(__('app.device_functions_count'))
+                    ->counts('deviceFunctions')
+                    ->sortable(),
                 IconColumn::make('status')
                     ->label(__('app.status'))
                     ->boolean()

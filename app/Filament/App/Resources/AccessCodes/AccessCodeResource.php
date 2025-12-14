@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\App\Resources\AccessCodes;
 
 use App\Filament\App\Resources\AccessCodes\Pages\ManageAccessCodes;
+use App\Filament\App\Resources\Booking\BookingResource;
 use App\Models\AccessCode;
 use App\Models\Place;
 use App\Models\User;
@@ -75,9 +76,26 @@ class AccessCodeResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->placeholder('—'),
+                TextColumn::make('booking.guest_name')
+                    ->label(__('app.booking'))
+                    ->sortable()
+                    ->searchable()
+                    ->placeholder('—')
+                    ->url(fn (AccessCode $record) => $record->booking
+                        ? BookingResource::getUrl('edit', ['record' => $record->booking])
+                        : null
+                    ),
                 TextColumn::make('pin')
                     ->label(__('app.pin'))
                     ->searchable(),
+                TextColumn::make('status')
+                    ->label(__('app.status'))
+                    ->badge()
+                    ->color(fn (AccessCode $record) => $record->isValid() ? 'success' : 'danger')
+                    ->formatStateUsing(fn (AccessCode $record) => $record->isValid()
+                        ? __('app.valid')
+                        : __('app.expired')
+                    ),
                 TextColumn::make('start')
                     ->label(__('app.start'))
                     ->dateTime()
