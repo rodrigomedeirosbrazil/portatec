@@ -98,7 +98,7 @@ class IntegrationResource extends Resource
                     ->action(function (Integration $record) {
                         try {
                             $syncService = app(ICalSyncService::class);
-                            
+
                             foreach ($record->places as $place) {
                                 $syncService->syncPlaceIntegration($place->id, $record->id);
                             }
