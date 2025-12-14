@@ -9,7 +9,7 @@ use App\Filament\App\Resources\Booking\Pages\CreateBooking;
 use App\Filament\App\Resources\Booking\Pages\EditBooking;
 use App\Filament\App\Resources\Booking\Pages\ListBookings;
 use App\Filament\App\Resources\Integration\IntegrationResource;
-use App\Filament\App\Resources\Place\PlaceResource;
+use App\Filament\App\Resources\PlaceResource;
 use App\Models\Booking;
 use App\Models\Integration;
 use App\Models\Place;
