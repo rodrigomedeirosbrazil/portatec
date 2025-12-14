@@ -160,11 +160,15 @@ return new class extends Migration
             $table->string('guest_name')->nullable();
             $table->datetime('check_in');
             $table->datetime('check_out');
+            $table->string('external_id')->nullable(); // ID do evento no iCal para rastreamento
+            $table->string('deletion_reason')->nullable(); // Motivo da remoção (soft delete)
             $table->timestamps();
+            $table->softDeletes();
 
             // Índices
             $table->index(['place_id', 'check_in', 'check_out']);
             $table->index(['integration_id']);
+            $table->index(['external_id', 'integration_id']);
         });
     }
 
@@ -189,20 +193,27 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\BookingDeletionReasonEnum;
 
 class Booking extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'place_id',
         'integration_id',
         'guest_name',
         'check_in',
         'check_out',
+        'external_id',
+        'deletion_reason',
     ];
 
     protected $casts = [
         'check_in' => 'datetime',
         'check_out' => 'datetime',
+        'deletion_reason' => BookingDeletionReasonEnum::class,
     ];
 
     public function place(): BelongsTo
@@ -637,9 +648,36 @@ public function integrations(): HasMany
 
 ---
 
-## 9. ATUALIZAR PLACEROLEENUM
+## 9. CRIAR ENUM BOOKINGDELETIONREASONENUM
 
-### 8.1 Adicionar Casos
+### 9.1 Arquivo
+
+**Arquivo**: `app/Enums/BookingDeletionReasonEnum.php`
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Enums;
+
+enum BookingDeletionReasonEnum: string
+{
+    case ChangeDate = 'change_date';
+    case Canceled = 'canceled';
+    case CanceledByUser = 'canceled_by_user';
+    case ChangeGuest = 'change_guest';
+    case Other = 'other';
+}
+```
+
+**Uso**: Este enum é usado no campo `deletion_reason` da tabela `bookings` para rastrear o motivo da remoção (soft delete) de um booking durante a sincronização.
+
+---
+
+## 10. ATUALIZAR PLACEROLEENUM
+
+### 10.1 Adicionar Casos
 
 **Arquivo**: `app/Enums/PlaceRoleEnum.php`
 
@@ -657,7 +695,7 @@ enum PlaceRoleEnum: string
 
 ---
 
-## 10. CHECKLIST DE IMPLEMENTAÇÃO
+## 11. CHECKLIST DE IMPLEMENTAÇÃO
 
 ### AccessPin → AccessCode
 - [ ] Criar migration para renomear tabela
@@ -671,8 +709,9 @@ enum PlaceRoleEnum: string
 - [ ] Testar migração
 
 ### Booking
-- [ ] Criar migration (sem external_id, com integration_id)
-- [ ] Criar model Booking
+- [ ] Criar migration (integration_id, external_id, deletion_reason, soft deletes)
+- [ ] Criar model Booking com SoftDeletes
+- [ ] Criar enum BookingDeletionReasonEnum
 - [ ] Criar observer BookingObserver
 - [ ] Adicionar relacionamento com Integration (não Platform)
 - [ ] Criar factory (opcional)
@@ -730,14 +769,14 @@ enum PlaceRoleEnum: string
 
 ---
 
-## 11. ORDEM DE EXECUÇÃO DAS MIGRATIONS
+## 12. ORDEM DE EXECUÇÃO DAS MIGRATIONS
 
 1. Renomear `access_pins` → `access_codes`
 2. Adicionar `booking_id` em `access_codes`
 3. Criar tabela `platforms` (id, name, slug)
 4. Criar tabela `integrations` (platform_id, user_id, soft deletes - sem external_id)
 5. Criar tabela `place_integration` (place_id, integration_id, external_id)
-6. Criar tabela `bookings` (place_id, integration_id, guest_name nullable, check_in, check_out - sem status)
+6. Criar tabela `bookings` (place_id, integration_id, guest_name nullable, check_in, check_out, external_id, deletion_reason, soft deletes)
 7. Renomear `chip_id` → `external_device_id` em `devices`
 8. Adicionar campos em `devices` (place_id, brand, default_pin - sem tuya_device_id, sem functional_type)
 

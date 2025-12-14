@@ -106,12 +106,18 @@ New entity to manage reservations and trigger AccessCode generation.
     - `guest_name` (String, nullable)
     - `check_in` (DateTime)
     - `check_out` (DateTime)
+    - `external_id` (String, nullable - ID do evento no iCal para rastreamento)
+    - `deletion_reason` (Enum, nullable - motivo da remoção: change_date, canceled, canceled_by_user, change_guest, other)
+    - `timestamps`
+    - `soft_deletes`
 - **Relationships**:
     - BelongsTo `Place`
     - BelongsTo `Integration` (not Platform directly)
     - HasOne `AccessCode`
 - **Logic**:
-    - **Observer**: On `Booking` creation/update (if confirmed), generate or update an `AccessCode` for the `check_in` - `check_out` period.
+    - **Observer**: On `Booking` creation/update, generate or update an `AccessCode` for the `check_in` - `check_out` period.
+    - **Soft Delete**: Quando um booking é removido durante sincronização, fazer soft delete e registrar `deletion_reason`.
+    - **Change Detection**: Se datas ou guest mudarem, soft delete o booking antigo e criar novo com reason apropriada.
 
 ## 5. Synchronization Logic (Overview)
 
@@ -119,7 +125,11 @@ New entity to manage reservations and trigger AccessCode generation.
     - Implement endpoint/websocket event `GET /api/device/sync` or `ws:sync`.
     - Returns: List of valid `AccessCodes` for the Device's `Place`.
 - **iCal Sync**:
-    - Scheduled Job (`SyncIntegrationsJob`) to fetch iCal from `place_integration.external_id` for each Place-Integration relationship, parse events, and create/update `Bookings`.
+    - Command `bookings:sync` que verifica integrações ativas e lança jobs para cada uma.
+    - Job `SyncIntegrationBookingsJob` processa cada Integration.
+    - Service `ICalSyncService` faz download HTTP do iCal de `place_integration.external_id`, usa parser fornecido externamente para retornar Collection de `BookingDTO`, e cria/atualiza Bookings.
+    - Agendado para executar a cada 3 horas.
+    - Soft delete com reason quando bookings são removidos ou alterados.
 
 ## 6. Execution Order
 
@@ -133,5 +143,11 @@ New entity to manage reservations and trigger AccessCode generation.
     - Add migration for `place_id`, `type`, `default_pin`.
 4.  **Implement Logic**:
     - `BookingObserver` for AccessCode generation.
-    - `IntegrationService` (ou `ICalSyncService`) for iCal parsing.
+    - `ICalSyncService` for iCal parsing (usa parser fornecido externamente).
+    - `SyncIntegrationBookingsJob` for processing each integration.
+    - `SyncBookingsCommand` for scheduling syncs (every 3 hours).
+    - `BookingDeletionReasonEnum` for tracking deletion reasons.
+    - `SyncIntegrationBookingsJob` for processing each integration.
+    - `SyncBookingsCommand` for scheduling syncs (every 3 hours).
+    - `BookingDeletionReasonEnum` for tracking deletion reasons.
 
