@@ -140,10 +140,18 @@ class PlaceResource extends Resource
                 //
             ])
             ->recordActions([
-                Action::make('view')
-                    ->label(__('app.view'))
-                    ->url(fn ($record): string => route('place', $record))
-                    ->openUrlInNewTab(),
+                Action::make('control-devices')
+                    ->label(__('app.control_devices'))
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->url(fn (Place $record): string => route('places.devices', $record))
+                    ->openUrlInNewTab()
+                    ->visible(fn (Place $record): bool =>
+                        auth()->user()->hasRole('super_admin') ||
+                        $record->placeUsers()
+                            ->where('user_id', auth()->user()->id)
+                            ->whereIn('role', [PlaceRoleEnum::Admin, PlaceRoleEnum::Host])
+                            ->exists()
+                    ),
                 EditAction::make()
                     ->visible(fn (Place $record): bool => auth()->user()->hasRole('super_admin') ||
                         $record->placeUsers()

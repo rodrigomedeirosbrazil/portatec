@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\PlaceResource\Pages;
 
+use App\Enums\PlaceRoleEnum;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use App\Filament\App\Resources\PlaceResource;
@@ -17,6 +18,18 @@ class EditPlace extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('control-devices')
+                ->label(__('app.control_devices'))
+                ->icon('heroicon-o-cog-6-tooth')
+                ->url(fn (): string => route('places.devices', $this->record))
+                ->openUrlInNewTab()
+                ->visible(fn (): bool =>
+                    auth()->user()->hasRole('super_admin') ||
+                    $this->record->placeUsers()
+                        ->where('user_id', auth()->user()->id)
+                        ->whereIn('role', [PlaceRoleEnum::Admin, PlaceRoleEnum::Host])
+                        ->exists()
+                ),
             Action::make('duplicate')
                 ->label('Duplicar')
                 ->icon('heroicon-o-document-duplicate')
