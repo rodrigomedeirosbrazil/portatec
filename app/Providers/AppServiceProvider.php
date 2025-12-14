@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\AccessCode;
+use App\Models\Booking;
 use App\Observers\AccessCodeObserver;
+use App\Observers\BookingObserver;
 use BezhanSalleh\FilamentShield\Facades\FilamentShield;
 use Filament\Pages\BasePage as Page;
 use Filament\Resources\Resource;
@@ -22,11 +24,15 @@ class AppServiceProvider extends ServiceProvider
             $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
             $this->app->register(TelescopeServiceProvider::class);
         }
+
+        // TODO: Registrar implementação concreta do ICalParserInterface quando fornecida
+        // Exemplo: $this->app->bind(ICalParserInterface::class, ICalParser::class);
     }
 
     public function boot(): void
     {
         AccessCode::observe(AccessCodeObserver::class);
+        Booking::observe(BookingObserver::class);
 
         // Register Livewire components explicitly
         Livewire::component('app.filament.app.pages.place-page', PlacePage::class);
