@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Models\AccessPin;
-use App\Observers\AccessPinObserver;
+use App\Models\AccessCode;
+use App\Observers\AccessCodeObserver;
 use BezhanSalleh\FilamentShield\Facades\FilamentShield;
 use Filament\Pages\BasePage as Page;
 use Filament\Resources\Resource;
@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        AccessPin::observe(AccessPinObserver::class);
+        AccessCode::observe(AccessCodeObserver::class);
 
         // Register Livewire components explicitly
         Livewire::component('app.filament.app.pages.place-page', PlacePage::class);

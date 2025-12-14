@@ -1,9 +1,11 @@
 <?php
 
-namespace App\Filament\App\Resources\AccessPins;
+declare(strict_types=1);
 
-use App\Filament\App\Resources\AccessPins\Pages\ManageAccessPins;
-use App\Models\AccessPin;
+namespace App\Filament\App\Resources\AccessCodes;
+
+use App\Filament\App\Resources\AccessCodes\Pages\ManageAccessCodes;
+use App\Models\AccessCode;
 use App\Models\Place;
 use App\Models\User;
 use Filament\Forms\Components\DateTimePicker;
@@ -18,15 +20,15 @@ use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class AccessPinResource extends Resource
+class AccessCodeResource extends Resource
 {
-    protected static ?string $model = AccessPin::class;
+    protected static ?string $model = AccessCode::class;
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-key';
 
-    protected static ?string $modelLabel = 'PIN de Acesso';
+    protected static ?string $modelLabel = 'Código de Acesso';
 
-    protected static ?string $pluralModelLabel = 'PINs de Acesso';
+    protected static ?string $pluralModelLabel = 'Códigos de Acesso';
 
     protected static ?string $recordTitleAttribute = 'pin';
 
@@ -42,7 +44,7 @@ class AccessPinResource extends Resource
                 Select::make('user_id')
                     ->label(__('app.user'))
                     ->options(User::all()->pluck('name', 'id'))
-                    ->required()
+                    ->nullable() // Agora nullable
                     ->searchable(),
                 TextInput::make('pin')
                     ->label(__('app.pin'))
@@ -71,7 +73,8 @@ class AccessPinResource extends Resource
                 TextColumn::make('user.name')
                     ->label(__('app.user'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('—'),
                 TextColumn::make('pin')
                     ->label(__('app.pin'))
                     ->searchable(),
@@ -108,7 +111,7 @@ class AccessPinResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ManageAccessPins::route('/'),
+            'index' => ManageAccessCodes::route('/'),
         ];
     }
 }

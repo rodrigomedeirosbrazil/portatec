@@ -1,17 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Events;
 
-use App\Models\AccessPin;
+use App\Models\AccessCode;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class AccessPinEvent implements ShouldBroadcast
+class AccessCodeEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -19,7 +20,7 @@ class AccessPinEvent implements ShouldBroadcast
      * Create a new event instance.
      */
     public function __construct(
-        public AccessPin $accessPin,
+        public AccessCode $accessCode,
         public string $action
     ) {
     }
@@ -32,7 +33,7 @@ class AccessPinEvent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('place.' . $this->accessPin->place_id),
+            new PrivateChannel('place.' . $this->accessCode->place_id),
         ];
     }
 
@@ -41,7 +42,7 @@ class AccessPinEvent implements ShouldBroadcast
      */
     public function broadcastAs(): string
     {
-        return 'access-pin';
+        return 'access-code';
     }
 
     /**
@@ -52,7 +53,7 @@ class AccessPinEvent implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'accessPin' => $this->accessPin,
+            'accessCode' => $this->accessCode,
             'action' => $this->action,
         ];
     }
