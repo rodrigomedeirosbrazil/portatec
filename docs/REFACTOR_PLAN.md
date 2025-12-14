@@ -60,7 +60,8 @@ Este plano detalha as mudanças necessárias na codebase atual para alcançar o 
 2. Criar modelos Booking e Platform
 3. Atualizar relacionamentos em todos os modelos
 4. Criar migrations necessárias
-5. Atualizar enums (DeviceIntegrationTypeEnum, DeviceFunctionalTypeEnum, PlaceRoleEnum)
+5. Atualizar enums (DeviceBrandEnum, PlaceRoleEnum)
+6. Renomear chip_id → external_device_id em devices
 
 ### Fase 2: Sincronização de AccessCodes
 1. Criar AccessCodeSyncService

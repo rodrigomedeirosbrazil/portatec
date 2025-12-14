@@ -47,7 +47,7 @@ public function normalize(array $tuyaEvent): array
 {
     // Converter formato Tuya para formato Portatec
     return [
-        'device_id' => $this->findDeviceByTuyaId($tuyaEvent['device_id']),
+        'device_id' => $this->findDeviceByExternalId($tuyaEvent['device_id']),
         'event_type' => $this->mapEventType($tuyaEvent['type']),
         'data' => $this->mapData($tuyaEvent['data']),
     ];
@@ -69,14 +69,15 @@ public function normalize(array $tuyaEvent): array
 ### 3.2 Métodos
 
 ```php
-public function sendOpenCommand(string $tuyaDeviceId): bool
+public function sendOpenCommand(string $externalDeviceId): bool
 {
-    // Enviar comando de abertura
+    // Enviar comando de abertura usando external_device_id
+    // O external_device_id é o mesmo campo usado para Portatec e Tuya
 }
 
-public function getDeviceStatus(string $tuyaDeviceId): array
+public function getDeviceStatus(string $externalDeviceId): array
 {
-    // Obter status atual
+    // Obter status atual usando external_device_id
 }
 ```
 

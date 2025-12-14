@@ -20,16 +20,24 @@ The existing `AccessPin` entity is close to the requirements but needs adjustmen
 
 The `Device` entity needs to be explicitly associated with a `Place` and support new types.
 
+### Important Notes:
+- **Device vs DeviceFunction**: A `Device` can have **multiple** `DeviceFunction` (e.g., Button AND Sensor at the same time). The functional type (Button/Sensor) is defined in `DeviceFunction.type`, not in `Device`.
+- **External Device ID**: Rename `chip_id` to `external_device_id` for better clarity.
+
 ### Changes:
 - **Schema Updates**:
+    - Rename `chip_id` → `external_device_id`.
     - Add `place_id` (Foreign Key to `places`, nullable for unassigned devices).
-    - Add `type` (Enum/String: 'portatec', 'tuya').
+    - Add `brand` (Enum/String: 'portatec', 'tuya').
     - Add `default_pin` (String, 6 chars, nullable).
-    - Add `is_online` (Boolean, default false) - helpful for status tracking.
+    - **Note**: `external_device_id` is used for both Portatec and Tuya devices. No separate `tuya_device_id` field needed.
+    - **Do NOT add `functional_type`** - this is already in `DeviceFunction.type`.
 - **Migration Strategy**:
     - If `PlaceDeviceFunction` is currently used to link Places and Devices, we might need a script to populate `device.place_id` based on existing relationships.
-- **Tuya Integration**:
-    - Add fields necessary for Tuya (e.g., `tuya_device_id`, `tuya_local_key` if needed, though plan says API based).
+- **DeviceFunction**:
+    - `DeviceFunction` already exists and is correct.
+    - Each `DeviceFunction` has its own `type` (Button/Sensor) and `pin`.
+    - A `Device` can have multiple `DeviceFunction` records.
 
 ## 3. Platforms
 

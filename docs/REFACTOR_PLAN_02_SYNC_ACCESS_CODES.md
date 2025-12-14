@@ -69,7 +69,7 @@ class DeviceAccessCodeSyncEvent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel("device-sync.{$this->device->chip_id}"),
+            new Channel("device-sync.{$this->device->external_device_id}"),
         ];
     }
 

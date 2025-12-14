@@ -237,7 +237,8 @@ Registrar todos os comandos enviados em `CommandLog`:
 - `App\Models\Place`
 - `App\Models\CommandLog`
 - `App\Models\PlaceDeviceFunction`
-- `App\Models\DeviceFunction`
+- `App\Models\DeviceFunction` (um Device pode ter múltiplas DeviceFunctions - Button e Sensor)
+- `App\Models\Device`
 
 **Enums**:
 - `App\Enums\DeviceTypeEnum`
@@ -482,17 +483,19 @@ public function isValid(): bool
 
 ### 7.1 Adicionar Campos no Form
 
-- `integration_type`: Select com enum (Portatec/Tuya)
-- `functional_type`: Select com enum (Pulse/Sensor)
+- `external_device_id`: TextInput (renomeado de chip_id)
+- `brand`: Select com enum (Portatec/Tuya)
 - `default_pin`: TextInput (6 caracteres, nullable)
 - `place_id`: Select com relacionamento
+- **DeviceFunctions**: Repeater ou relacionamento para gerenciar múltiplas funções (Button/Sensor)
 
 ### 7.2 Adicionar Colunas na Tabela
 
-- `integration_type`: Badge
-- `functional_type`: Badge
+- `external_device_id`: Text (renomeado de chip_id)
+- `brand`: Badge
 - `place.name`: Link para PlaceResource
-- `is_online`: Badge (verde/vermelho)
+- `device_functions_count`: Contador de funções (Button/Sensor)
+- `is_online`: Badge (verde/vermelho) - baseado em last_sync
 
 ### 7.3 Mostrar AccessCodes Sincronizados
 
@@ -648,7 +651,9 @@ Criar policy para AccessEvent:
 - [ ] Adicionar método isValid() no model
 
 ### Device Resource
-- [ ] Adicionar campos no form (integration_type, functional_type, default_pin, place_id)
+- [ ] Renomear chip_id para external_device_id
+- [ ] Adicionar campos no form (external_device_id, brand, default_pin, place_id)
+- [ ] Adicionar gerenciamento de DeviceFunctions (múltiplas funções por Device)
 - [ ] Adicionar colunas na tabela
 - [ ] Mostrar AccessCodes sincronizados
 

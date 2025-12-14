@@ -75,7 +75,7 @@ class AccessEvent extends Model
 {
   "event": "client-access-event",
   "data": {
-    "chip-id": "...",
+    "external-device-id": "...",
     "pin": "123456",
     "result": "success|failed|expired|invalid",
     "timestamp": 1234567890
@@ -90,7 +90,7 @@ class AccessEvent extends Model
 Adicionar handler para `client-access-event`:
 ```php
 if ($event === 'client-access-event') {
-    $device = Device::where('chip_id', $data['chip-id'])->first();
+    $device = Device::where('external_device_id', $data['external-device-id'])->first();
 
     if ($device) {
         $accessCode = AccessCode::where('pin', $data['pin'])

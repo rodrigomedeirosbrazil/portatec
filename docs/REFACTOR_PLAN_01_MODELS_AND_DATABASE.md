@@ -432,7 +432,45 @@ Esta estrutura permite que:
 
 ## 5. ATUALIZAR MODELO DEVICE
 
-### 5.1 Migration
+### 5.1 Nota Importante sobre Device e DeviceFunction
+
+**Estrutura Atual**:
+- `Device`: Representa um dispositivo físico
+- `DeviceFunction`: Representa uma função do dispositivo (Button ou Sensor)
+- Um `Device` pode ter **múltiplas** `DeviceFunction` (ex: um dispositivo pode ter Button E Sensor ao mesmo tempo)
+- O tipo funcional (Button/Sensor) é definido em `DeviceFunction.type`, não no `Device`
+- `external_device_id`: Campo único usado para identificar dispositivos externamente, seja Portatec ou Tuya (não há campo separado `tuya_device_id`)
+
+### 5.2 Migration para Renomear chip_id
+
+**Arquivo**: `database/migrations/XXXX_XX_XX_XXXXXX_rename_chip_id_to_external_device_id_in_devices_table.php`
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('devices', function (Blueprint $table) {
+            $table->renameColumn('chip_id', 'external_device_id');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('devices', function (Blueprint $table) {
+            $table->renameColumn('external_device_id', 'chip_id');
+        });
+    }
+};
+```
+
+### 5.3 Migration para Adicionar Novos Campos
 
 **Arquivo**: `database/migrations/XXXX_XX_XX_XXXXXX_add_fields_to_devices_table.php`
 
@@ -454,21 +492,13 @@ return new class extends Migration
                 ->constrained()
                 ->nullOnDelete();
 
-            $table->string('integration_type')
+            $table->string('brand')
                 ->default('portatec')
                 ->after('place_id');
 
-            $table->string('functional_type')
-                ->nullable()
-                ->after('integration_type');
-
             $table->string('default_pin', 6)
                 ->nullable()
-                ->after('functional_type');
-
-            $table->string('tuya_device_id')
-                ->nullable()
-                ->after('default_pin');
+                ->after('brand');
         });
     }
 
@@ -478,19 +508,22 @@ return new class extends Migration
             $table->dropForeign(['place_id']);
             $table->dropColumn([
                 'place_id',
-                'integration_type',
-                'functional_type',
+                'brand',
                 'default_pin',
-                'tuya_device_id',
             ]);
         });
     }
 };
 ```
 
-### 5.2 Criar Enums
+**Nota**: Não adicionamos `functional_type` no Device porque:
+- O tipo funcional (Button/Sensor) é definido em `DeviceFunction.type`
+- Um Device pode ter múltiplas funções (Button E Sensor)
+- Cada `DeviceFunction` tem seu próprio `type` e `pin`
 
-**Arquivo**: `app/Enums/DeviceIntegrationTypeEnum.php`
+### 5.4 Criar Enum
+
+**Arquivo**: `app/Enums/DeviceBrandEnum.php`
 
 ```php
 <?php
@@ -499,54 +532,57 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
-enum DeviceIntegrationTypeEnum: string
+enum DeviceBrandEnum: string
 {
     case Portatec = 'portatec';
     case Tuya = 'tuya';
 }
 ```
 
-**Arquivo**: `app/Enums/DeviceFunctionalTypeEnum.php`
+**Nota**: Não precisamos de `DeviceFunctionalTypeEnum` porque o tipo funcional já existe em `DeviceTypeEnum` (Button, Sensor) usado em `DeviceFunction`.
+
+### 5.5 Atualizar Model Device
 
 ```php
-<?php
-
-declare(strict_types=1);
-
-namespace App\Enums;
-
-enum DeviceFunctionalTypeEnum: string
-{
-    case Pulse = 'pulse';
-    case Sensor = 'sensor';
-}
-```
-
-### 5.3 Atualizar Model Device
-
-```php
-use App\Enums\DeviceIntegrationTypeEnum;
-use App\Enums\DeviceFunctionalTypeEnum;
+use App\Enums\DeviceBrandEnum;
 
 protected $fillable = [
-    // ... campos existentes
+    'name',
+    'external_device_id', // ID externo do dispositivo (Portatec ou Tuya)
     'place_id',
-    'integration_type',
-    'functional_type',
+    'brand',
     'default_pin',
-    'tuya_device_id',
+    'last_sync',
 ];
 
 protected $casts = [
-    'integration_type' => DeviceIntegrationTypeEnum::class,
-    'functional_type' => DeviceFunctionalTypeEnum::class,
+    'brand' => DeviceBrandEnum::class,
+    'last_sync' => 'datetime',
 ];
 
 public function place(): BelongsTo
 {
     return $this->belongsTo(Place::class);
 }
+
+public function deviceFunctions(): HasMany
+{
+    return $this->hasMany(DeviceFunction::class);
+}
+
+// Método helper para obter funções por tipo
+public function getFunctionByType(DeviceTypeEnum $type): ?DeviceFunction
+{
+    return $this->deviceFunctions()->where('type', $type)->first();
+}
 ```
+
+### 5.6 Atualizar DeviceFunction
+
+**Nota**: `DeviceFunction` já existe e está correta. Apenas garantir que:
+- `type` use `DeviceTypeEnum` (Button, Sensor)
+- Um Device pode ter múltiplas DeviceFunctions
+- Cada DeviceFunction tem seu próprio `pin` e `status`
 
 ---
 
@@ -662,12 +698,20 @@ enum PlaceRoleEnum: string
 - [ ] Adicionar relacionamento many-to-many em Integration
 
 ### Device
-- [ ] Criar migration para novos campos
-- [ ] Criar DeviceIntegrationTypeEnum
-- [ ] Criar DeviceFunctionalTypeEnum
+- [ ] Criar migration para renomear chip_id → external_device_id
+- [ ] Criar migration para novos campos (place_id, brand, default_pin)
+- [ ] Criar DeviceBrandEnum
 - [ ] Atualizar model Device
 - [ ] Adicionar relacionamento place()
+- [ ] Adicionar relacionamento deviceFunctions()
 - [ ] Atualizar fillable e casts
+- [ ] Atualizar todas as referências a chip_id para external_device_id
+- [ ] Remover referências a tuya_device_id (usar external_device_id para todos)
+
+### DeviceFunction
+- [ ] Verificar que DeviceFunction.type usa DeviceTypeEnum (Button, Sensor)
+- [ ] Garantir que um Device pode ter múltiplas DeviceFunctions
+- [ ] Atualizar documentação se necessário
 
 ### Place
 - [ ] Adicionar relacionamento devices()
@@ -694,6 +738,7 @@ enum PlaceRoleEnum: string
 4. Criar tabela `integrations` (platform_id, user_id, soft deletes - sem external_id)
 5. Criar tabela `place_integration` (place_id, integration_id, external_id)
 6. Criar tabela `bookings` (place_id, integration_id, guest_name nullable, check_in, check_out - sem status)
-7. Adicionar campos em `devices` (place_id, integration_type, etc.)
+7. Renomear `chip_id` → `external_device_id` em `devices`
+8. Adicionar campos em `devices` (place_id, brand, default_pin - sem tuya_device_id, sem functional_type)
 
 **Importante**: Executar migrations em ordem e testar cada uma antes de prosseguir.
