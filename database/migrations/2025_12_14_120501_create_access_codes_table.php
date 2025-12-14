@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('access_pins', function (Blueprint $table) {
+        // Criar access_codes diretamente com estrutura final
+        Schema::create('access_codes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('place_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('booking_id')->nullable()->constrained()->nullOnDelete();
             $table->string('pin', 6);
             $table->timestamp('start');
             $table->timestamp('end');
@@ -27,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('access_pins');
+        Schema::dropIfExists('access_codes');
     }
 };

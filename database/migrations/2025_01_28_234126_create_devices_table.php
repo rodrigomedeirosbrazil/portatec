@@ -13,14 +13,16 @@ return new class extends Migration
     {
         Schema::create('devices', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('place_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
-
-            $table->string('chip_id')->nullable();
+            $table->string('brand')->default('portatec');
+            $table->string('external_device_id')->nullable();
+            $table->string('default_pin', 6)->nullable();
             $table->timestamp('last_sync')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
-            $table->index(['chip_id']);
+            $table->index(['external_device_id']);
         });
     }
 
