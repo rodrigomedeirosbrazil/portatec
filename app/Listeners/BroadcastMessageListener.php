@@ -67,7 +67,7 @@ class BroadcastMessageListener
         }
 
         $device = Device::query()
-            ->where('chip_id', $data['chip-id'])
+            ->where('external_device_id', $data['chip-id'])
             ->firstOrFail();
 
         $deviceFunction = $device->deviceFunctions()
@@ -132,7 +132,7 @@ class BroadcastMessageListener
             ]
         );
 
-        $device = Device::where('chip_id', $data['chip-id'])->firstOrFail();
+        $device = Device::where('external_device_id', $data['chip-id'])->firstOrFail();
 
         $deviceFunction = $device->deviceFunctions()
             ->where('pin', $data['pin'])

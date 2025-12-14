@@ -137,7 +137,7 @@ class UserSeeder extends Seeder
 
         $portaoGaragem = Device::create([
             'name' => 'Portão garagem',
-            'chip_id' => '123123',
+            'external_device_id' => '123123',
         ]);
 
         $portaoGaragemPulse = DeviceFunction::create([

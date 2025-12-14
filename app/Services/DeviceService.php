@@ -12,7 +12,7 @@ class DeviceService
 {
     public function updateStatus(string $chipId, array $data = []): void
     {
-        $device = Device::where('chip_id', $chipId)->firstOrFail();
+        $device = Device::where('external_device_id', $chipId)->firstOrFail();
 
         $pin = data_get($data, 'pin');
 

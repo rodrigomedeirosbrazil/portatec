@@ -65,7 +65,7 @@ class BroadcastPulseEventCommand extends Command
     {
         try {
             // Verificar se o dispositivo existe
-            $device = Device::where('chip_id', $chipId)->first();
+            $device = Device::where('external_device_id', $chipId)->first();
 
             if (! $device) {
                 $this->warn("Dispositivo com chip_id '{$chipId}' não encontrado no banco de dados, mas o pulse será enviado mesmo assim.");
@@ -99,7 +99,7 @@ class BroadcastPulseEventCommand extends Command
     private function sendPulseToAllDevices(array $pulseData = []): int
     {
         try {
-            $devices = Device::whereNotNull('chip_id')->get();
+            $devices = Device::whereNotNull('external_device_id')->get();
 
             if ($devices->isEmpty()) {
                 $this->warn('Nenhum dispositivo com chip_id encontrado.');
@@ -114,11 +114,11 @@ class BroadcastPulseEventCommand extends Command
 
             foreach ($devices as $device) {
                 try {
-                    broadcast(new DevicePulseEvent($device->chip_id, $pulseData));
-                    $this->line("✅ Pulse enviado para: {$device->chip_id} ({$device->name})");
+                    broadcast(new DevicePulseEvent($device->external_device_id, $pulseData));
+                    $this->line("✅ Pulse enviado para: {$device->external_device_id} ({$device->name})");
                     $successCount++;
                 } catch (Exception $e) {
-                    $this->line("❌ Erro ao enviar para {$device->chip_id}: {$e->getMessage()}");
+                    $this->line("❌ Erro ao enviar para {$device->external_device_id}: {$e->getMessage()}");
                     $failCount++;
                 }
             }

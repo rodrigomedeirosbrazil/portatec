@@ -53,8 +53,8 @@ class DeviceResource extends Resource
                                     ->columnSpan(1),
                             ]),
 
-                        TextInput::make('chip_id')
-                            ->label(__('app.chip_id'))
+                        TextInput::make('external_device_id')
+                            ->label(__('app.external_device_id'))
                             ->maxLength(255)
                             ->columnSpanFull(),
 
@@ -141,8 +141,8 @@ class DeviceResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('chip_id')
-                    ->label(__('app.chip_id'))
+                TextColumn::make('external_device_id')
+                    ->label(__('app.external_device_id'))
                     ->searchable()
                     ->sortable(),
 

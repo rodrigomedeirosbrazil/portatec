@@ -80,7 +80,7 @@ class PlacePage extends BasePage
                 ? $deviceFunction->device->payload_off
                 : $deviceFunction->device->payload_on;
 
-            broadcast(new DevicePulseEvent($deviceFunction->device->chip_id, [
+            broadcast(new DevicePulseEvent($deviceFunction->device->external_device_id, [
                 'pin' => $deviceFunction->pin,
                 'status' => $newStatus,
             ]));
@@ -130,7 +130,7 @@ class PlacePage extends BasePage
                 return;
             }
 
-            broadcast(new DevicePulseEvent($deviceFunction->device->chip_id, [
+            broadcast(new DevicePulseEvent($deviceFunction->device->external_device_id, [
                 'pin' => $deviceFunction->pin,
             ]));
 

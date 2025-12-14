@@ -13,7 +13,7 @@ class DeviceController extends Controller
     {
         $chipId = $request->input('chip-id');
 
-        Device::where('chip_id', $chipId)->firstOrFail();
+        Device::where('external_device_id', $chipId)->firstOrFail();
 
         $firmwareVersion = $request->input('version');
 

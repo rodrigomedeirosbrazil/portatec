@@ -1,12 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Enums\DeviceBrandEnum;
+use App\Enums\DeviceTypeEnum;
 use App\Events\DeviceCreatedEvent;
 use App\Events\DeviceDeletedEvent;
 use App\Events\DeviceUpdatedEvent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -17,11 +22,15 @@ class Device extends Model
 
     protected $fillable = [
         'name',
-        'chip_id',
+        'external_device_id', // ID externo do dispositivo (Portatec ou Tuya)
+        'place_id',
+        'brand',
+        'default_pin',
         'last_sync',
     ];
 
     protected $casts = [
+        'brand' => DeviceBrandEnum::class,
         'last_sync' => 'datetime',
     ];
 
@@ -59,5 +68,16 @@ class Device extends Model
     public function deviceUsers(): HasMany
     {
         return $this->hasMany(DeviceUser::class);
+    }
+
+    public function place(): BelongsTo
+    {
+        return $this->belongsTo(Place::class);
+    }
+
+    // Método helper para obter funções por tipo
+    public function getFunctionByType(DeviceTypeEnum $type): ?DeviceFunction
+    {
+        return $this->deviceFunctions()->where('type', $type)->first();
     }
 }
