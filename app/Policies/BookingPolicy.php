@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Enums\PlaceRoleEnum;
-use App\Models\Booking;
 use Illuminate\Foundation\Auth\User as AuthUser;
+use App\Models\Booking;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class BookingPolicy
 {
     use HandlesAuthorization;
-
+    
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_booking');
@@ -20,40 +19,22 @@ class BookingPolicy
 
     public function view(AuthUser $authUser, Booking $booking): bool
     {
-        // Usuários podem ver bookings de Places que têm acesso
-        return $authUser->can('view_booking') &&
-            ($authUser->hasRole('super_admin') ||
-            $booking->place->placeUsers()
-                ->where('user_id', $authUser->id)
-                ->exists());
+        return $authUser->can('view_booking');
     }
 
     public function create(AuthUser $authUser): bool
     {
-        // Apenas Admin/Owner podem criar
         return $authUser->can('create_booking');
     }
 
     public function update(AuthUser $authUser, Booking $booking): bool
     {
-        // Apenas Admin/Owner podem editar
-        return $authUser->can('update_booking') &&
-            ($authUser->hasRole('super_admin') ||
-            $booking->place->placeUsers()
-                ->where('user_id', $authUser->id)
-                ->whereIn('role', [PlaceRoleEnum::Admin])
-                ->exists());
+        return $authUser->can('update_booking');
     }
 
     public function delete(AuthUser $authUser, Booking $booking): bool
     {
-        // Apenas Admin/Owner podem deletar
-        return $authUser->can('delete_booking') &&
-            ($authUser->hasRole('super_admin') ||
-            $booking->place->placeUsers()
-                ->where('user_id', $authUser->id)
-                ->whereIn('role', [PlaceRoleEnum::Admin])
-                ->exists());
+        return $authUser->can('delete_booking');
     }
 
     public function restore(AuthUser $authUser, Booking $booking): bool
@@ -85,4 +66,5 @@ class BookingPolicy
     {
         return $authUser->can('reorder_booking');
     }
+
 }

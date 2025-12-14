@@ -11,103 +11,59 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 class RolePolicy
 {
     use HandlesAuthorization;
-
+    
     public function viewAny(AuthUser $authUser): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('view_any_role');
     }
 
     public function view(AuthUser $authUser, Role $role): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('view_role');
     }
 
     public function create(AuthUser $authUser): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('create_role');
     }
 
     public function update(AuthUser $authUser, Role $role): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('update_role');
     }
 
     public function delete(AuthUser $authUser, Role $role): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('delete_role');
     }
 
     public function restore(AuthUser $authUser, Role $role): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('restore_role');
     }
 
     public function forceDelete(AuthUser $authUser, Role $role): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('force_delete_role');
     }
 
     public function forceDeleteAny(AuthUser $authUser): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('force_delete_any_role');
     }
 
     public function restoreAny(AuthUser $authUser): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('restore_any_role');
     }
 
     public function replicate(AuthUser $authUser, Role $role): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('replicate_role');
     }
 
     public function reorder(AuthUser $authUser): bool
     {
-        if ($authUser->hasRole('super_admin')) {
-            return true;
-        }
-
         return $authUser->can('reorder_role');
     }
 

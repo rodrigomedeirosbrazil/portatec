@@ -11,7 +11,7 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 class AccessCodePolicy
 {
     use HandlesAuthorization;
-
+    
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_access::code');
@@ -66,4 +66,5 @@ class AccessCodePolicy
     {
         return $authUser->can('reorder_access::code');
     }
+
 }

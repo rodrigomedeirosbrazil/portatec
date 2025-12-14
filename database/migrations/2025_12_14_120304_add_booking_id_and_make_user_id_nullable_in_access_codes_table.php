@@ -11,14 +11,37 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('access_codes', function (Blueprint $table) {
-            // Tornar user_id nullable (AccessCodes criados a partir de Bookings podem não ter user_id)
-            // Nota: Para usar ->change(), é necessário ter doctrine/dbal instalado
-            // Se não estiver instalado, use: DB::statement('ALTER TABLE access_codes MODIFY user_id BIGINT UNSIGNED NULL');
-        });
-        
-        // Usar DB::statement para garantir compatibilidade
-        \Illuminate\Support\Facades\DB::statement('ALTER TABLE access_codes MODIFY user_id BIGINT UNSIGNED NULL');
+        // SQLite não suporta MODIFY diretamente, então precisamos recriar a tabela
+        if (config('database.default') === 'sqlite') {
+            // Para SQLite, recriar a tabela com user_id nullable
+            Schema::table('access_codes', function (Blueprint $table) {
+                $table->dropForeign(['user_id']);
+            });
+            
+            \Illuminate\Support\Facades\DB::statement('
+                CREATE TABLE access_codes_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    place_id INTEGER NOT NULL,
+                    user_id INTEGER NULL,
+                    pin VARCHAR(6) NOT NULL,
+                    start DATETIME NOT NULL,
+                    end DATETIME NOT NULL,
+                    created_at DATETIME,
+                    updated_at DATETIME,
+                    FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            ');
+            
+            \Illuminate\Support\Facades\DB::statement('INSERT INTO access_codes_new SELECT * FROM access_codes');
+            \Illuminate\Support\Facades\DB::statement('DROP TABLE access_codes');
+            \Illuminate\Support\Facades\DB::statement('ALTER TABLE access_codes_new RENAME TO access_codes');
+        } else {
+            // Para MySQL/PostgreSQL, usar ->change() (requer doctrine/dbal)
+            Schema::table('access_codes', function (Blueprint $table) {
+                $table->foreignId('user_id')->nullable()->change();
+            });
+        }
     }
 
     /**
@@ -26,9 +49,35 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('access_codes', function (Blueprint $table) {
-            // Reverter user_id para NOT NULL (pode causar problemas se houver registros null)
-            // Deixar comentado para evitar problemas em rollback
-        });
+        // Reverter user_id para NOT NULL (pode causar problemas se houver registros null)
+        if (config('database.default') === 'sqlite') {
+            Schema::table('access_codes', function (Blueprint $table) {
+                $table->dropForeign(['user_id']);
+            });
+            
+            \Illuminate\Support\Facades\DB::statement('
+                CREATE TABLE access_codes_old (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    place_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    pin VARCHAR(6) NOT NULL,
+                    start DATETIME NOT NULL,
+                    end DATETIME NOT NULL,
+                    created_at DATETIME,
+                    updated_at DATETIME,
+                    FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            ');
+            
+            // Copiar apenas registros que têm user_id (filtrar NULLs)
+            \Illuminate\Support\Facades\DB::statement('INSERT INTO access_codes_old SELECT * FROM access_codes WHERE user_id IS NOT NULL');
+            \Illuminate\Support\Facades\DB::statement('DROP TABLE access_codes');
+            \Illuminate\Support\Facades\DB::statement('ALTER TABLE access_codes_old RENAME TO access_codes');
+        } else {
+            Schema::table('access_codes', function (Blueprint $table) {
+                $table->foreignId('user_id')->nullable(false)->change();
+            });
+        }
     }
 };

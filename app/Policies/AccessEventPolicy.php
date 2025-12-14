@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\AccessEvent;
 use Illuminate\Foundation\Auth\User as AuthUser;
+use App\Models\AccessEvent;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class AccessEventPolicy
 {
     use HandlesAuthorization;
-
+    
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_access::event');
@@ -19,30 +19,22 @@ class AccessEventPolicy
 
     public function view(AuthUser $authUser, AccessEvent $accessEvent): bool
     {
-        // Usuários podem ver eventos de Places que têm acesso
-        return $authUser->can('view_access::event') &&
-            ($authUser->hasRole('super_admin') ||
-            $accessEvent->device->place->placeUsers()
-                ->where('user_id', $authUser->id)
-                ->exists());
+        return $authUser->can('view_access::event');
     }
 
     public function create(AuthUser $authUser): bool
     {
-        // Somente leitura - eventos são criados automaticamente
-        return false;
+        return $authUser->can('create_access::event');
     }
 
     public function update(AuthUser $authUser, AccessEvent $accessEvent): bool
     {
-        // Somente leitura
-        return false;
+        return $authUser->can('update_access::event');
     }
 
     public function delete(AuthUser $authUser, AccessEvent $accessEvent): bool
     {
-        // Somente leitura
-        return false;
+        return $authUser->can('delete_access::event');
     }
 
     public function restore(AuthUser $authUser, AccessEvent $accessEvent): bool
@@ -74,4 +66,5 @@ class AccessEventPolicy
     {
         return $authUser->can('reorder_access::event');
     }
+
 }
