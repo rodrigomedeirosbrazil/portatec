@@ -101,47 +101,7 @@ class ControlPlace extends Page implements HasTable
 
     protected function getHeaderActions(): array
     {
-        return [
-            Action::make('edit')
-                ->label(__('app.edit'))
-                ->icon('heroicon-o-pencil-square')
-                ->url(fn (): string => PlaceResource::getUrl('edit', ['record' => $this->place])),
-            Action::make('duplicate')
-                ->label('Duplicar')
-                ->icon('heroicon-o-document-duplicate')
-                ->action(function (): \Illuminate\Http\RedirectResponse {
-                    return DB::transaction(function () {
-                        $record = $this->place;
-
-                        $newPlace = $record->replicate();
-                        $newPlace->name = $record->name . ' (Cópia)';
-                        $newPlace->save();
-
-                        foreach ($record->placeUsers as $placeUser) {
-                            $newPlaceUser = $placeUser->replicate();
-                            $newPlaceUser->place_id = $newPlace->id;
-                            $newPlaceUser->save();
-                        }
-
-                        foreach ($record->placeDevices as $placeDevice) {
-                            $newPlaceDevice = $placeDevice->replicate();
-                            $newPlaceDevice->place_id = $newPlace->id;
-                            $newPlaceDevice->save();
-                        }
-
-                        return redirect()->route('filament.app.resources.places.edit', ['record' => $newPlace]);
-                    });
-                })
-                ->visible(fn (): bool =>
-                    auth()->user()->hasRole('super_admin') ||
-                    $this->place->placeUsers()
-                        ->where('user_id', auth()->user()->id)
-                        ->whereIn('role', [PlaceRoleEnum::Admin, PlaceRoleEnum::Host])
-                        ->exists()
-                ),
-            DeleteAction::make()
-                ->record($this->place),
-        ];
+        return [];
     }
 
     public function pushButton(PlaceDeviceFunction $placeDeviceFunction): void
