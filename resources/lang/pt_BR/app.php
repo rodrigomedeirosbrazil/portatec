@@ -27,6 +27,7 @@ return [
     'role' => 'Função',
     'roles' => 'Funções',
     'view' => 'Visualizar',
+    'device_type' => 'Tipo de dispositivo',
 
     // Ações e notificações
     'command_sent' => 'Comando enviado.',
@@ -44,6 +45,7 @@ return [
     'device_offline' => 'Dispositivo offline',
     'device_on' => 'Ligado',
     'device_off' => 'Desligado',
+    'push' => 'Acionar',
 
     // Campos
     'name' => 'Nome',
