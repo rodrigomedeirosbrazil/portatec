@@ -21,8 +21,7 @@ class EditPlace extends EditRecord
             Action::make('control-devices')
                 ->label(__('app.control_devices'))
                 ->icon('heroicon-o-cog-6-tooth')
-                ->url(fn (): string => route('places.devices', $this->record))
-                ->openUrlInNewTab()
+                ->url(fn (): string => PlaceResource::getUrl('control', ['record' => $this->record]))
                 ->visible(fn (): bool =>
                     auth()->user()->hasRole('super_admin') ||
                     $this->record->placeUsers()

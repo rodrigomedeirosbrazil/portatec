@@ -10,6 +10,7 @@ use Filament\Actions\DeleteBulkAction;
 use App\Filament\App\Resources\PlaceResource\Pages\ListPlaces;
 use App\Filament\App\Resources\PlaceResource\Pages\CreatePlace;
 use App\Filament\App\Resources\PlaceResource\Pages\EditPlace;
+use App\Filament\App\Resources\PlaceResource\Pages\ControlPlace;
 use App\Enums\PlaceRoleEnum;
 use App\Filament\App\Resources\PlaceResource\Pages;
 use App\Models\DeviceFunction;
@@ -143,8 +144,7 @@ class PlaceResource extends Resource
                 Action::make('control-devices')
                     ->label(__('app.control_devices'))
                     ->icon('heroicon-o-cog-6-tooth')
-                    ->url(fn (Place $record): string => route('places.devices', $record))
-                    ->openUrlInNewTab()
+                    ->url(fn (Place $record): string => self::getUrl('control', ['record' => $record]))
                     ->visible(fn (Place $record): bool =>
                         auth()->user()->hasRole('super_admin') ||
                         $record->placeUsers()
@@ -173,6 +173,7 @@ class PlaceResource extends Resource
             'index' => ListPlaces::route('/'),
             'create' => CreatePlace::route('/create'),
             'edit' => EditPlace::route('/{record}/edit'),
+            'control' => ControlPlace::route('/{record}/control'),
         ];
     }
 
