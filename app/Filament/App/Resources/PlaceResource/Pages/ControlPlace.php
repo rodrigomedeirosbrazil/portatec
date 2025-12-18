@@ -80,7 +80,10 @@ class ControlPlace extends Page implements HasTable
                     ->visible(
                         fn (PlaceDeviceFunction $record): bool =>
                             $record->deviceFunction?->type === DeviceTypeEnum::Button
-                            && $record->deviceFunction?->device?->isAvailable()
+                    )
+                    ->disabled(
+                        fn (PlaceDeviceFunction $record): bool =>
+                            ! $record->deviceFunction?->device?->isAvailable()
                     )
                     ->requiresConfirmation()
                     ->action(fn (PlaceDeviceFunction $record) => $this->pushButton($record)),
