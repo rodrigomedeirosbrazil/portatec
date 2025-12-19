@@ -7,6 +7,7 @@ namespace App\Filament\App\Resources\PlaceResource\Pages;
 use App\Enums\DeviceTypeEnum;
 use App\Enums\PlaceRoleEnum;
 use App\Events\DevicePulseEvent;
+use App\Events\PlaceDeviceCommandAckEvent;
 use App\Filament\App\Resources\PlaceResource;
 use App\Models\CommandLog;
 use App\Models\Place;
@@ -41,6 +42,21 @@ class ControlPlace extends Page implements HasTable
         if (! auth()->user()->hasRole('super_admin') && ! $this->place->hasAccessToPlace(auth()->user())) {
             abort(403);
         }
+    }
+
+    public function getListeners(): array
+    {
+        return [
+            'echo-private:Place.Device.Command.Ack.'.$this->place->id.',PlaceDeviceCommandAckEvent' => 'handlePlaceDeviceCommandAck',
+        ];
+    }
+
+    public function handlePlaceDeviceCommandAck(array $data): void
+    {
+        Notification::make()
+            ->title(__('app.command_ack'))
+            ->success()
+            ->send();
     }
 
     public function table(Table $table): Table
