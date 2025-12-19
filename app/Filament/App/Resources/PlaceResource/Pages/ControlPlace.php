@@ -5,16 +5,13 @@ declare(strict_types=1);
 namespace App\Filament\App\Resources\PlaceResource\Pages;
 
 use App\Enums\DeviceTypeEnum;
-use App\Enums\PlaceRoleEnum;
 use App\Events\DevicePulseEvent;
-use App\Events\PlaceDeviceCommandAckEvent;
 use App\Filament\App\Resources\PlaceResource;
 use App\Models\CommandLog;
 use App\Models\Place;
 use App\Models\PlaceDeviceFunction;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Filament\Tables;
@@ -22,7 +19,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 class ControlPlace extends Page implements HasTable
 {
@@ -48,6 +44,7 @@ class ControlPlace extends Page implements HasTable
     {
         return [
             'echo-private:Place.Device.Command.Ack.'.$this->place->id.',PlaceDeviceCommandAckEvent' => 'handlePlaceDeviceCommandAck',
+            'echo-private:Place.Device.Status.'.$this->place->id.',PlaceDeviceStatusEvent' => 'refreshDeviceFunctionStatus',
         ];
     }
 
@@ -57,6 +54,11 @@ class ControlPlace extends Page implements HasTable
             ->title(__('app.command_ack'))
             ->success()
             ->send();
+    }
+
+    public function refreshDeviceFunctionStatus(): void
+    {
+        $this->table->reload();
     }
 
     public function table(Table $table): Table
@@ -74,8 +76,6 @@ class ControlPlace extends Page implements HasTable
                     ->formatStateUsing(
                         fn (?DeviceTypeEnum $state): ?string => $state?->label()
                     ),
-                TextColumn::make('deviceFunction.pin')
-                    ->label('Pin'),
                 TextColumn::make('deviceFunction.device_status')
                     ->label(__('app.status'))
                     ->state(fn (PlaceDeviceFunction $record): ?bool => $record->deviceFunction?->status)
