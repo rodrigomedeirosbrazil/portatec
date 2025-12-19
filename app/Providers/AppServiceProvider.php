@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Contracts\ICalParserInterface;
 use App\Models\AccessCode;
 use App\Models\Booking;
 use App\Observers\AccessCodeObserver;
 use App\Observers\BookingObserver;
+use App\Services\ICalParser;
 use BezhanSalleh\FilamentShield\Facades\FilamentShield;
 use Filament\Pages\BasePage as Page;
 use Filament\Resources\Resource;
@@ -24,8 +26,7 @@ class AppServiceProvider extends ServiceProvider
             $this->app->register(TelescopeServiceProvider::class);
         }
 
-        // TODO: Registrar implementação concreta do ICalParserInterface quando fornecida
-        // Exemplo: $this->app->bind(ICalParserInterface::class, ICalParser::class);
+        $this->app->bind(ICalParserInterface::class, ICalParser::class);
     }
 
     public function boot(): void

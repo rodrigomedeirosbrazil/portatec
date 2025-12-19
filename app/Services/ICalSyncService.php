@@ -42,8 +42,8 @@ class ICalSyncService
         // Baixar iCal via HTTP
         $icalContent = $this->downloadICal($externalId);
 
-        // Parsear usando a classe fornecida
-        $bookingDTOs = $this->parser->parse($icalContent);
+        // Parsear usando a classe fornecida (passando URL para lógica de plataforma)
+        $bookingDTOs = $this->parser->parse($icalContent, $externalId);
 
         // Obter bookings existentes para este relacionamento
         $existingBookings = Booking::where('place_id', $placeId)
