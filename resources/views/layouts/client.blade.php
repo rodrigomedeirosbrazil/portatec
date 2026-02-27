@@ -10,6 +10,7 @@
     <nav style="background: #111827; color: #fff; padding: 12px 20px; display: flex; gap: 12px; align-items: center;">
         <a href="{{ route('app.dashboard') }}" style="color: #fff; text-decoration: none; font-weight: 600;">Dashboard</a>
         <a href="{{ route('app.places.index') }}" style="color: #fff; text-decoration: none;">Places</a>
+        <a href="{{ route('app.devices.index') }}" style="color: #fff; text-decoration: none;">Devices</a>
         <a href="{{ route('app.bookings.index') }}" style="color: #fff; text-decoration: none;">Bookings</a>
         <a href="{{ route('app.access-codes.index') }}" style="color: #fff; text-decoration: none;">Access Codes</a>
         <a href="{{ route('app.integrations.index') }}" style="color: #fff; text-decoration: none;">Integrations</a>

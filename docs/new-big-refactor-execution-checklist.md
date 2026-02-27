@@ -48,10 +48,11 @@
 - [ ] Definir estratégia de impersonate para o app cliente (Livewire):
   - fluxo explícito de "entrar como cliente" fora do Filament
   - trilha de auditoria mínima (quem assumiu, quem foi assumido, quando iniciou/finalizou)
-- [ ] Implementar telas Livewire de dispositivos:
+- [x] Implementar telas Livewire de dispositivos:
   - `Devices\\Index`
   - `Devices\\Show`
   - `Devices\\Control`
+  - observação: listagem/detalhes/controle básico por ações MQTT (`toggle`/`push_button`) com filtro por ownership via `place_users`
 - [x] Adicionar visualização de `AccessEvent` no painel admin `/admin`
 - [ ] Fechar cobertura de testes mínimos do plano:
   - isolamento por `place_users`

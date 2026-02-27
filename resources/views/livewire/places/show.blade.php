@@ -28,7 +28,12 @@
         <h2 style="margin-top: 0;">Dispositivos</h2>
         <ul style="margin: 0; padding-left: 20px;">
             @forelse ($place->devices as $device)
-                <li>{{ $device->name }} ({{ $device->brand->value ?? $device->brand }})</li>
+                <li>
+                    <a href="{{ route('app.devices.show', $device->id) }}" style="color: #1d4ed8; text-decoration: none;">
+                        {{ $device->name }}
+                    </a>
+                    ({{ $device->brand->value ?? $device->brand }})
+                </li>
             @empty
                 <li>Nenhum dispositivo associado.</li>
             @endforelse
