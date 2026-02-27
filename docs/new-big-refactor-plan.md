@@ -470,7 +470,7 @@ Só fazer esta fase depois que todas as telas acima estiverem funcionando e em u
 
 - [ ] Concluir remoção do painel Filament do cliente (`app` panel)
 - [ ] Remover eventos/listeners/rotas legadas de WebSocket para dispositivo (quando MQTT estiver estável)
-- [ ] Remover impersonate acoplado ao Filament admin (`filament-impersonate` + ação no `UserResource`)
+- [x] Remover impersonate acoplado ao Filament admin (`filament-impersonate` + ação no `UserResource`)
 - [ ] Especificar e implementar impersonate no painel cliente Livewire com auditoria mínima
 - [ ] Manter painel admin (`/admin`) com FilamentPHP em escopo reduzido:
   - CRUD de usuários

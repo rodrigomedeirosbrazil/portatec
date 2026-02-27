@@ -14,8 +14,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "php-mqtt/laravel-client": "^1.5",
-        "sabre/vobject": "^4.5",
-        "stechstudio/filament-impersonate": "^4.0"
+        "sabre/vobject": "^4.5"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.14",

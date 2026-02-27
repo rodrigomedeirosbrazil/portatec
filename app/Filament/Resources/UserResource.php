@@ -13,7 +13,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use STS\FilamentImpersonate\Actions\Impersonate;
 
 class UserResource extends Resource
 {
@@ -72,7 +71,6 @@ class UserResource extends Resource
                 //
             ])
             ->recordActions([
-                Impersonate::make(),
                 EditAction::make(),
             ]);
     }
