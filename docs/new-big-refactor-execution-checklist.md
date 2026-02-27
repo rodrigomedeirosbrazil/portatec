@@ -15,6 +15,47 @@
 
 ---
 
+## Checklist de progresso (status real)
+
+> Última atualização: **2026-02-27**
+> Fonte de verdade para continuidade em nova janela de contexto.
+
+### PRs do plano
+
+- [x] PR-01 — Fundação de dependências e painéis (**concluído com ressalvas**)
+- [x] PR-02 — Reset de banco + migrations definitivas
+- [x] PR-03 — Modelos, relações e policies por ownership
+- [x] PR-04 — Base Livewire do cliente (Dashboard + Places) (**sem auth Breeze ainda**)
+- [x] PR-05 — Bookings e AccessCodes
+- [x] PR-06 — MQTT: publicação, subscriber e operação (**sem telas Livewire de Devices**)
+- [x] PR-07 — iCal + robustez de sync
+- [x] PR-08 — Limpeza final do legado
+
+### Pendências abertas (próximos passos)
+
+- [ ] Remover resíduos de Shield/Spatie ainda no repositório:
+  - `config/filament-shield.php`
+  - `config/permission.php`
+  - `app/Filament/Resources/Roles/**`
+- [ ] Implementar autenticação do cliente desacoplada do Filament (Breeze/Livewire):
+  - login/registro/reset próprios para `/app`
+  - parar de depender de `/admin/login` como entrada do cliente
+- [ ] Implementar telas Livewire de dispositivos:
+  - `Devices\\Index`
+  - `Devices\\Show`
+  - `Devices\\Control`
+- [ ] Adicionar visualização de `AccessEvent` no painel admin `/admin`
+- [ ] Fechar cobertura de testes mínimos do plano:
+  - isolamento por `place_users`
+  - booking -> access code
+  - sync access code (mock transport)
+  - importação iCal básica
+  - geração de PIN
+  - mapeamento payload MQTT
+- [ ] Atualizar este checklist a cada entrega (marcar itens e registrar pendências novas)
+
+---
+
 ## PR-01 — Fundação de dependências e painéis
 
 ### Objetivo

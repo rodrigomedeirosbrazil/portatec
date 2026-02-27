@@ -356,6 +356,8 @@ A subscrição dos tópicos (para receber ACKs, pulses e eventos) deve rodar com
 
 O banco de dados começa do zero. Todas as migrations são definitivas — não há dados para preservar nem migrations antigas para compatibilizar.
 
+> Acompanhar execução e marcação de progresso em: `docs/new-big-refactor-execution-checklist.md`.
+
 ---
 
 ### Fase 1 — Fundação
@@ -549,3 +551,4 @@ Abordagens a considerar quando chegar nessa parte:
 *v0.4 — plano de fases reescrito com base nas migrations e seeders reais; dependências do Filament Shield mapeadas; campos faltantes identificados*
 *v0.5 — premissa de banco do zero adotada; Filament e Shield removidos do escopo; migrations definitivas listadas na Fase 1*
 *v0.6 — decisões refinadas: `default_pin` movido para `devices.default_pin`; painel admin Filament mantido desde o início; Shield/Spatie removidos do escopo; operação MQTT detalhada (subscriber + supervisor); regra de PIN por Place sem validação de sobreposição nesta fase*
+*v0.7 — rastreamento de execução movido para checklist dedicado (`docs/new-big-refactor-execution-checklist.md`) com status real e pendências abertas*
