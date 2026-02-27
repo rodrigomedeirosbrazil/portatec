@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Events\DeviceAccessCodeSyncEvent;
 use App\Models\AccessCode;
 use App\Models\Device;
 use App\Models\Place;
+use App\Services\Device\DeviceCommandService;
 use Illuminate\Support\Collection;
 
 class AccessCodeSyncService
 {
+    public function __construct(
+        private DeviceCommandService $deviceCommandService
+    ) {}
+
     /**
      * Sincroniza todos os AccessCodes válidos do Place para um dispositivo
      */
@@ -23,12 +27,7 @@ class AccessCodeSyncService
 
         $place = $device->place;
         $validAccessCodes = $this->getValidAccessCodesForPlace($place);
-
-        broadcast(new DeviceAccessCodeSyncEvent(
-            device: $device,
-            action: 'sync',
-            accessCodes: $validAccessCodes
-        ));
+        $this->deviceCommandService->syncAccessCodes($device, $validAccessCodes);
     }
 
     /**
@@ -39,15 +38,7 @@ class AccessCodeSyncService
         $devices = Device::where('place_id', $accessCode->place_id)->get();
 
         foreach ($devices as $device) {
-            // Se o AccessCode é válido, envia como create
-            // Caso contrário, não precisa sincronizar
-            if ($accessCode->isValid()) {
-                broadcast(new DeviceAccessCodeSyncEvent(
-                    device: $device,
-                    action: 'create',
-                    accessCode: $accessCode
-                ));
-            }
+            $this->syncAccessCodesToDevice($device);
         }
     }
 
@@ -59,22 +50,7 @@ class AccessCodeSyncService
         $devices = Device::where('place_id', $accessCode->place_id)->get();
 
         foreach ($devices as $device) {
-            // Se o AccessCode ainda é válido, envia como update
-            // Caso contrário, envia como delete para remover dos dispositivos
-            if ($accessCode->isValid()) {
-                broadcast(new DeviceAccessCodeSyncEvent(
-                    device: $device,
-                    action: 'update',
-                    accessCode: $accessCode
-                ));
-            } else {
-                // AccessCode expirou, remover dos dispositivos
-                broadcast(new DeviceAccessCodeSyncEvent(
-                    device: $device,
-                    action: 'delete',
-                    accessCode: $accessCode
-                ));
-            }
+            $this->syncAccessCodesToDevice($device);
         }
     }
 
@@ -86,11 +62,7 @@ class AccessCodeSyncService
         $devices = Device::where('place_id', $accessCode->place_id)->get();
 
         foreach ($devices as $device) {
-            broadcast(new DeviceAccessCodeSyncEvent(
-                device: $device,
-                action: 'delete',
-                accessCode: $accessCode
-            ));
+            $this->syncAccessCodesToDevice($device);
         }
     }
 
