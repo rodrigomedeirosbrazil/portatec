@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\PlaceRoleEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -16,13 +15,11 @@ class Place extends Model
 
     protected $fillable = [
         'name',
-        'role',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'role' => PlaceRoleEnum::class,
     ];
 
     public function placeUsers(): HasMany
@@ -61,7 +58,10 @@ class Place extends Model
     {
         return $this->accessCodes()
             ->where('start', '<=', now())
-            ->where('end', '>=', now())
+            ->where(function ($query) {
+                $query->whereNull('end')
+                    ->orWhere('end', '>=', now());
+            })
             ->get();
     }
 
@@ -69,7 +69,6 @@ class Place extends Model
     {
         return $this->placeUsers()
             ->where('user_id', $user->id)
-            ->whereIn('role', [PlaceRoleEnum::Admin, PlaceRoleEnum::Host])
             ->exists();
     }
 }

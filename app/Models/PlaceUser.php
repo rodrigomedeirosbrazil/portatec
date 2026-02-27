@@ -11,6 +11,7 @@ class PlaceUser extends Model
         'place_id',
         'user_id',
         'role',
+        'label',
     ];
 
     public function place(): BelongsTo

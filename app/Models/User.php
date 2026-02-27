@@ -44,6 +44,13 @@ class User extends Authenticatable
         return $this->hasMany(PlaceUser::class);
     }
 
+    public function places(): BelongsToMany
+    {
+        return $this->belongsToMany(Place::class, 'place_users')
+            ->withPivot(['role', 'label'])
+            ->withTimestamps();
+    }
+
     /**
      * Transitional compatibility helper while role system is removed.
      */
