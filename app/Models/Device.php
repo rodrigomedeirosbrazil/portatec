@@ -8,7 +8,6 @@ use App\Enums\DeviceBrandEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Events\DeviceCreatedEvent;
 use App\Events\DeviceDeletedEvent;
-use App\Events\DeviceUpdatedEvent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -38,11 +37,6 @@ class Device extends Model
     {
         static::created(function (Device $device) {
             event(new DeviceCreatedEvent($device->id));
-        });
-
-        static::updated(function (Device $device) {
-            $changes = $device->getChanges(); // Campos modificados e novos valores
-            event(new DeviceUpdatedEvent($device->id, $changes));
         });
 
         static::deleted(function (Device $device) {
