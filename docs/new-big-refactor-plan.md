@@ -137,7 +137,8 @@ $places = auth()->user()
 - O AccessCode pode ser **editado manualmente** pelo cliente após criado (ex: ajustar datas, trocar o PIN)
 - Um AccessCode pode existir **sem Booking** (ex: PIN para colaborador com janela fixa)
 - Um AccessCode pode estar vinculado a um `user_id` (colaborador com conta) ou ser avulso (sem usuário, só pin + datas)
-- O PIN deve ser **único por dispositivo no período de vigência** — validar na geração e na edição
+- O PIN de AccessCode vale para **todos os dispositivos do Place**
+- Nesta fase, **não haverá validação de sobreposição/colisão temporal de PIN**
 - AccessCodes expirados não são deletados — ficam no histórico
 
 ### Dispositivos Portatec — PIN padrão
@@ -146,10 +147,10 @@ Todo dispositivo Portatec (ESP8266) possui um **PIN padrão de acesso** (`defaul
 
 - Funciona como acesso de emergência / manutenção
 - **Nunca expira**
-- Deve ser sincronizado para o dispositivo junto com os demais AccessCodes
+- Deve ser sincronizado para o dispositivo no fluxo de sync (separado dos AccessCodes temporários)
 - Não deve aparecer para hóspedes — apenas para o admin e o host do lugar
 
-> **Decisão:** o `default_pin` é armazenado como um AccessCode permanente no banco, com o campo `is_default_pin = true` e sem data de expiração (`end = null`). Entra no mesmo fluxo de sync dos demais PINs, sem lógica especial no firmware.
+> **Decisão:** o `default_pin` é armazenado em `devices.default_pin` (sem criptografia nesta fase). Não é salvo em `access_codes`.
 
 ---
 
@@ -351,10 +352,12 @@ O banco de dados começa do zero. Todas as migrations são definitivas — não 
 
 O objetivo é ter o projeto rodando com autenticação, banco limpo e o padrão de acesso por `user_id` estabelecido.
 
-**Remover do projeto:**
-- [ ] Remover `filament/filament`, `bezhansalleh/filament-shield`, `spatie/laravel-permission` do `composer.json`
-- [ ] Remover as pastas `app/Filament/`, `app/Providers/Filament/`
+**Ajustar dependências e painéis:**
+- [ ] **Manter** `filament/filament` para o painel admin (`/admin`)
+- [ ] Remover `bezhansalleh/filament-shield` e `spatie/laravel-permission` do `composer.json`
 - [ ] Remover `HasPanelShield`, `HasRoles`, `FilamentUser` do model `User`
+- [ ] Remover somente o painel Filament do cliente (`app panel`) e manter o painel admin
+- [ ] Ajustar `AppServiceProvider` para remover boot/configuração do Filament Shield
 - [ ] Deletar todas as migrations antigas e o seeder atual
 
 **Instalar a nova base:**
@@ -372,7 +375,7 @@ O objetivo é ter o projeto rodando com autenticação, banco limpo e o padrão 
 - [ ] `integrations` — `id`, `platform_id`, `user_id`, `timestamps`, `softDeletes`
 - [ ] `place_integration` — `id`, `place_id`, `integration_id`, `external_id` (URL do iCal), `unique(place_id, integration_id)`, `timestamps`
 - [ ] `bookings` — `id`, `place_id`, `integration_id nullable`, `guest_name nullable`, `check_in datetime`, `check_out datetime`, `source enum(manual, ical) default ical`, `external_id nullable`, `deletion_reason nullable`, `timestamps`, `softDeletes`
-- [ ] `access_codes` — `id`, `place_id`, `booking_id nullable`, `user_id nullable`, `pin varchar(6)`, `label nullable` (ex: "Faxineira", "Hóspede João"), `start timestamp`, `end timestamp nullable`, `is_default_pin boolean default false`, `timestamps`
+- [ ] `access_codes` — `id`, `place_id`, `booking_id nullable`, `user_id nullable`, `pin varchar(6)`, `label nullable` (ex: "Faxineira", "Hóspede João"), `start timestamp`, `end timestamp nullable`, `timestamps`
 - [ ] `access_events` — `id`, `device_id`, `access_code_id nullable`, `pin varchar(6)`, `result enum(success, failed, expired, invalid)`, `device_timestamp nullable`, `server_timestamp`, `metadata json nullable`, `timestamps`
 - [ ] `command_logs` — `id`, `user_id nullable`, `place_id`, `device_function_id nullable`, `command_type`, `command_payload text nullable`, `device_function_type nullable`, `ip_address nullable`, `user_agent nullable`, `timestamps`
 
@@ -397,7 +400,7 @@ Esta é a fase de maior regra de negócio. Fazer com calma.
 
 - [ ] Criar `AccessCodeGeneratorService`:
   - Gera PIN numérico de 4–6 dígitos
-  - Valida unicidade: o mesmo PIN não pode estar ativo em dois AccessCodes simultâneos no mesmo Place
+  - Nesta fase, não validar sobreposição temporal de PIN
   - Cria o AccessCode e dispara sync para os dispositivos
 - [ ] Componente Livewire `Bookings\Index` — lista de bookings por Place (com filtro de período)
 - [ ] Componente Livewire `Bookings\Create` — formulário de booking manual:
@@ -407,7 +410,7 @@ Esta é a fase de maior regra de negócio. Fazer com calma.
 - [ ] Componente Livewire `AccessCodes\Edit` — editar PIN, datas de um AccessCode existente
 - [ ] Componente Livewire `AccessCodes\Index` — lista de todos os PINs ativos do Place (hóspedes + colaboradores)
 - [ ] Componente Livewire `AccessCodes\Create` — criar PIN avulso para colaborador (sem booking)
-- [ ] Lógica do `default_pin`: ao cadastrar um Device Portatec, criar automaticamente um AccessCode com `is_default_pin = true`, `end = null`
+- [ ] Lógica do `default_pin`: ao cadastrar um Device Portatec, salvar `devices.default_pin` e incluir no payload de sync do dispositivo
 
 ---
 
@@ -417,7 +420,8 @@ Depende do teste MQTT estar validado antes de começar.
 
 - [ ] Subir broker Mosquitto em container Docker (`docker-compose.yml`)
 - [ ] Instalar e configurar `php-mqtt/laravel-client`
-- [ ] Criar comando artisan `mqtt:subscribe` que roda em background (registrar no Supervisor)
+- [ ] Criar comando artisan `mqtt:subscribe` de longa duração para receber `ack`, `pulse` e `event`
+- [ ] Registrar processo dedicado no Supervisor para `mqtt:subscribe` (separado dos workers de queue)
 - [ ] Criar `DeviceCommandService`:
   - `sendCommand(Device $device, string $action, int $pin)` — publica no tópico MQTT e registra no `CommandLog`
   - `handleAck(string $chipId, array $payload)` — processa o ACK do dispositivo e dispara evento Reverb ao frontend
@@ -426,6 +430,7 @@ Depende do teste MQTT estar validado antes de começar.
 - [ ] Componente Livewire `Devices\Index` — lista de dispositivos do Place com status (online/offline baseado em `last_sync`)
 - [ ] Componente Livewire `Devices\Show` — saúde do dispositivo: `last_seen`, uptime, funções e seus status
 - [ ] Migrar `AccessCodeSyncService` de WebSocket para MQTT
+- [ ] Garantir que o payload de sync inclua `devices.default_pin` + AccessCodes ativos do Place
 
 ---
 
@@ -438,15 +443,13 @@ Depende do teste MQTT estar validado antes de começar.
 
 ---
 
-### Fase 6 — Limpeza final do Filament
+### Fase 6 — Limpeza final do legado
 
 Só fazer esta fase depois que todas as telas acima estiverem funcionando e em uso.
 
-- [ ] Remover FilamentPHP do painel do cliente (`app` panel)
-- [ ] Remover `HasPanelShield`, `HasRoles` (Spatie) do `User` model se não for mais usado
-- [ ] Remover `spatie/laravel-permission` se não for mais necessário
-- [ ] Remover `filament/filament` e `bezhansalleh/filament-shield` do `composer.json`
-- [ ] Manter apenas o painel admin (`/admin`) com FilamentPHP em escopo reduzido:
+- [ ] Concluir remoção do painel Filament do cliente (`app` panel)
+- [ ] Remover eventos/listeners/rotas legadas de WebSocket para dispositivo (quando MQTT estiver estável)
+- [ ] Manter painel admin (`/admin`) com FilamentPHP em escopo reduzido:
   - CRUD de usuários
   - Visualização de CommandLog e AccessEvent
   - Status de dispositivos
@@ -489,11 +492,13 @@ app/
 
 | # | Questão | Decisão |
 |---|---|---|
-| 1 | `default_pin` — como armazenar? | AccessCode com `is_default_pin = true` e `end = null`. Mesmo fluxo de sync dos demais PINs. |
+| 1 | `default_pin` — como armazenar? | Campo `devices.default_pin` (sem criptografia nesta fase). Não usar `access_codes` para PIN de admin do dispositivo. |
 | 2 | Autenticação do ESP8266 no broker MQTT | Usuário/senha por dispositivo (configurado no firmware) |
 | 3 | Broker MQTT | **Mosquitto** — simples, leve, container Docker |
 | 4 | Hóspede recebe o PIN como? | Fora do sistema por enquanto (WhatsApp, e-mail manual pelo host) |
 | 5 | FilamentPHP no painel admin | Manter com escopo reduzido (CRUD de suporte apenas) |
+| 6 | Shield/Spatie no app do cliente | Fora do escopo. Autorização por relacionamento (`place_users`) + policies/scopes |
+| 7 | Regra de PIN em `access_codes` | PIN vale para todos os dispositivos do Place; sem validação de sobreposição temporal nesta fase |
 
 ---
 
@@ -530,3 +535,4 @@ Abordagens a considerar quando chegar nessa parte:
 *v0.3 — todas as questões em aberto resolvidas; default_pin definido como AccessCode com is_default_pin; nota sobre formulários Livewire com relacionamentos adicionada*
 *v0.4 — plano de fases reescrito com base nas migrations e seeders reais; dependências do Filament Shield mapeadas; campos faltantes identificados*
 *v0.5 — premissa de banco do zero adotada; Filament e Shield removidos do escopo; migrations definitivas listadas na Fase 1*
+*v0.6 — decisões refinadas: `default_pin` movido para `devices.default_pin`; painel admin Filament mantido desde o início; Shield/Spatie removidos do escopo; operação MQTT detalhada (subscriber + supervisor); regra de PIN por Place sem validação de sobreposição nesta fase*
