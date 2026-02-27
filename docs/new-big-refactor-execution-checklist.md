@@ -51,13 +51,20 @@
   - `Devices\\Control`
   - observação: listagem/detalhes/controle básico por ações MQTT (`toggle`/`push_button`) com filtro por ownership via `place_users`
 - [x] Adicionar visualização de `AccessEvent` no painel admin `/admin`
-- [ ] Fechar cobertura de testes mínimos do plano:
+- [x] Fechar cobertura de testes mínimos do plano:
   - isolamento por `place_users`
   - booking -> access code
   - sync access code (mock transport)
   - importação iCal básica
   - geração de PIN
   - mapeamento payload MQTT
+  - observação: cobertura adicionada em
+    - `tests/Feature/PlaceUsersIsolationTest.php`
+    - `tests/Feature/BookingAccessCodeFlowTest.php`
+    - `tests/Unit/AccessCodeSyncServiceTest.php`
+    - `tests/Unit/ICalSyncServiceTest.php`
+    - `tests/Unit/AccessCodeGeneratorServiceTest.php`
+    - `tests/Unit/DeviceCommandServicePayloadMappingTest.php`
 - [ ] Definir estratégia de impersonate para o app cliente (Livewire):
   - fluxo explícito de "entrar como cliente" fora do Filament
   - trilha de auditoria mínima (quem assumiu, quem foi assumido, quando iniciou/finalizou)
