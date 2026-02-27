@@ -45,9 +45,6 @@
   - remover ação `Impersonate` do `UserResource`
   - remover dependências/configuração de `filament-impersonate`/`laravel-impersonate` do admin
   - observação: `composer.lock` ainda precisa ser regenerado em ambiente com acesso ao Packagist
-- [ ] Definir estratégia de impersonate para o app cliente (Livewire):
-  - fluxo explícito de "entrar como cliente" fora do Filament
-  - trilha de auditoria mínima (quem assumiu, quem foi assumido, quando iniciou/finalizou)
 - [x] Implementar telas Livewire de dispositivos:
   - `Devices\\Index`
   - `Devices\\Show`
@@ -61,6 +58,9 @@
   - importação iCal básica
   - geração de PIN
   - mapeamento payload MQTT
+- [ ] Definir estratégia de impersonate para o app cliente (Livewire):
+  - fluxo explícito de "entrar como cliente" fora do Filament
+  - trilha de auditoria mínima (quem assumiu, quem foi assumido, quando iniciou/finalizou)
 - [ ] Atualizar este checklist a cada entrega (marcar itens e registrar pendências novas)
 
 ---
