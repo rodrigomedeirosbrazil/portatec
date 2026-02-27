@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Filament\App\Resources\Booking\Pages;
+namespace App\Filament\Resources\PlaceResource\Pages;
 
-use App\Filament\App\Resources\Booking\BookingResource;
+use App\Filament\Resources\PlaceResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
-class ListBookings extends ListRecords
+class ListPlaces extends ListRecords
 {
-    protected static string $resource = BookingResource::class;
+    protected static string $resource = PlaceResource::class;
 
     protected function getHeaderActions(): array
     {

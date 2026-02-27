@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Filament\App\Resources\CommandLogResource\Pages;
+declare(strict_types=1);
 
-use App\Filament\App\Resources\CommandLogResource;
+namespace App\Filament\Resources\CommandLogResource\Pages;
+
+use App\Filament\Resources\CommandLogResource;
 use Filament\Resources\Pages\ListRecords;
 
 class ListCommandLogs extends ListRecords

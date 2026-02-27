@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory;
     use Notifiable;
@@ -56,6 +58,19 @@ class User extends Authenticatable
      */
     public function hasRole(string $role): bool
     {
-        return $role === 'super_admin';
+        if ($role !== 'super_admin') {
+            return false;
+        }
+
+        $allowedEmails = collect(explode(',', (string) env('PORTATEC_SUPER_ADMIN_EMAILS', 'contato@medeirostec.com.br')))
+            ->map(static fn (string $email): string => strtolower(trim($email)))
+            ->filter();
+
+        return $allowedEmails->contains(strtolower((string) $this->email));
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $panel->getId() === 'admin' && $this->hasRole('super_admin');
     }
 }

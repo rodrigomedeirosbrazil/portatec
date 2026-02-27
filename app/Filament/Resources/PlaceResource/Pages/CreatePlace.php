@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Filament\App\Resources\PlaceResource\Pages;
+declare(strict_types=1);
 
-use App\Filament\App\Resources\PlaceResource;
+namespace App\Filament\Resources\PlaceResource\Pages;
+
+use App\Filament\Resources\PlaceResource;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreatePlace extends CreateRecord
