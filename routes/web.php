@@ -2,4 +2,4 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/main/login');
+Route::redirect('/', '/admin/login');

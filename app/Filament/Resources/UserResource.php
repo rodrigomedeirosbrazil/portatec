@@ -9,7 +9,6 @@ use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
@@ -42,13 +41,6 @@ class UserResource extends Resource
                     ->password()
                     ->revealable()
                     ->maxLength(255),
-
-                Select::make('roles')
-                    ->label('System roles')
-                    ->relationship('roles', 'name')
-                    ->multiple()
-                    ->preload()
-                    ->searchable(),
             ]);
     }
 
@@ -65,10 +57,6 @@ class UserResource extends Resource
 
                 TextColumn::make('email')
                     ->searchable(),
-
-                TextColumn::make('roleNames')
-                    ->label('Roles')
-                    ->badge()->separator(','),
 
                 TextColumn::make('created_at')
                     ->dateTime()

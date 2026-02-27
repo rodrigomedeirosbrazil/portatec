@@ -2,12 +2,15 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\CommandLogResource;
+use App\Filament\Resources\DeviceResource;
+use App\Filament\Resources\PlaceResource;
+use App\Filament\Resources\UserResource;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use App\Http\Responses\CustomLoginResponse;
-use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -40,12 +43,15 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ->resources([
+                UserResource::class,
+                PlaceResource::class,
+                DeviceResource::class,
+                CommandLogResource::class,
+            ])
             ->pages([
                 Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 AccountWidget::class,
                 FilamentInfoWidget::class,
@@ -60,9 +66,6 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
-            ])
-            ->plugins([
-                FilamentShieldPlugin::make(),
             ])
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->authMiddleware([
