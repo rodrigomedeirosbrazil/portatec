@@ -44,7 +44,7 @@
 - [x] Remover impersonate do painel admin em Filament:
   - remover ação `Impersonate` do `UserResource`
   - remover dependências/configuração de `filament-impersonate`/`laravel-impersonate` do admin
-  - observação: `composer.lock` ainda precisa ser regenerado em ambiente com acesso ao Packagist
+  - observação: `composer.lock` regenerado em 2026-02-27 via Sail (`./vendor/bin/sail composer update`) removendo resíduos de `filament-shield`, `spatie/laravel-permission`, `filament-impersonate` e `laravel-impersonate`
 - [x] Implementar telas Livewire de dispositivos:
   - `Devices\\Index`
   - `Devices\\Show`
