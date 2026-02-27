@@ -341,42 +341,115 @@ A subscrição dos tópicos (para receber ACKs, pulses e eventos) deve rodar com
 
 ## 9. Plano de refatoração em fases
 
+### Premissa
+
+O banco de dados começa do zero. Todas as migrations são definitivas — não há dados para preservar nem migrations antigas para compatibilizar.
+
+---
+
 ### Fase 1 — Fundação
 
-- [ ] Instalar Laravel Breeze com Livewire: `php artisan breeze:install livewire`
-- [ ] Criar rota e layout base do painel do cliente (separado do FilamentPHP)
-- [ ] Implementar padrão de queries com filtro por `user_id` / `place_id` em todos os controllers
-- [ ] Dashboard inicial: lista de Places e status dos dispositivos
+O objetivo é ter o projeto rodando com autenticação, banco limpo e o padrão de acesso por `user_id` estabelecido.
 
-### Fase 2 — Bookings e AccessCodes
+**Remover do projeto:**
+- [ ] Remover `filament/filament`, `bezhansalleh/filament-shield`, `spatie/laravel-permission` do `composer.json`
+- [ ] Remover as pastas `app/Filament/`, `app/Providers/Filament/`
+- [ ] Remover `HasPanelShield`, `HasRoles`, `FilamentUser` do model `User`
+- [ ] Deletar todas as migrations antigas e o seeder atual
 
-- [ ] Tela de listagem de Bookings por Place
-- [ ] Criação manual de Booking + geração automática de AccessCode
-- [ ] Edição de AccessCode (ajuste de datas e PIN)
-- [ ] `AccessCodeGeneratorService` — geração de PIN único com validação de conflito de período
-- [ ] Listar PINs ativos por Place (hóspedes e colaboradores)
-- [ ] Definir e implementar tratamento do `default_pin` do dispositivo Portatec
+**Instalar a nova base:**
+- [ ] Instalar Breeze com Livewire: `php artisan breeze:install livewire`
+- [ ] Criar layout base do painel do cliente
 
-### Fase 3 — Controle de dispositivos em tempo real
+**Migrations definitivas (criar nesta ordem):**
+- [ ] `users` — padrão Laravel (já vem com o Breeze)
+- [ ] `places` — `id`, `name`, `timestamps`
+- [ ] `place_users` — `place_id`, `user_id`, `role enum(admin, host)`, `label nullable` (apelido livre, ex: "Maittê - proprietária"), `timestamps`
+- [ ] `devices` — `id`, `place_id nullable`, `name`, `brand enum(portatec, tuya)`, `external_device_id nullable`, `last_sync nullable`, `timestamps`, `softDeletes`
+- [ ] `device_functions` — `id`, `device_id`, `type enum(switch, sensor, button)`, `pin`, `status boolean nullable`, `timestamps`
+- [ ] `place_device_functions` — `id`, `place_id`, `device_function_id`, `timestamps`
+- [ ] `platforms` — `id`, `name`, `slug unique`, `timestamps`
+- [ ] `integrations` — `id`, `platform_id`, `user_id`, `timestamps`, `softDeletes`
+- [ ] `place_integration` — `id`, `place_id`, `integration_id`, `external_id` (URL do iCal), `unique(place_id, integration_id)`, `timestamps`
+- [ ] `bookings` — `id`, `place_id`, `integration_id nullable`, `guest_name nullable`, `check_in datetime`, `check_out datetime`, `source enum(manual, ical) default ical`, `external_id nullable`, `deletion_reason nullable`, `timestamps`, `softDeletes`
+- [ ] `access_codes` — `id`, `place_id`, `booking_id nullable`, `user_id nullable`, `pin varchar(6)`, `label nullable` (ex: "Faxineira", "Hóspede João"), `start timestamp`, `end timestamp nullable`, `is_default_pin boolean default false`, `timestamps`
+- [ ] `access_events` — `id`, `device_id`, `access_code_id nullable`, `pin varchar(6)`, `result enum(success, failed, expired, invalid)`, `device_timestamp nullable`, `server_timestamp`, `metadata json nullable`, `timestamps`
+- [ ] `command_logs` — `id`, `user_id nullable`, `place_id`, `device_function_id nullable`, `command_type`, `command_payload text nullable`, `device_function_type nullable`, `ip_address nullable`, `user_agent nullable`, `timestamps`
 
-- [ ] Subir broker MQTT em container (Mosquitto ou EMQX)
-- [ ] Integrar `php-mqtt/laravel-client` no Laravel
-- [ ] `DeviceCommandService` — publica comando MQTT e aguarda ACK
-- [ ] Tela de controle do portão (Livewire) com feedback em tempo real via Reverb
-- [ ] Sincronização de AccessCodes via MQTT ao criar/editar/expirar
-- [ ] Dashboard de saúde dos dispositivos: `last_seen`, uptime, firmware version
+**Seeder de desenvolvimento:**
+- [ ] 1 usuário admin, 1 usuário host, 1 Place com ambos vinculados, 1 Device Portatec com suas funções
 
-### Fase 4 — Integração com plataformas
+---
 
-- [ ] Refatorar `ICalSyncService` — melhorar parsing e tratamento de erros
-- [ ] UI para gerenciar integrações e ver último status de sync
-- [ ] Geração automática de AccessCode ao importar Booking via iCal
+### Fase 2 — Dashboard e Places
 
-### Fase 5 — Painel admin interno (Portatec)
+- [ ] Componente Livewire `Dashboard` — lista os Places do usuário com status resumido (quantos dispositivos online, próximo check-in)
+- [ ] Componente Livewire `Places\Index` — lista de Places com link para detalhes
+- [ ] Componente Livewire `Places\Show` — detalhe do Place: dispositivos, bookings recentes, PINs ativos
+- [ ] Componente Livewire `Places\Create` e `Places\Edit` — formulário simples (só nome por enquanto)
+- [ ] Vincular usuário ao Place (`PlaceUser`) ao criar — o criador vira admin automaticamente
 
-- [ ] Avaliar se FilamentPHP atende com escopo reduzido (CRUD simples) ou reescrever com Livewire
-- [ ] Cadastro de clientes / reset de senhas
-- [ ] Visualização de dispositivos, logs de comando e eventos de acesso
+---
+
+### Fase 3 — Bookings e AccessCodes
+
+Esta é a fase de maior regra de negócio. Fazer com calma.
+
+- [ ] Criar `AccessCodeGeneratorService`:
+  - Gera PIN numérico de 4–6 dígitos
+  - Valida unicidade: o mesmo PIN não pode estar ativo em dois AccessCodes simultâneos no mesmo Place
+  - Cria o AccessCode e dispara sync para os dispositivos
+- [ ] Componente Livewire `Bookings\Index` — lista de bookings por Place (com filtro de período)
+- [ ] Componente Livewire `Bookings\Create` — formulário de booking manual:
+  - Campos: `guest_name`, `check_in`, `check_out`
+  - Ao salvar: cria o Booking com `source = manual` e gera AccessCode automaticamente via Service
+- [ ] Componente Livewire `Bookings\Show` — detalhe do booking com o AccessCode vinculado
+- [ ] Componente Livewire `AccessCodes\Edit` — editar PIN, datas de um AccessCode existente
+- [ ] Componente Livewire `AccessCodes\Index` — lista de todos os PINs ativos do Place (hóspedes + colaboradores)
+- [ ] Componente Livewire `AccessCodes\Create` — criar PIN avulso para colaborador (sem booking)
+- [ ] Lógica do `default_pin`: ao cadastrar um Device Portatec, criar automaticamente um AccessCode com `is_default_pin = true`, `end = null`
+
+---
+
+### Fase 4 — Dispositivos e controle em tempo real
+
+Depende do teste MQTT estar validado antes de começar.
+
+- [ ] Subir broker Mosquitto em container Docker (`docker-compose.yml`)
+- [ ] Instalar e configurar `php-mqtt/laravel-client`
+- [ ] Criar comando artisan `mqtt:subscribe` que roda em background (registrar no Supervisor)
+- [ ] Criar `DeviceCommandService`:
+  - `sendCommand(Device $device, string $action, int $pin)` — publica no tópico MQTT e registra no `CommandLog`
+  - `handleAck(string $chipId, array $payload)` — processa o ACK do dispositivo e dispara evento Reverb ao frontend
+- [ ] Substituir os Events de WebSocket existentes (`PlaceDeviceCommandAckEvent`, etc.) por publicações MQTT onde couber
+- [ ] Componente Livewire `Devices\Control` — botão de abrir/fechar com feedback em tempo real (escuta evento Reverb via `wire:poll` ou Echo)
+- [ ] Componente Livewire `Devices\Index` — lista de dispositivos do Place com status (online/offline baseado em `last_sync`)
+- [ ] Componente Livewire `Devices\Show` — saúde do dispositivo: `last_seen`, uptime, funções e seus status
+- [ ] Migrar `AccessCodeSyncService` de WebSocket para MQTT
+
+---
+
+### Fase 5 — Integrações iCal
+
+- [ ] Refatorar `ICalSyncService` — melhorar tratamento de erros e logging
+- [ ] Componente Livewire `Integrations\Index` — lista de integrações com status do último sync
+- [ ] Componente Livewire `Integrations\Create` — formulário para adicionar URL do iCal de um Place
+- [ ] Ao importar Booking via iCal: chamar `AccessCodeGeneratorService` automaticamente (já acontece via Observer, validar que continua funcionando)
+
+---
+
+### Fase 6 — Limpeza final do Filament
+
+Só fazer esta fase depois que todas as telas acima estiverem funcionando e em uso.
+
+- [ ] Remover FilamentPHP do painel do cliente (`app` panel)
+- [ ] Remover `HasPanelShield`, `HasRoles` (Spatie) do `User` model se não for mais usado
+- [ ] Remover `spatie/laravel-permission` se não for mais necessário
+- [ ] Remover `filament/filament` e `bezhansalleh/filament-shield` do `composer.json`
+- [ ] Manter apenas o painel admin (`/admin`) com FilamentPHP em escopo reduzido:
+  - CRUD de usuários
+  - Visualização de CommandLog e AccessEvent
+  - Status de dispositivos
 
 ---
 
@@ -455,3 +528,5 @@ Abordagens a considerar quando chegar nessa parte:
 *v0.1 — criado em fevereiro/2026*
 *v0.2 — decisões de frontend (Livewire), comunicação (MQTT), isolamento de dados, scope do projeto, regras de AccessCode/Booking e default_pin atualizadas*
 *v0.3 — todas as questões em aberto resolvidas; default_pin definido como AccessCode com is_default_pin; nota sobre formulários Livewire com relacionamentos adicionada*
+*v0.4 — plano de fases reescrito com base nas migrations e seeders reais; dependências do Filament Shield mapeadas; campos faltantes identificados*
+*v0.5 — premissa de banco do zero adotada; Filament e Shield removidos do escopo; migrations definitivas listadas na Fase 1*
