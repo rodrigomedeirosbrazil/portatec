@@ -39,12 +39,11 @@ class BookingAccessCodeFlowTest extends TestCase
         $this->assertDatabaseHas('access_codes', [
             'place_id' => $placeId,
             'booking_id' => $booking->id,
-            'label' => 'Guest Flow',
         ]);
 
-        $createdAccessCode = DB::table('access_codes')->where('booking_id', $booking->id)->first();
-
+        $createdAccessCode = $booking->accessCode;
         $this->assertNotNull($createdAccessCode);
-        $this->assertSame(6, strlen((string) $createdAccessCode->pin));
+        $this->assertSame(6, strlen($createdAccessCode->pin));
+        $this->assertSame('Guest Flow', $createdAccessCode->display_name);
     }
 }

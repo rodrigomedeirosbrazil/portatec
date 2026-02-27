@@ -19,7 +19,6 @@ class AccessCode extends Model
         'user_id',
         'booking_id',
         'pin',
-        'label',
         'start',
         'end',
     ];
@@ -42,6 +41,15 @@ class AccessCode extends Model
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    public function getDisplayNameAttribute(): string
+    {
+        if ($this->booking) {
+            return $this->booking->guest_name ?: "Reserva #{$this->booking->id}";
+        }
+
+        return 'Código manual';
     }
 
     /**

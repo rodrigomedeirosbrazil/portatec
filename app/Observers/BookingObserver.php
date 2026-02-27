@@ -24,7 +24,6 @@ class BookingObserver
 
         if ($accessCode) {
             $accessCode->update([
-                'label' => $booking->guest_name ?: $accessCode->label,
                 'start' => $booking->check_in,
                 'end' => $booking->check_out,
             ]);
@@ -40,7 +39,7 @@ class BookingObserver
 
     public function restored(Booking $booking): void
     {
-        if (!$booking->accessCode) {
+        if (! $booking->accessCode) {
             $this->generator->createForBooking($booking);
         }
     }

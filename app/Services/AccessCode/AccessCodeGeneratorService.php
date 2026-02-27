@@ -17,7 +17,6 @@ class AccessCodeGeneratorService
             'booking_id' => $booking->id,
             'user_id' => $booking->integration?->user_id,
             'pin' => $this->generatePin($booking->place_id),
-            'label' => $booking->guest_name ?: 'Hospede',
             'start' => $booking->check_in,
             'end' => $booking->check_out,
         ]);
@@ -26,7 +25,6 @@ class AccessCodeGeneratorService
     public function createStandalone(
         int $placeId,
         ?int $userId,
-        ?string $label,
         CarbonInterface $start,
         ?CarbonInterface $end,
         ?string $pin = null
@@ -36,7 +34,6 @@ class AccessCodeGeneratorService
             'user_id' => $userId,
             'booking_id' => null,
             'pin' => $pin ?: $this->generatePin($placeId),
-            'label' => $label,
             'start' => $start,
             'end' => $end,
         ]);

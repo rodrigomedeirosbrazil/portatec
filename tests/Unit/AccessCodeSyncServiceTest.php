@@ -44,7 +44,6 @@ class AccessCodeSyncServiceTest extends TestCase
             AccessCode::create([
                 'place_id' => $placeId,
                 'pin' => '111111',
-                'label' => 'Valid',
                 'start' => now()->subHour(),
                 'end' => now()->addHour(),
             ]);
@@ -52,7 +51,6 @@ class AccessCodeSyncServiceTest extends TestCase
             AccessCode::create([
                 'place_id' => $placeId,
                 'pin' => '222222',
-                'label' => 'Expired',
                 'start' => now()->subDays(3),
                 'end' => now()->subDay(),
             ]);
@@ -64,7 +62,7 @@ class AccessCodeSyncServiceTest extends TestCase
             ->with(
                 Mockery::on(fn ($value): bool => $value instanceof Device && $value->id === $device->id),
                 Mockery::on(function ($value): bool {
-                    if (!$value instanceof Collection) {
+                    if (! $value instanceof Collection) {
                         return false;
                     }
 

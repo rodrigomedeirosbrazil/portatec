@@ -24,7 +24,6 @@ class AccessCodeGeneratorServiceTest extends TestCase
         DB::table('access_codes')->insert([
             'place_id' => $placeId,
             'pin' => '123456',
-            'label' => 'Existing',
             'start' => now()->subDay(),
             'end' => now()->addDay(),
             'created_at' => now(),

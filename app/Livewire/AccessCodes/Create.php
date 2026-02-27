@@ -14,9 +14,11 @@ use Livewire\Component;
 class Create extends Component
 {
     public ?int $placeId = null;
-    public ?string $label = null;
+
     public ?string $pin = null;
+
     public string $start = '';
+
     public ?string $end = null;
 
     public function mount(): void
@@ -30,7 +32,6 @@ class Create extends Component
     {
         return [
             'placeId' => ['required', 'integer', 'exists:places,id'],
-            'label' => ['nullable', 'string', 'max:255'],
             'pin' => ['nullable', 'string', 'max:6'],
             'start' => ['required', 'date'],
             'end' => ['nullable', 'date', 'after:start'],
@@ -51,7 +52,6 @@ class Create extends Component
         $accessCode = $generator->createStandalone(
             placeId: $validated['placeId'],
             userId: null,
-            label: $validated['label'],
             start: Carbon::parse($validated['start']),
             end: isset($validated['end']) ? Carbon::parse($validated['end']) : null,
             pin: $validated['pin']

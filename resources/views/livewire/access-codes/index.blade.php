@@ -23,7 +23,7 @@
                         PIN {{ $accessCode->pin }}
                     </a>
                 </h2>
-                <p style="margin: 0; color: #4b5563;">{{ $accessCode->label ?: 'Sem rótulo' }}</p>
+                <p style="margin: 0; color: #4b5563;">{{ $accessCode->display_name }}</p>
                 <p style="margin: 4px 0 0; color: #4b5563;">
                     {{ $accessCode->start->format('d/m/Y H:i') }} até {{ $accessCode->end?->format('d/m/Y H:i') ?? 'Sem expiração' }}
                 </p>

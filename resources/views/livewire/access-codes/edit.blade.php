@@ -3,10 +3,7 @@
     <h1 style="margin: 8px 0 16px;">Editar Access Code</h1>
 
     <form wire:submit="save" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; display: grid; gap: 10px;">
-        <div>
-            <label for="label">Rótulo</label><br>
-            <input id="label" type="text" wire:model="label" style="padding: 8px; width: 100%;">
-        </div>
+        <p style="margin: 0 0 8px; color: #4b5563;">{{ $accessCode->display_name }}</p>
 
         <div>
             <label for="pin">PIN</label><br>

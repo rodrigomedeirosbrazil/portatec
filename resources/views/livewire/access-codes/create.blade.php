@@ -13,11 +13,6 @@
         </div>
 
         <div>
-            <label for="label">Rótulo</label><br>
-            <input id="label" type="text" wire:model="label" style="padding: 8px; width: 100%;">
-        </div>
-
-        <div>
             <label for="pin">PIN (opcional)</label><br>
             <input id="pin" type="text" wire:model="pin" style="padding: 8px; width: 100%;">
         </div>
