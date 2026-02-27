@@ -40,6 +40,12 @@
 - [ ] Implementar autenticação do cliente desacoplada do Filament (Breeze/Livewire):
   - login/registro/reset próprios para `/app`
   - parar de depender de `/admin/login` como entrada do cliente
+- [ ] Remover impersonate do painel admin em Filament:
+  - remover ação `Impersonate` do `UserResource`
+  - remover dependências/configuração de `filament-impersonate`/`laravel-impersonate` do admin
+- [ ] Definir estratégia de impersonate para o app cliente (Livewire):
+  - fluxo explícito de "entrar como cliente" fora do Filament
+  - trilha de auditoria mínima (quem assumiu, quem foi assumido, quando iniciou/finalizou)
 - [ ] Implementar telas Livewire de dispositivos:
   - `Devices\\Index`
   - `Devices\\Show`

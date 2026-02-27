@@ -194,6 +194,13 @@ Manter FilamentPHP **somente** para o painel admin interno, com escopo reduzido:
 - Visualização de dispositivos e status de comunicação
 - Visualização de logs (CommandLog, AccessEvent)
 - Nenhuma regra de negócio complexa — só operações de suporte e manutenção
+- Não usar impersonate no Filament admin
+
+### Impersonate (admin -> cliente)
+
+- O impersonate não deve ficar acoplado ao Filament admin.
+- Precisamos implementar um fluxo próprio no app cliente (Livewire), com entrada explícita pelo backend e retorno seguro à sessão original.
+- Requisito mínimo de auditoria: registrar admin de origem, usuário assumido, início e fim da sessão.
 
 ---
 
@@ -463,6 +470,8 @@ Só fazer esta fase depois que todas as telas acima estiverem funcionando e em u
 
 - [ ] Concluir remoção do painel Filament do cliente (`app` panel)
 - [ ] Remover eventos/listeners/rotas legadas de WebSocket para dispositivo (quando MQTT estiver estável)
+- [ ] Remover impersonate acoplado ao Filament admin (`filament-impersonate` + ação no `UserResource`)
+- [ ] Especificar e implementar impersonate no painel cliente Livewire com auditoria mínima
 - [ ] Manter painel admin (`/admin`) com FilamentPHP em escopo reduzido:
   - CRUD de usuários
   - Visualização de CommandLog e AccessEvent
