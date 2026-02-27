@@ -17,9 +17,9 @@ class Edit extends Component
     public string $start = '';
     public ?string $end = null;
 
-    public function mount(int $accessCode): void
+    public function mount(AccessCode $accessCode): void
     {
-        $this->accessCode = AccessCode::findOrFail($accessCode);
+        $this->accessCode = $accessCode;
 
         abort_unless(
             Auth::user()->placeUsers()->where('place_id', $this->accessCode->place_id)->exists(),

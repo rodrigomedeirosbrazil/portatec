@@ -14,9 +14,9 @@ class Edit extends Component
     public Place $place;
     public string $name = '';
 
-    public function mount(int $place): void
+    public function mount(Place $place): void
     {
-        $this->place = Place::findOrFail($place);
+        $this->place = $place;
 
         abort_unless(
             $this->place->placeUsers()->where('user_id', Auth::id())->exists(),

@@ -13,11 +13,13 @@ class Show extends Component
 {
     public Place $place;
 
-    public function mount(int $place): void
+    public function mount(Place $place): void
     {
-        $this->place = Place::query()
-            ->with(['devices', 'bookings' => fn ($q) => $q->latest('check_in')->limit(10), 'accessCodes'])
-            ->findOrFail($place);
+        $this->place = $place->load([
+            'devices',
+            'bookings' => fn ($q) => $q->latest('check_in')->limit(10),
+            'accessCodes',
+        ]);
 
         abort_unless(
             $this->place->placeUsers()->where('user_id', Auth::id())->exists(),

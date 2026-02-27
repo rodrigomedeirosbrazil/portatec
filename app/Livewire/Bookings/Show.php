@@ -13,9 +13,9 @@ class Show extends Component
 {
     public Booking $booking;
 
-    public function mount(int $booking): void
+    public function mount(Booking $booking): void
     {
-        $this->booking = Booking::with('accessCode')->findOrFail($booking);
+        $this->booking = $booking->load('accessCode');
 
         abort_unless(
             Auth::user()->placeUsers()->where('place_id', $this->booking->place_id)->exists(),
