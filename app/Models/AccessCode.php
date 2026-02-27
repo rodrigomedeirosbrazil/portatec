@@ -16,9 +16,10 @@ class AccessCode extends Model
 
     protected $fillable = [
         'place_id',
-        'user_id', // Agora nullable
-        'booking_id', // Novo campo (será adicionado em migration futura)
+        'user_id',
+        'booking_id',
         'pin',
+        'label',
         'start',
         'end',
     ];
@@ -49,6 +50,11 @@ class AccessCode extends Model
     public function isValid(): bool
     {
         $now = now();
+
+        if ($this->end === null) {
+            return $now->gte($this->start);
+        }
+
         return $now->gte($this->start) && $now->lte($this->end);
     }
 }

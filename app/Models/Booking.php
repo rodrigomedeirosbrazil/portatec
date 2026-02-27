@@ -20,6 +20,7 @@ class Booking extends Model
         'guest_name',
         'check_in',
         'check_out',
+        'source',
         'external_id',
         'deletion_reason',
     ];

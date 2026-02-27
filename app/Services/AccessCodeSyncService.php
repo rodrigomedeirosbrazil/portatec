@@ -101,7 +101,10 @@ class AccessCodeSyncService
     {
         return $place->accessCodes()
             ->where('start', '<=', now())
-            ->where('end', '>=', now())
+            ->where(function ($query) {
+                $query->whereNull('end')
+                    ->orWhere('end', '>=', now());
+            })
             ->get();
     }
 }

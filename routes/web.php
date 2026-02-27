@@ -1,6 +1,12 @@
 <?php
 
 use App\Livewire\Dashboard;
+use App\Livewire\AccessCodes\Create as CreateAccessCode;
+use App\Livewire\AccessCodes\Edit as EditAccessCode;
+use App\Livewire\AccessCodes\Index as IndexAccessCodes;
+use App\Livewire\Bookings\Create as CreateBooking;
+use App\Livewire\Bookings\Index as IndexBookings;
+use App\Livewire\Bookings\Show as ShowBooking;
 use App\Livewire\Places\Create as CreatePlace;
 use App\Livewire\Places\Edit as EditPlace;
 use App\Livewire\Places\Index as IndexPlaces;
@@ -30,4 +36,12 @@ Route::middleware('auth')
         Route::get('/places/create', CreatePlace::class)->name('places.create');
         Route::get('/places/{place}', ShowPlace::class)->name('places.show');
         Route::get('/places/{place}/edit', EditPlace::class)->name('places.edit');
+
+        Route::get('/bookings', IndexBookings::class)->name('bookings.index');
+        Route::get('/bookings/create', CreateBooking::class)->name('bookings.create');
+        Route::get('/bookings/{booking}', ShowBooking::class)->name('bookings.show');
+
+        Route::get('/access-codes', IndexAccessCodes::class)->name('access-codes.index');
+        Route::get('/access-codes/create', CreateAccessCode::class)->name('access-codes.create');
+        Route::get('/access-codes/{accessCode}/edit', EditAccessCode::class)->name('access-codes.edit');
     });
