@@ -65,9 +65,10 @@
     - `tests/Unit/ICalSyncServiceTest.php`
     - `tests/Unit/AccessCodeGeneratorServiceTest.php`
     - `tests/Unit/DeviceCommandServicePayloadMappingTest.php`
-- [ ] Definir estratégia de impersonate para o app cliente (Livewire):
+- [x] Definir estratégia de impersonate para o app cliente (Livewire):
   - fluxo explícito de "entrar como cliente" fora do Filament
   - trilha de auditoria mínima (quem assumiu, quem foi assumido, quando iniciou/finalizou)
+  - observação: implementado fluxo de início/fim por rotas dedicadas com registro em `impersonation_sessions` (`started_at`/`ended_at`, IP e user agent), ação explícita no `UserResource` e teste em `tests/Feature/ClientImpersonationFlowTest.php`
 - [ ] Atualizar este checklist a cada entrega (marcar itens e registrar pendências novas)
 
 ---
