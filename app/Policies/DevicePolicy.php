@@ -4,67 +4,73 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Device;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class DevicePolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $user): bool
     {
-        return $authUser->can('view_any_device');
+        return true;
     }
 
-    public function view(AuthUser $authUser, Device $device): bool
+    public function view(User $user, Device $device): bool
     {
-        return $authUser->can('view_device');
+        return $device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $user): bool
     {
-        return $authUser->can('create_device');
+        return true;
     }
 
-    public function update(AuthUser $authUser, Device $device): bool
+    public function update(User $user, Device $device): bool
     {
-        return $authUser->can('update_device');
+        return $device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id);
     }
 
-    public function delete(AuthUser $authUser, Device $device): bool
+    public function delete(User $user, Device $device): bool
     {
-        return $authUser->can('delete_device');
+        return $device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id);
     }
 
-    public function restore(AuthUser $authUser, Device $device): bool
+    public function restore(User $user, Device $device): bool
     {
-        return $authUser->can('restore_device');
+        return $device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id);
     }
 
-    public function forceDelete(AuthUser $authUser, Device $device): bool
+    public function forceDelete(User $user, Device $device): bool
     {
-        return $authUser->can('force_delete_device');
+        return false;
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $user): bool
     {
-        return $authUser->can('force_delete_any_device');
+        return false;
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $user): bool
     {
-        return $authUser->can('restore_any_device');
+        return true;
     }
 
-    public function replicate(AuthUser $authUser, Device $device): bool
+    public function replicate(User $user, Device $device): bool
     {
-        return $authUser->can('replicate_device');
+        return false;
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $user): bool
     {
-        return $authUser->can('reorder_device');
+        return false;
     }
 
+    private function hasPlaceAccess(User $user, int $placeId): bool
+    {
+        return $user->placeUsers()
+            ->where('place_id', $placeId)
+            ->exists();
+    }
 }

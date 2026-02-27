@@ -39,6 +39,11 @@ class User extends Authenticatable
         return $this->hasMany(Integration::class);
     }
 
+    public function placeUsers(): HasMany
+    {
+        return $this->hasMany(PlaceUser::class);
+    }
+
     /**
      * Transitional compatibility helper while role system is removed.
      */

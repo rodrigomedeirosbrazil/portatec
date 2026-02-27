@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\AccessCode;
 use App\Models\AccessEvent;
 use App\Models\Booking;
+use App\Models\CommandLog;
 use App\Models\Device;
 use App\Models\Integration;
 use App\Models\Place;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Policies\AccessCodePolicy;
 use App\Policies\AccessEventPolicy;
 use App\Policies\BookingPolicy;
+use App\Policies\CommandLogPolicy;
 use App\Policies\DevicePolicy;
 use App\Policies\IntegrationPolicy;
 use App\Policies\PlacePolicy;
@@ -33,6 +35,7 @@ class AuthServiceProvider extends ServiceProvider
         User::class => UserPolicy::class,
         AccessCode::class => AccessCodePolicy::class,
         Booking::class => BookingPolicy::class,
+        CommandLog::class => CommandLogPolicy::class,
         Platform::class => PlatformPolicy::class,
         Integration::class => IntegrationPolicy::class,
         AccessEvent::class => AccessEventPolicy::class,
