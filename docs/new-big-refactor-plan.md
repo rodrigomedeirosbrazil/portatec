@@ -149,7 +149,7 @@ Todo dispositivo Portatec (ESP8266) possui um **PIN padrão de acesso** (`defaul
 - Deve ser sincronizado para o dispositivo junto com os demais AccessCodes
 - Não deve aparecer para hóspedes — apenas para o admin e o host do lugar
 
-> **Decisão em aberto:** o `default_pin` é tratado como um AccessCode permanente no banco (sem `end`), ou como um campo do Device sincronizado separadamente pelo firmware? Ver seção 11.
+> **Decisão:** o `default_pin` é armazenado como um AccessCode permanente no banco, com o campo `is_default_pin = true` e sem data de expiração (`end = null`). Entra no mesmo fluxo de sync dos demais PINs, sem lógica especial no firmware.
 
 ---
 
@@ -412,19 +412,35 @@ app/
 
 ---
 
-## 11. Questões em aberto
+## 11. Questões resolvidas
 
-| # | Questão | Prioridade |
+| # | Questão | Decisão |
 |---|---|---|
-| 1 | `default_pin` do dispositivo Portatec: AccessCode permanente no banco (sem `end`) ou campo sincronizado separadamente pelo firmware? | Alta |
-| 2 | Como o ESP8266 se autentica no broker MQTT? (usuário/senha por dispositivo, ou certificado?) | Alta |
-| 3 | Mosquitto ou EMQX como broker? (EMQX tem dashboard; Mosquitto é mais simples) | Média |
-| 4 | Como o hóspede recebe o PIN por enquanto? (fora do sistema — WhatsApp manual, e-mail manual?) | Média |
-| 5 | FilamentPHP no painel admin: manter com escopo reduzido ou reescrever em Livewire também? | Baixa |
+| 1 | `default_pin` — como armazenar? | AccessCode com `is_default_pin = true` e `end = null`. Mesmo fluxo de sync dos demais PINs. |
+| 2 | Autenticação do ESP8266 no broker MQTT | Usuário/senha por dispositivo (configurado no firmware) |
+| 3 | Broker MQTT | **Mosquitto** — simples, leve, container Docker |
+| 4 | Hóspede recebe o PIN como? | Fora do sistema por enquanto (WhatsApp, e-mail manual pelo host) |
+| 5 | FilamentPHP no painel admin | Manter com escopo reduzido (CRUD de suporte apenas) |
 
 ---
 
-## 12. Referências e dependências
+## 12. Notas de implementação — a refinar
+
+### Formulários com relacionamentos no Livewire
+
+Formulários que envolvem relacionamentos (ex: criar um Place e já associar usuários, criar um Device e vincular a um Place com suas funções) são um ponto de atenção. O Livewire resolve bem, mas exige um pouco mais de cuidado do que o FilamentPHP fazia automaticamente.
+
+Abordagens a considerar quando chegar nessa parte:
+
+- **Formulários em múltiplos steps (wizard):** criar o recurso principal primeiro, depois adicionar os relacionamentos em etapas separadas. Reduz a complexidade de um único componente Livewire grande.
+- **Componentes Livewire aninhados:** separar a lógica do formulário principal dos sub-formulários de relacionamento em componentes menores e reutilizáveis.
+- **`wire:model` com arrays:** Livewire suporta binding de arrays para coleções de relacionamentos (ex: lista de funções de um dispositivo), o que permite adicionar/remover itens dinamicamente antes de salvar.
+
+> Este ponto deve ser refinado quando cada formulário for implementado. Não bloqueia o início da refatoração.
+
+---
+
+## 13. Referências e dependências
 
 - [Laravel Breeze + Livewire](https://laravel.com/docs/starter-kits#breeze-and-livewire) — scaffolding de autenticação com Livewire
 - [Livewire v3](https://livewire.laravel.com/) — componentes reativos server-side
@@ -438,3 +454,4 @@ app/
 
 *v0.1 — criado em fevereiro/2026*
 *v0.2 — decisões de frontend (Livewire), comunicação (MQTT), isolamento de dados, scope do projeto, regras de AccessCode/Booking e default_pin atualizadas*
+*v0.3 — todas as questões em aberto resolvidas; default_pin definido como AccessCode com is_default_pin; nota sobre formulários Livewire com relacionamentos adicionada*
