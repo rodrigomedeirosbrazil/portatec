@@ -69,6 +69,7 @@
   - fluxo explícito de "entrar como cliente" fora do Filament
   - trilha de auditoria mínima (quem assumiu, quem foi assumido, quando iniciou/finalizou)
   - observação: implementado fluxo de início/fim por rotas dedicadas com registro em `impersonation_sessions` (`started_at`/`ended_at`, IP e user agent), ação explícita no `UserResource` e teste em `tests/Feature/ClientImpersonationFlowTest.php`
+  - atualização 2026-02-27: endurecimento do fluxo para bloquear impersonação de `super_admin` e validar integridade da sessão no encerramento (session id + impersonator + impersonated), com cobertura adicional em `tests/Feature/ClientImpersonationFlowTest.php`
 - [ ] Atualizar este checklist a cada entrega (marcar itens e registrar pendências novas)
 
 ---
