@@ -25,7 +25,7 @@
 - [x] PR-01 — Fundação de dependências e painéis (**concluído com ressalvas**)
 - [x] PR-02 — Reset de banco + migrations definitivas
 - [x] PR-03 — Modelos, relações e policies por ownership
-- [x] PR-04 — Base Livewire do cliente (Dashboard + Places) (**sem auth Breeze ainda**)
+- [x] PR-04 — Base Livewire do cliente (Dashboard + Places)
 - [x] PR-05 — Bookings e AccessCodes
 - [x] PR-06 — MQTT: publicação, subscriber e operação (**sem telas Livewire de Devices**)
 - [x] PR-07 — iCal + robustez de sync
@@ -33,13 +33,14 @@
 
 ### Pendências abertas (próximos passos)
 
-- [ ] Remover resíduos de Shield/Spatie ainda no repositório:
+- [x] Remover resíduos de Shield/Spatie ainda no repositório:
   - `config/filament-shield.php`
   - `config/permission.php`
   - `app/Filament/Resources/Roles/**`
-- [ ] Implementar autenticação do cliente desacoplada do Filament (Breeze/Livewire):
+- [x] Implementar autenticação do cliente desacoplada do Filament (Breeze/Livewire):
   - login/registro/reset próprios para `/app`
   - parar de depender de `/admin/login` como entrada do cliente
+  - observação: implementado com controllers/views customizados; sem scaffolding Breeze
 - [x] Remover impersonate do painel admin em Filament:
   - remover ação `Impersonate` do `UserResource`
   - remover dependências/configuração de `filament-impersonate`/`laravel-impersonate` do admin
