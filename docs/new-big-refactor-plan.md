@@ -1,20 +1,23 @@
 # Portatec — Documento de Arquitetura e Refatoração
 
-> **Status:** Rascunho inicial · Versão 0.1
+> **Status:** Rascunho · Versão 0.2
 > **Objetivo:** Servir como documento vivo para guiar a refatoração do sistema. Deve ser atualizado à medida que decisões forem sendo tomadas.
 
 ---
 
 ## 1. O que é o Portatec
 
-Sistema SaaS de gerenciamento de controle de acesso (portões, fechaduras) voltado para anfitriões de hospedagem por temporada (Airbnb, etc.).
+Sistema de gerenciamento de controle de acesso (portões, fechaduras) voltado para condomínios e anfitriões de hospedagem por temporada (Airbnb, etc.).
+
+**Escopo atual:** pequeno — aproximadamente 2 condomínios, até ~20 usuários. Não é SaaS público por enquanto.
 
 **Atores principais:**
-- **Admin (Portatec):** gerencia clientes, plataformas e dispositivos globais
-- **Cliente / Host:** cadastra seus locais (Places), dispositivos e integra com plataformas de reserva
-- **Hóspede:** recebe um PIN com validade pela duração da estadia
-- **Colaborador:** faxineira, zelador — recebe um PIN com janela de acesso entre estadias
-- **Dispositivo ESP8266 (Portatec):** fica no local, recebe comandos e valida PINs localmente
+
+- **Admin (Portatec):** gerencia clientes, plataformas e dispositivos — acesso via painel interno simplificado
+- **Cliente / Host:** cadastra seus locais (Places), dispositivos, bookings e códigos de acesso
+- **Colaborador:** faxineira, zelador — recebe um PIN com janela de acesso entre estadias, cadastrado pelo host
+- **Hóspede:** recebe um PIN com validade pela duração da estadia (sem conta no sistema, sem notificação automática por enquanto)
+- **Dispositivo Portatec (ESP8266):** fica no local, recebe comandos remotos, valida PINs localmente via WiFi aberto
 - **Dispositivo Tuya:** fechaduras e relés gerenciados via API Tuya
 
 ---
@@ -22,6 +25,7 @@ Sistema SaaS de gerenciamento de controle de acesso (portões, fechaduras) volta
 ## 2. Situação atual
 
 ### Stack
+
 | Camada | Tecnologia atual |
 |---|---|
 | Backend | Laravel 11 |
@@ -33,15 +37,16 @@ Sistema SaaS de gerenciamento de controle de acesso (portões, fechaduras) volta
 | Jobs | Laravel Queues + Horizon |
 
 ### Modelos existentes (manter com ajustes)
+
 ```
 User
 Place              → tem vários Devices, AccessCodes, Bookings, Integrations
 PlaceUser          → pivot com role (admin, host)
-Device             → brand (portatec | tuya), external_device_id, last_sync
+Device             → brand (portatec | tuya), external_device_id, last_sync, default_pin
 DeviceFunction     → tipo (switch, sensor, button), pin, status
 PlaceDeviceFunction→ pivot Device ↔ Place
 AccessCode         → pin, start, end, place_id, user_id?, booking_id?
-Booking            → check_in, check_out, guest_name, integration_id
+Booking            → check_in, check_out, guest_name, integration_id, source (manual | ical)
 Integration        → platform_id, user_id (ex: conexão com Airbnb)
 Platform           → airbnb, booking.com, etc.
 AccessEvent        → log de cada tentativa de acesso
@@ -49,221 +54,201 @@ CommandLog         → log de comandos enviados ao dispositivo
 ```
 
 ### Problemas identificados
-- **FilamentPHP** dificulta regras de negócio customizadas (visibilidade de dados por tenant, lógica de criação de PINs, etc.)
-- **SQLite** não está pronto para produção multi-tenant com concorrência
-- **WebSocket sem confirmação confiável:** não há garantia de que o dispositivo recebeu o comando
-- Sem separação clara de tenant: qualquer usuário pode potencialmente ver dados de outro
+
+- **FilamentPHP** dificulta regras de negócio customizadas — será descartado do painel do cliente
+- **WebSocket** tem gerado instabilidade e não há confirmação (ACK) confiável de execução dos comandos
 
 ---
 
-## 3. Decisões de arquitetura a tomar
+## 3. Decisões tomadas
 
-### 3.1 Frontend — Blade/Livewire vs Next.js
-
-| Critério | Blade + Livewire | Next.js |
+| # | Questão | Decisão |
 |---|---|---|
-| Velocidade de desenvolvimento | ✅ Muito rápido | ⚠️ Mais setup |
-| Time de manutenção Laravel | ✅ Mesma linguagem | ❌ Exige JS/React |
-| UX em tempo real (status do portão) | ⚠️ Livewire + Alpine | ✅ React facilita |
-| SEO | Neutro (app autenticado) | Neutro |
-| Deploy | ✅ Mesmo servidor | ⚠️ Separado ou Vercel |
-| Controle fino de UI/UX | ⚠️ Limitado | ✅ Total |
-
-**Recomendação inicial:** Começar com **Blade + Livewire**. O ganho de controle vs FilamentPHP já é enorme, sem precisar de duas aplicações. Se o produto crescer e precisar de um app mobile ou UX muito interativa, migrar a SPA para Next.js depois. A API REST já estará pronta para isso.
-
-**Decisão:** `[ ] Blade+Livewire` `[ ] Next.js` `[ ] Outro`
-
----
-
-### 3.2 Banco de dados — SQLite → PostgreSQL
-
-SQLite não suporta concorrência real nem múltiplos workers. Para produção, migrar para **PostgreSQL**.
-
-- Mantém a mesma ORM (Eloquent), sem mudança de código
-- Habilita row-level locking para geração de PINs únicos
-- Suporte a `jsonb` para metadata de eventos
-
-**Decisão:** `[x] PostgreSQL` (migração obrigatória antes de produção)
+| 1 | Frontend | **Livewire** (Blade + Livewire + Alpine) |
+| 2 | Comunicação dispositivo | **MQTT** (retomar broker em container) |
+| 3 | Isolamento de dados | **Filtros por user_id/place_id nas queries** — sem multi-tenancy |
+| 4 | Notificação ao hóspede | **Não implementar por enquanto** |
+| 5 | Billing/planos | **Não implementar por enquanto** |
+| 6 | FilamentPHP | **Descartar** do painel do cliente; manter somente painel admin interno simplificado |
+| 7 | ESP32 | Fora do escopo deste repositório |
+| 8 | App mobile | **Não** — web responsiva que funcione no navegador do celular |
+| 9 | Banco de dados | **SQLite** — escala atual não exige PostgreSQL |
 
 ---
 
-### 3.3 Multi-tenancy
+## 4. Regras de acesso e isolamento de dados
 
-Hoje não há isolamento de dados por cliente. Precisamos de uma estratégia.
+Não há multi-tenancy com bancos separados. O controle é feito por regras de negócio nas queries, usando os relacionamentos existentes.
 
-**Opção A — Scoping manual:** Cada query filtra por `user_id` ou `place_id` do usuário autenticado. Simples, mas fácil de esquecer.
+### Princípio geral
 
-**Opção B — Pacote `stancl/tenancy`:** Multi-tenant com banco separado por cliente. Mais seguro, mais complexo.
+O usuário autenticado só enxerga e opera dados que lhe pertencem ou foram explicitamente compartilhados com ele.
 
-**Opção C — Global Scopes no Eloquent:** Scopes aplicados automaticamente em todos os modelos baseados no usuário logado. Meio-termo entre A e B.
+### Casos de compartilhamento suportados
 
-**Recomendação:** Opção C — Global Scopes + Policies (já existem no código) para garantir isolamento sem a complexidade de bancos separados.
+- **Um cliente compartilha um Place com outro usuário** via `PlaceUser` (roles: `admin`, `host`)
+- **Um Device de um Place pode ser vinculado a outro Place** via `PlaceDeviceFunction` — o dispositivo físico é o mesmo, mas aparece em dois locais com funções potencialmente diferentes
 
-**Decisão:** `[ ] A` `[ ] B` `[ ] C`
+### Regras por recurso
 
----
+| Recurso | Regra de acesso |
+|---|---|
+| Place | Usuário deve ter registro em `place_users` para o place |
+| Device | Acesso via `place_users` do place ao qual o device pertence |
+| AccessCode | Pertence a um Place — acesso via place |
+| Booking | Pertence a um Place — acesso via place |
+| Integration | Pertence diretamente ao `user_id` do usuário |
+| CommandLog | Filtrado pelo `user_id` que emitiu o comando |
 
-### 3.4 Comunicação com os dispositivos
+### Implementação
 
-#### Situação atual
-O dispositivo ESP8266 conecta via WebSocket ao servidor Laravel (Reverb/Pusher). O servidor envia eventos e o dispositivo reage. Não há confirmação (ACK) confiável de que o comando foi executado.
+Usar **Policy classes** (já existem no projeto) combinadas com **query scopes** nos controllers. Não utilizar Global Scopes automáticos para evitar comportamentos invisíveis e difíceis de depurar.
 
-#### Fluxos de comunicação
-Existem dois fluxos distintos que precisam de soluções diferentes:
+Padrão a seguir nos controllers:
 
-**Fluxo 1 — Sincronização de AccessCodes (não urgente)**
-> Quando um PIN é criado/atualizado/expirado, sincronizar com o dispositivo.
+```php
+// Sempre partir do usuário autenticado para chegar aos dados
+$places = auth()->user()
+    ->placeUsers()
+    ->with('place')
+    ->get()
+    ->pluck('place');
 
-Este fluxo **não precisa ser em tempo real imediato**. O dispositivo pode fazer polling ou receber push. O importante é que fique consistente.
-
-Opções:
-- **HTTP Polling pelo dispositivo:** A cada N minutos o ESP8266 faz GET /api/device/{id}/access-codes. Simples, funciona com ESP8266 limitado.
-- **WebSocket push (atual):** Mais rápido, mais complexo.
-- **MQTT:** Protocolo feito para IoT, leve, com QoS garantido. Requer um broker (ex: EMQX, Mosquitto, HiveMQ Cloud grátis).
-
-**Fluxo 2 — Comando em tempo real (abrir/fechar portão)**
-> O usuário clica "Abrir" no dashboard e quer feedback imediato.
-
-Este fluxo **precisa de confirmação**. O usuário precisa saber se o portão abriu ou não.
-
-Opções:
-- **WebSocket bidirecional (melhorado):** Manter WebSocket, mas implementar ACK: ao receber o comando, o dispositivo envia de volta `{command_id, status: "executed"}`. O servidor confirma ao frontend via Broadcasting.
-- **MQTT com QoS 1/2:** O broker garante a entrega. O dispositivo publica o resultado num tópico de resposta.
-
-#### Recomendação
-
-Adotar **MQTT** para ambos os fluxos:
-- É o protocolo padrão para IoT (muito documentado para ESP8266/ESP32)
-- Suporta QoS (Quality of Service) → garante entrega
-- Broker free tier disponível (HiveMQ Cloud, EMQX Cloud)
-- O Laravel publica via um cliente MQTT (ex: `php-mqtt/laravel-client`)
-- O dispositivo subscreve tópicos por `chip_id`
-
-**Alternativa mais simples no curto prazo:** Manter WebSocket, mas adicionar protocolo de ACK:
-1. Servidor envia `{command_id, action, pin}` ao dispositivo
-2. Dispositivo executa e responde `{command_id, status}`
-3. Servidor recebe ACK e publica evento ao frontend
-
-**Decisão:** `[ ] Manter WebSocket + ACK` `[ ] Migrar para MQTT` `[ ] Outro`
-
----
-
-### 3.5 WiFi aberto no ESP8266
-
-O dispositivo cria um WiFi aberto. Qualquer pessoa que conecta acessa uma interface local para controlar o portão via PIN.
-
-**Riscos e melhorias a considerar:**
-- PIN sem HTTPS na rede local — considerar se o ESP8266 pode servir HTTPS (difícil, limitação de hardware) ou se o risco é aceitável
-- Implementar rate limiting local no firmware para tentativas de PIN errado
-- Timeout de sessão local após inatividade
-
----
-
-## 4. Arquitetura proposta (pós-refatoração)
-
-```
-┌─────────────────────────────────────────────────────┐
-│                   Portatec Server                    │
-│                                                      │
-│  ┌──────────────┐  ┌──────────────────────────────┐ │
-│  │  Laravel API  │  │  Blade + Livewire (UI)       │ │
-│  │  (REST)       │  │  - Dashboard do cliente      │ │
-│  │  - Auth       │  │  - Controle de portão        │ │
-│  │  - AccessCode │  │  - Bookings / Calendário     │ │
-│  │  - Devices    │  │  - Códigos de acesso         │ │
-│  │  - Bookings   │  └──────────────────────────────┘ │
-│  │  - Webhooks   │                                    │
-│  └──────┬────────┘                                   │
-│         │ Laravel Broadcasting (Reverb)               │
-│         │ para feedback em tempo real no frontend     │
-│  ┌──────▼────────┐                                   │
-│  │  MQTT Broker  │ ◄─── ESP8266 / Tuya              │
-│  │  (HiveMQ /   │                                    │
-│  │   Mosquitto)  │                                   │
-│  └──────────────┘                                    │
-│                                                      │
-│  ┌──────────────┐  ┌──────────────┐                 │
-│  │  PostgreSQL  │  │  Redis        │                 │
-│  │  (dados)     │  │  (queue/cache)│                 │
-│  └──────────────┘  └──────────────┘                 │
-└─────────────────────────────────────────────────────┘
+// Nunca buscar direto sem filtro
+// ❌ Place::all()
+// ✅ Place::whereHas('placeUsers', fn($q) => $q->where('user_id', auth()->id()))
 ```
 
 ---
 
-## 5. Plano de refatoração em fases
+## 5. Regras de negócio — AccessCode e Bookings
 
-### Fase 1 — Fundação (sem FilamentPHP na app do cliente)
-- [ ] Criar sistema de autenticação próprio (Laravel Breeze ou do zero)
-- [ ] Criar `PlaceScope` — middleware/global scope para multi-tenancy
-- [ ] Migrar banco para PostgreSQL
-- [ ] Criar primeira tela Livewire: Dashboard do cliente (lista de Places e status dos dispositivos)
-- [ ] Criar tela de controle do portão em tempo real (Livewire + Broadcasting)
+### Bookings
 
-### Fase 2 — Regras de negócio de AccessCode
-- [ ] Service `AccessCodeGeneratorService` — geração com unicidade e validação de janela
-- [ ] Tela de visualização de PINs ativos por estadia
-- [ ] Automatização: criação de PIN ao confirmar Booking
-- [ ] Expiração automática e notificação ao hóspede (e-mail/SMS)
+- Bookings podem ser criados de duas formas:
+  - **Automática:** importação via iCal (Airbnb e similares)
+  - **Manual:** o cliente cria diretamente no sistema, informando datas e nome do hóspede
+- O campo `source` distingue a origem: `manual | ical`
+- Bookings com soft delete mantêm o histórico com `deletion_reason`
 
-### Fase 3 — Integração com plataformas
-- [ ] Refatorar `ICalSyncService` — melhorar parsing e tratamento de erros
-- [ ] Webhook (futuro) para Airbnb direto ao invés de polling iCal
-- [ ] UI para gerenciar integrações e ver status de sincronização
+### AccessCode
 
-### Fase 4 — Comunicação confiável com dispositivos
-- [ ] Definir protocolo de ACK no WebSocket atual (curto prazo)
-- [ ] Avaliar/implementar MQTT
-- [ ] Tópicos de comando: `device/{chip_id}/command`
-- [ ] Tópicos de status: `device/{chip_id}/status`
-- [ ] Tópicos de sync: `device/{chip_id}/access-codes/sync`
-- [ ] Dashboard de saúde dos dispositivos (last_seen, uptime, firmware version)
+- Todo Booking gera automaticamente um AccessCode ao ser criado (via Observer ou Service)
+- O AccessCode pode ser **editado manualmente** pelo cliente após criado (ex: ajustar datas, trocar o PIN)
+- Um AccessCode pode existir **sem Booking** (ex: PIN para colaborador com janela fixa)
+- Um AccessCode pode estar vinculado a um `user_id` (colaborador com conta) ou ser avulso (sem usuário, só pin + datas)
+- O PIN deve ser **único por dispositivo no período de vigência** — validar na geração e na edição
+- AccessCodes expirados não são deletados — ficam no histórico
 
-### Fase 5 — Painel Admin (Portatec interno)
-- [ ] Decidir: manter FilamentPHP só no admin interno (onde regras de negócio são simples) ou reescrever também
-- [ ] Gestão de clientes, billing, suporte
+### Dispositivos Portatec — PIN padrão
+
+Todo dispositivo Portatec (ESP8266) possui um **PIN padrão de acesso** (`default_pin`), cadastrado no momento do registro do dispositivo. Esse PIN:
+
+- Funciona como acesso de emergência / manutenção
+- **Nunca expira**
+- Deve ser sincronizado para o dispositivo junto com os demais AccessCodes
+- Não deve aparecer para hóspedes — apenas para o admin e o host do lugar
+
+> **Decisão em aberto:** o `default_pin` é tratado como um AccessCode permanente no banco (sem `end`), ou como um campo do Device sincronizado separadamente pelo firmware? Ver seção 11.
 
 ---
 
-## 6. Estrutura de pastas proposta (Laravel)
+## 6. Frontend — Blade + Livewire
 
-```
-app/
-├── Http/
-│   ├── Controllers/
-│   │   ├── Api/           # API REST para dispositivos e futuros clientes mobile
-│   │   └── Web/           # Controllers das páginas Blade
-│   └── Middleware/
-│       └── ScopePlaceToUser.php
-├── Livewire/
-│   ├── Dashboard/
-│   ├── Places/
-│   ├── Devices/
-│   ├── AccessCodes/
-│   └── Bookings/
-├── Services/
-│   ├── AccessCode/
-│   │   ├── AccessCodeGeneratorService.php
-│   │   └── AccessCodeSyncService.php   # já existe, manter
-│   ├── Device/
-│   │   └── DeviceCommandService.php    # abstrai envio de comandos
-│   ├── Booking/
-│   │   └── BookingImportService.php
-│   └── Tuya/                           # já existe
-├── Models/                             # manter os existentes com ajustes
-├── Events/                             # manter, refinar
-├── Jobs/                               # manter
-└── Policies/                           # manter, expandir
-```
+### Stack de frontend
+
+- **Laravel Breeze** como ponto de partida (autenticação + scaffolding básico)
+  - Breeze tem integração nativa com Livewire: `php artisan breeze:install livewire`
+  - Fornece login, registro, reset de senha e verificação de e-mail prontos
+- **Livewire v3** para componentes interativos (controle de portão, listas reativas)
+- **Alpine.js** para micro-interações no frontend (dropdowns, toggles, feedback visual)
+- **Tailwind CSS** para estilização
+
+### Painel do cliente (app)
+
+Substituir completamente o FilamentPHP. Telas planejadas:
+
+- Dashboard — visão geral dos Places com status dos dispositivos
+- Controle do portão — botão de abrir/fechar com feedback em tempo real
+- Bookings — lista, criação manual, visualização de AccessCodes vinculados
+- AccessCodes — lista de PINs ativos, criação de PIN para colaborador, edição
+- Dispositivos — lista e status
+- Integrações — gerenciar conexões com Airbnb/iCal
+
+### Painel admin (interno Portatec)
+
+Manter FilamentPHP **somente** para o painel admin interno, com escopo reduzido:
+
+- CRUD de usuários/clientes (incluindo reset de senha)
+- Visualização de dispositivos e status de comunicação
+- Visualização de logs (CommandLog, AccessEvent)
+- Nenhuma regra de negócio complexa — só operações de suporte e manutenção
 
 ---
 
-## 7. Protocolo de comunicação dispositivo — proposta
+## 7. Comunicação com dispositivos — MQTT
 
-### Comandos servidor → dispositivo
+### Por que voltar ao MQTT
+
+O WebSocket tem gerado instabilidade. O MQTT é o protocolo padrão para IoT:
+
+- **Leve:** adequado ao ESP8266 (memória limitada)
+- **QoS garantido:** o broker garante entrega das mensagens (QoS 0, 1 ou 2)
+- **Bidirecional por design:** o dispositivo publica e subscreve tópicos — ideal para ACK de comandos
+- **Reconexão automática:** broker e bibliotecas do ESP8266 lidam com reconexão nativamente
+- **Tempo real:** latência tipicamente < 100ms — adequado para "abrir portão agora"
+
+### Fluxo de comando em tempo real
+
+```
+Cliente (browser) → clica "Abrir"
+  → Laravel recebe requisição HTTP
+  → Laravel publica mensagem MQTT: device/{chip_id}/command
+  → Broker entrega ao ESP8266 em <100ms
+  → ESP8266 executa (abre o portão)
+  → ESP8266 publica ACK: device/{chip_id}/ack
+  → Laravel recebe ACK via subscriber MQTT
+  → Laravel dispara Broadcasting event (Reverb) ao frontend
+  → Browser recebe confirmação e atualiza UI
+```
+
+O broker MQTT é responsável pela entrega confiável ao dispositivo. O Laravel Reverb continua sendo usado apenas para comunicação servidor → browser (o browser não precisa falar MQTT diretamente).
+
+### Broker
+
+O projeto já teve um broker MQTT em container Docker. Retomar com **Mosquitto** (simples, leve) ou **EMQX** (tem dashboard web para visualizar conexões e mensagens).
+
+```yaml
+# docker-compose.yml (exemplo com Mosquitto)
+services:
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+      - "9001:9001"   # WebSocket port (para debug via browser)
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+```
+
+### Tópicos MQTT
+
+| Tópico | Direção | Descrição |
+|---|---|---|
+| `device/{chip_id}/command` | Servidor → Dispositivo | Comandos (open, close, toggle) |
+| `device/{chip_id}/ack` | Dispositivo → Servidor | Confirmação de execução |
+| `device/{chip_id}/access-codes/sync` | Servidor → Dispositivo | Sincronização de PINs |
+| `device/{chip_id}/access-codes/ack` | Dispositivo → Servidor | Confirmação de sync |
+| `device/{chip_id}/status` | Dispositivo → Servidor | Status de sensores |
+| `device/{chip_id}/pulse` | Dispositivo → Servidor | Heartbeat / keep-alive |
+| `device/{chip_id}/event` | Dispositivo → Servidor | Evento de acesso (tentativa de PIN) |
+
+### Payload dos comandos
+
+**Servidor → Dispositivo**
 
 ```json
-// Abrir/fechar portão
+// Comando de controle
 {
   "command_id": "uuid",
   "action": "open" | "close" | "toggle",
@@ -271,7 +256,7 @@ app/
   "timestamp": "ISO8601"
 }
 
-// Sincronizar PINs
+// Sincronização de PINs
 {
   "command_id": "uuid",
   "action": "sync_access_codes",
@@ -280,14 +265,14 @@ app/
   ]
 }
 
-// Pulse/heartbeat (servidor → dispositivo, para verificar se está online)
+// Heartbeat (servidor verifica se dispositivo está vivo)
 {
   "action": "ping",
   "timestamp": "ISO8601"
 }
 ```
 
-### Respostas dispositivo → servidor
+**Dispositivo → Servidor**
 
 ```json
 // ACK de comando
@@ -298,7 +283,7 @@ app/
   "timestamp_device": 123456
 }
 
-// Evento de acesso (alguém usou um PIN)
+// Evento de tentativa de acesso via PIN
 {
   "event": "access_attempt",
   "pin": "1234",
@@ -306,7 +291,7 @@ app/
   "timestamp_device": 123456
 }
 
-// Heartbeat / pulse
+// Heartbeat
 {
   "event": "pulse",
   "millis": 123456,
@@ -314,32 +299,142 @@ app/
 }
 ```
 
+### Integração no Laravel
+
+Usar o pacote `php-mqtt/laravel-client` para publicar e subscrever mensagens MQTT.
+
+A subscrição dos tópicos (para receber ACKs, pulses e eventos) deve rodar como um **processo de longa duração** — via artisan command registrado no Supervisor, separado dos workers de queue.
+
 ---
 
-## 8. Questões em aberto
+## 8. Arquitetura proposta (pós-refatoração)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Portatec Server                      │
+│                                                          │
+│  ┌───────────────┐   ┌──────────────────────────────┐   │
+│  │  Laravel App  │   │  Blade + Livewire (UI)        │   │
+│  │               │   │  - Dashboard                  │   │
+│  │  - Auth       │   │  - Controle de portão         │   │
+│  │  - AccessCode │   │  - Bookings / AccessCodes     │   │
+│  │  - Devices    │   │  - Dispositivos               │   │
+│  │  - Bookings   │   │  - Integrações                │   │
+│  │  - iCal sync  │   └──────────────────────────────┘   │
+│  │  - Tuya API   │                                       │
+│  └──────┬────────┘                                       │
+│         │                                                 │
+│   ┌─────▼──────┐    ┌──────────────┐                    │
+│   │   Reverb   │    │ MQTT Broker  │◄── ESP8266 / Tuya  │
+│   │ (browser ← │    │ (Mosquitto / │                     │
+│   │  feedback) │    │  EMQX)       │                     │
+│   └────────────┘    └──────────────┘                    │
+│                                                          │
+│   ┌────────────┐    ┌──────────────┐                    │
+│   │   SQLite   │    │  Redis        │                    │
+│   │  (dados)   │    │  (queue/cache)│                    │
+│   └────────────┘    └──────────────┘                    │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 9. Plano de refatoração em fases
+
+### Fase 1 — Fundação
+
+- [ ] Instalar Laravel Breeze com Livewire: `php artisan breeze:install livewire`
+- [ ] Criar rota e layout base do painel do cliente (separado do FilamentPHP)
+- [ ] Implementar padrão de queries com filtro por `user_id` / `place_id` em todos os controllers
+- [ ] Dashboard inicial: lista de Places e status dos dispositivos
+
+### Fase 2 — Bookings e AccessCodes
+
+- [ ] Tela de listagem de Bookings por Place
+- [ ] Criação manual de Booking + geração automática de AccessCode
+- [ ] Edição de AccessCode (ajuste de datas e PIN)
+- [ ] `AccessCodeGeneratorService` — geração de PIN único com validação de conflito de período
+- [ ] Listar PINs ativos por Place (hóspedes e colaboradores)
+- [ ] Definir e implementar tratamento do `default_pin` do dispositivo Portatec
+
+### Fase 3 — Controle de dispositivos em tempo real
+
+- [ ] Subir broker MQTT em container (Mosquitto ou EMQX)
+- [ ] Integrar `php-mqtt/laravel-client` no Laravel
+- [ ] `DeviceCommandService` — publica comando MQTT e aguarda ACK
+- [ ] Tela de controle do portão (Livewire) com feedback em tempo real via Reverb
+- [ ] Sincronização de AccessCodes via MQTT ao criar/editar/expirar
+- [ ] Dashboard de saúde dos dispositivos: `last_seen`, uptime, firmware version
+
+### Fase 4 — Integração com plataformas
+
+- [ ] Refatorar `ICalSyncService` — melhorar parsing e tratamento de erros
+- [ ] UI para gerenciar integrações e ver último status de sync
+- [ ] Geração automática de AccessCode ao importar Booking via iCal
+
+### Fase 5 — Painel admin interno (Portatec)
+
+- [ ] Avaliar se FilamentPHP atende com escopo reduzido (CRUD simples) ou reescrever com Livewire
+- [ ] Cadastro de clientes / reset de senhas
+- [ ] Visualização de dispositivos, logs de comando e eventos de acesso
+
+---
+
+## 10. Estrutura de pastas proposta (Laravel)
+
+```
+app/
+├── Http/
+│   ├── Controllers/
+│   │   ├── Api/              # API REST para dispositivos
+│   │   └── Web/              # Controllers das páginas Blade
+│   └── Middleware/
+├── Livewire/
+│   ├── Dashboard/
+│   ├── Places/
+│   ├── Devices/
+│   ├── AccessCodes/
+│   └── Bookings/
+├── Services/
+│   ├── AccessCode/
+│   │   ├── AccessCodeGeneratorService.php
+│   │   └── AccessCodeSyncService.php     # já existe, manter
+│   ├── Device/
+│   │   └── DeviceCommandService.php      # abstrai publicação MQTT
+│   ├── Booking/
+│   │   └── BookingImportService.php
+│   └── Tuya/                             # já existe
+├── Models/                               # manter os existentes com ajustes
+├── Events/                               # manter, refinar
+├── Jobs/                                 # manter
+└── Policies/                             # manter, expandir
+```
+
+---
+
+## 11. Questões em aberto
 
 | # | Questão | Prioridade |
 |---|---|---|
-| 1 | Frontend: Livewire ou Next.js? | Alta |
-| 2 | Comunicação: melhorar WebSocket ou migrar para MQTT? | Alta |
-| 3 | Multi-tenancy: Global Scopes ou tenancy package? | Alta |
-| 4 | Como notificar o hóspede do PIN? (email, SMS, WhatsApp?) | Média |
-| 5 | O sistema vai ter planos/billing? Se sim, quando? | Média |
-| 6 | FilamentPHP: manter só no painel admin interno? | Baixa |
-| 7 | Suporte a ESP32 além do ESP8266? | Baixa |
-| 8 | App mobile no futuro? (afeta escolha de frontend agora) | Baixa |
+| 1 | `default_pin` do dispositivo Portatec: AccessCode permanente no banco (sem `end`) ou campo sincronizado separadamente pelo firmware? | Alta |
+| 2 | Como o ESP8266 se autentica no broker MQTT? (usuário/senha por dispositivo, ou certificado?) | Alta |
+| 3 | Mosquitto ou EMQX como broker? (EMQX tem dashboard; Mosquitto é mais simples) | Média |
+| 4 | Como o hóspede recebe o PIN por enquanto? (fora do sistema — WhatsApp manual, e-mail manual?) | Média |
+| 5 | FilamentPHP no painel admin: manter com escopo reduzido ou reescrever em Livewire também? | Baixa |
 
 ---
 
-## 9. Referências e dependências
+## 12. Referências e dependências
 
-- [Laravel Reverb](https://reverb.laravel.com/) — WebSocket server nativo do Laravel
+- [Laravel Breeze + Livewire](https://laravel.com/docs/starter-kits#breeze-and-livewire) — scaffolding de autenticação com Livewire
+- [Livewire v3](https://livewire.laravel.com/) — componentes reativos server-side
+- [Laravel Reverb](https://reverb.laravel.com/) — WebSocket server para feedback no browser
 - [php-mqtt/laravel-client](https://github.com/php-mqtt/laravel-client) — cliente MQTT para Laravel
-- [HiveMQ Cloud](https://www.hivemq.com/mqtt-cloud-broker/) — broker MQTT grátis (até 100 conexões)
-- [stancl/tenancy](https://tenancyforlaravel.com/) — multi-tenancy para Laravel
-- [PubNub](https://www.pubnub.com/) — alternativa gerenciada para WebSocket/MQTT
+- [Eclipse Mosquitto](https://mosquitto.org/) — broker MQTT leve para Docker
+- [EMQX](https://www.emqx.io/) — broker MQTT com dashboard web
 - [Tuya IoT Platform](https://developer.tuya.com/) — integração com dispositivos Tuya
 
 ---
 
-*Documento criado em: fevereiro/2026 — atualizar com cada decisão tomada.*
+*v0.1 — criado em fevereiro/2026*
+*v0.2 — decisões de frontend (Livewire), comunicação (MQTT), isolamento de dados, scope do projeto, regras de AccessCode/Booking e default_pin atualizadas*
