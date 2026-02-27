@@ -17,6 +17,7 @@ class StopImpersonationController extends Controller
     {
         $impersonatorId = (int) $request->session()->get('impersonator_id');
         $impersonationSessionId = (int) $request->session()->get('impersonation_session_id');
+        $currentUserId = (int) optional($request->user())->id;
 
         if ($impersonatorId <= 0 || $impersonationSessionId <= 0) {
             return redirect('/app/dashboard')->with('status', 'Nao existe sessao assumida ativa.');
@@ -32,14 +33,26 @@ class StopImpersonationController extends Controller
             return redirect('/app/login')->with('status', 'Sessao de impersonate invalida. Faça login novamente.');
         }
 
-        ImpersonationSession::query()
+        $session = ImpersonationSession::query()
             ->whereKey($impersonationSessionId)
+            ->where('impersonator_user_id', $impersonatorId)
+            ->where('impersonated_user_id', $currentUserId)
             ->whereNull('ended_at')
-            ->update([
-                'ended_at' => now(),
-                'ended_ip' => $request->ip(),
-                'ended_user_agent' => (string) $request->userAgent(),
-            ]);
+            ->first();
+
+        if (! $session) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect('/app/login')->with('status', 'Sessao de impersonate invalida. Faça login novamente.');
+        }
+
+        $session->update([
+            'ended_at' => now(),
+            'ended_ip' => $request->ip(),
+            'ended_user_agent' => (string) $request->userAgent(),
+        ]);
 
         Auth::login($impersonator);
         $request->session()->regenerate();

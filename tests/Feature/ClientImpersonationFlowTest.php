@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\ImpersonationSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -49,5 +50,49 @@ class ClientImpersonationFlowTest extends TestCase
         $this->actingAs($regularAdmin)
             ->get(route('admin.impersonations.start', ['user' => $clientUser]))
             ->assertForbidden();
+    }
+
+    public function test_super_admin_cannot_impersonate_another_super_admin(): void
+    {
+        putenv('PORTATEC_SUPER_ADMIN_EMAILS=contato@medeirostec.com.br,segundo@medeirostec.com.br');
+
+        $superAdmin = User::factory()->create([
+            'email' => 'contato@medeirostec.com.br',
+        ]);
+        $otherSuperAdmin = User::factory()->create([
+            'email' => 'segundo@medeirostec.com.br',
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('admin.impersonations.start', ['user' => $otherSuperAdmin]))
+            ->assertRedirect();
+
+        $this->assertAuthenticatedAs($superAdmin);
+        $this->assertDatabaseCount('impersonation_sessions', 0);
+    }
+
+    public function test_stop_impersonation_logs_out_when_session_is_invalid_for_current_user(): void
+    {
+        $superAdmin = User::factory()->create([
+            'email' => 'contato@medeirostec.com.br',
+        ]);
+        $clientUser = User::factory()->create();
+        $otherClientUser = User::factory()->create();
+
+        $session = ImpersonationSession::query()->create([
+            'impersonator_user_id' => $superAdmin->id,
+            'impersonated_user_id' => $otherClientUser->id,
+            'started_at' => now(),
+        ]);
+
+        $this->actingAs($clientUser)
+            ->withSession([
+                'impersonator_id' => $superAdmin->id,
+                'impersonation_session_id' => $session->id,
+            ])
+            ->post(route('app.impersonations.stop'))
+            ->assertRedirect('/app/login');
+
+        $this->assertGuest();
     }
 }

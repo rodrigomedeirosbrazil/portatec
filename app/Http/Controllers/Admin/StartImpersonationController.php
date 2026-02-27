@@ -25,6 +25,10 @@ class StartImpersonationController extends Controller
             return back()->with('status', 'Nao e permitido assumir a propria conta.');
         }
 
+        if ($user->hasRole('super_admin')) {
+            return back()->with('status', 'Impersonacao permitida apenas para contas cliente.');
+        }
+
         if ($request->session()->has('impersonator_id')) {
             return redirect('/app/dashboard')->with('status', 'Finalize a sessao assumida atual antes de iniciar outra.');
         }
