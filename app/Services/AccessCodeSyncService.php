@@ -9,6 +9,8 @@ use App\Models\Device;
 use App\Models\Place;
 use App\Services\Device\DeviceCommandService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class AccessCodeSyncService
 {
@@ -27,7 +29,18 @@ class AccessCodeSyncService
 
         $place = $device->place;
         $validAccessCodes = $this->getValidAccessCodesForPlace($place);
-        $this->deviceCommandService->syncAccessCodes($device, $validAccessCodes);
+
+        try {
+            $this->deviceCommandService->syncAccessCodes($device, $validAccessCodes);
+        } catch (Throwable $exception) {
+            Log::error('Falha ao sincronizar access codes via MQTT.', [
+                'device_id' => $device->id,
+                'external_device_id' => $device->external_device_id,
+                'place_id' => $device->place_id,
+                'access_codes_count' => $validAccessCodes->count(),
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     /**
