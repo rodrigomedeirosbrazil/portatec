@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use Filament\Schemas\Schema;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Filament\Resources\UserResource\Pages\CreateUser;
@@ -71,6 +72,14 @@ class UserResource extends Resource
                 //
             ])
             ->recordActions([
+                Action::make('impersonate_client')
+                    ->label('Entrar no app')
+                    ->icon('heroicon-o-arrow-right-circle')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Entrar no app como cliente')
+                    ->modalDescription('Esta acao iniciara uma sessao assumida no app cliente.')
+                    ->url(fn (User $record): string => route('admin.impersonations.start', ['user' => $record])),
                 EditAction::make(),
             ]);
     }

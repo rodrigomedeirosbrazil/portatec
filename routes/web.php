@@ -16,10 +16,13 @@ use App\Livewire\Places\Create as CreatePlace;
 use App\Livewire\Places\Edit as EditPlace;
 use App\Livewire\Places\Index as IndexPlaces;
 use App\Livewire\Places\Show as ShowPlace;
+use App\Http\Controllers\Admin\StartImpersonationController;
+use App\Http\Controllers\App\StopImpersonationController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Models\ImpersonationSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -42,12 +45,26 @@ Route::middleware('guest')->prefix('app')->group(function () {
 });
 
 Route::post('/app/logout', function (Request $request) {
+    if ($request->session()->has('impersonation_session_id')) {
+        ImpersonationSession::query()
+            ->whereKey((int) $request->session()->get('impersonation_session_id'))
+            ->whereNull('ended_at')
+            ->update([
+                'ended_at' => now(),
+                'ended_ip' => $request->ip(),
+                'ended_user_agent' => (string) $request->userAgent(),
+            ]);
+    }
+
     Auth::logout();
     $request->session()->invalidate();
     $request->session()->regenerateToken();
 
     return redirect('/app/login');
 })->name('logout');
+
+Route::middleware('auth')->get('/admin/impersonations/{user}/start', StartImpersonationController::class)
+    ->name('admin.impersonations.start');
 
 Route::middleware('auth')
     ->prefix('app')
@@ -75,4 +92,6 @@ Route::middleware('auth')
 
         Route::get('/integrations', IndexIntegrations::class)->name('integrations.index');
         Route::get('/integrations/create', CreateIntegration::class)->name('integrations.create');
+
+        Route::post('/impersonations/stop', StopImpersonationController::class)->name('impersonations.stop');
     });

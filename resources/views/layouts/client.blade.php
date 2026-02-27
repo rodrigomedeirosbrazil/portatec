@@ -24,6 +24,18 @@
     </nav>
 
     <main style="max-width: 980px; margin: 24px auto; padding: 0 16px;">
+        @if (session()->has('impersonator_id'))
+            <div style="background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; padding: 10px 12px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <span>Voce esta em sessao assumida.</span>
+                <form method="POST" action="{{ route('app.impersonations.stop') }}">
+                    @csrf
+                    <button type="submit" style="background: #92400e; color: #fff; border: 0; border-radius: 6px; padding: 8px 12px; cursor: pointer;">
+                        Finalizar sessao assumida
+                    </button>
+                </form>
+            </div>
+        @endif
+
         @if (session('status'))
             <div style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 10px 12px; border-radius: 8px; margin-bottom: 16px;">
                 {{ session('status') }}

@@ -53,6 +53,16 @@ class User extends Authenticatable implements FilamentUser
             ->withTimestamps();
     }
 
+    public function startedImpersonationSessions(): HasMany
+    {
+        return $this->hasMany(ImpersonationSession::class, 'impersonator_user_id');
+    }
+
+    public function receivedImpersonationSessions(): HasMany
+    {
+        return $this->hasMany(ImpersonationSession::class, 'impersonated_user_id');
+    }
+
     /**
      * Transitional compatibility helper while role system is removed.
      */
