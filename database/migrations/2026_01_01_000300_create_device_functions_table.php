@@ -7,24 +7,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('device_functions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('device_id')->constrained()->onDelete('cascade');
-            $table->string('type')->default(DeviceTypeEnum::Switch->value);
+            $table->foreignId('device_id')->constrained()->cascadeOnDelete();
+            $table->enum('type', DeviceTypeEnum::values())->default(DeviceTypeEnum::Switch->value);
             $table->string('pin');
             $table->boolean('status')->nullable();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('device_functions');

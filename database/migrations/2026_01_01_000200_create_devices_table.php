@@ -1,34 +1,30 @@
 <?php
 
+use App\Enums\DeviceBrandEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('devices', function (Blueprint $table) {
             $table->id();
             $table->foreignId('place_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
-            $table->string('brand')->default('portatec');
-            $table->string('external_device_id')->nullable();
+            $table->enum('brand', array_map(
+                static fn (DeviceBrandEnum $brand): string => $brand->value,
+                DeviceBrandEnum::cases()
+            ))->default(DeviceBrandEnum::Portatec->value);
+            $table->string('external_device_id')->nullable()->index();
             $table->string('default_pin', 6)->nullable();
             $table->timestamp('last_sync')->nullable();
-
             $table->timestamps();
             $table->softDeletes();
-            $table->index(['external_device_id']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('devices');
