@@ -57,6 +57,7 @@ CommandLog         → log de comandos enviados ao dispositivo
 
 - **FilamentPHP** dificulta regras de negócio customizadas — será descartado do painel do cliente
 - **WebSocket** tem gerado instabilidade e não há confirmação (ACK) confiável de execução dos comandos
+- **Observabilidade de ações de dispositivo** está misturada: `CommandLog` e `AccessEvent` têm sobreposição parcial de responsabilidades
 
 ---
 
@@ -141,6 +142,15 @@ $places = auth()->user()
 - Nesta fase, **não haverá validação de sobreposição/colisão temporal de PIN**
 - AccessCodes expirados não são deletados — ficam no histórico
 
+### Observabilidade de ações (logs)
+
+- `CommandLog` registra apenas comandos emitidos para dispositivo (ação remota do usuário/sistema)
+  - Exemplos: `open`, `close`, `toggle`, `push_button`, `sync_access_codes`
+- `AccessEvent` registra tentativas de acesso por PIN recebidas do dispositivo
+  - Exemplos: `success`, `failed`, `expired`, `invalid`
+- Eventos de telemetria/sensor (ex: status de contato aberto/fechado) **não** devem ser gravados em `CommandLog`
+  - Devem ficar em logging técnico temporário ou em tabela dedicada futura
+
 ### Dispositivos Portatec — PIN padrão
 
 Todo dispositivo Portatec (ESP8266) possui um **PIN padrão de acesso** (`default_pin`), cadastrado no momento do registro do dispositivo. Esse PIN:
@@ -217,7 +227,7 @@ O broker MQTT é responsável pela entrega confiável ao dispositivo. O Laravel 
 
 ### Broker
 
-O projeto já teve um broker MQTT em container Docker. Retomar com **Mosquitto** (simples, leve) ou **EMQX** (tem dashboard web para visualizar conexões e mensagens).
+O projeto já teve broker MQTT em versões anteriores, mas o setup antigo não deve ser reaproveitado cegamente. Reintroduzir com configuração limpa de produção usando **Mosquitto**.
 
 ```yaml
 # docker-compose.yml (exemplo com Mosquitto)
@@ -419,18 +429,20 @@ Esta é a fase de maior regra de negócio. Fazer com calma.
 Depende do teste MQTT estar validado antes de começar.
 
 - [ ] Subir broker Mosquitto em container Docker (`docker-compose.yml`)
+- [ ] Reintroduzir Mosquitto no deploy (`docker-compose-prod.yml`) com volumes/config próprios
 - [ ] Instalar e configurar `php-mqtt/laravel-client`
 - [ ] Criar comando artisan `mqtt:subscribe` de longa duração para receber `ack`, `pulse` e `event`
 - [ ] Registrar processo dedicado no Supervisor para `mqtt:subscribe` (separado dos workers de queue)
 - [ ] Criar `DeviceCommandService`:
   - `sendCommand(Device $device, string $action, int $pin)` — publica no tópico MQTT e registra no `CommandLog`
-  - `handleAck(string $chipId, array $payload)` — processa o ACK do dispositivo e dispara evento Reverb ao frontend
+  - `handleAck(string $chipId, array $payload)` — processa ACK, atualiza status do comando no `CommandLog` e dispara evento Reverb ao frontend
 - [ ] Substituir os Events de WebSocket existentes (`PlaceDeviceCommandAckEvent`, etc.) por publicações MQTT onde couber
 - [ ] Componente Livewire `Devices\Control` — botão de abrir/fechar com feedback em tempo real (escuta evento Reverb via `wire:poll` ou Echo)
 - [ ] Componente Livewire `Devices\Index` — lista de dispositivos do Place com status (online/offline baseado em `last_sync`)
 - [ ] Componente Livewire `Devices\Show` — saúde do dispositivo: `last_seen`, uptime, funções e seus status
 - [ ] Migrar `AccessCodeSyncService` de WebSocket para MQTT
 - [ ] Garantir que o payload de sync inclua `devices.default_pin` + AccessCodes ativos do Place
+- [ ] Remover gravação de `sensor_update` em `CommandLog` (telemetria não é comando)
 
 ---
 
@@ -499,6 +511,7 @@ app/
 | 5 | FilamentPHP no painel admin | Manter com escopo reduzido (CRUD de suporte apenas) |
 | 6 | Shield/Spatie no app do cliente | Fora do escopo. Autorização por relacionamento (`place_users`) + policies/scopes |
 | 7 | Regra de PIN em `access_codes` | PIN vale para todos os dispositivos do Place; sem validação de sobreposição temporal nesta fase |
+| 8 | Fronteira de logs | `CommandLog` = comandos enviados; `AccessEvent` = uso de PIN recebido do dispositivo; telemetria fora de `CommandLog` |
 
 ---
 
