@@ -52,7 +52,7 @@
   - `Devices\\Index`
   - `Devices\\Show`
   - `Devices\\Control`
-- [ ] Adicionar visualização de `AccessEvent` no painel admin `/admin`
+- [x] Adicionar visualização de `AccessEvent` no painel admin `/admin`
 - [ ] Fechar cobertura de testes mínimos do plano:
   - isolamento por `place_users`
   - booking -> access code

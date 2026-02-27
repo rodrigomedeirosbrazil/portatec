@@ -6,6 +6,7 @@ use App\Filament\Resources\CommandLogResource;
 use App\Filament\Resources\DeviceResource;
 use App\Filament\Resources\PlaceResource;
 use App\Filament\Resources\UserResource;
+use App\Filament\Resources\AccessEventResource;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
@@ -48,6 +49,7 @@ class AdminPanelProvider extends PanelProvider
                 PlaceResource::class,
                 DeviceResource::class,
                 CommandLogResource::class,
+                AccessEventResource::class,
             ])
             ->pages([
                 Dashboard::class,
