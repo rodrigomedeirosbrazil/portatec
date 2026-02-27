@@ -36,6 +36,13 @@ class UserSeeder extends Seeder
             'updated_at' => $now,
         ]);
 
+        DB::table('platforms')->insert([
+            'name' => 'Airbnb',
+            'slug' => 'airbnb',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
         DB::table('place_users')->insert([
             [
                 'place_id' => $placeId,

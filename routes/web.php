@@ -7,6 +7,8 @@ use App\Livewire\AccessCodes\Index as IndexAccessCodes;
 use App\Livewire\Bookings\Create as CreateBooking;
 use App\Livewire\Bookings\Index as IndexBookings;
 use App\Livewire\Bookings\Show as ShowBooking;
+use App\Livewire\Integrations\Create as CreateIntegration;
+use App\Livewire\Integrations\Index as IndexIntegrations;
 use App\Livewire\Places\Create as CreatePlace;
 use App\Livewire\Places\Edit as EditPlace;
 use App\Livewire\Places\Index as IndexPlaces;
@@ -44,4 +46,7 @@ Route::middleware('auth')
         Route::get('/access-codes', IndexAccessCodes::class)->name('access-codes.index');
         Route::get('/access-codes/create', CreateAccessCode::class)->name('access-codes.create');
         Route::get('/access-codes/{accessCode}/edit', EditAccessCode::class)->name('access-codes.edit');
+
+        Route::get('/integrations', IndexIntegrations::class)->name('integrations.index');
+        Route::get('/integrations/create', CreateIntegration::class)->name('integrations.create');
     });

@@ -12,6 +12,7 @@
         <a href="{{ route('app.places.index') }}" style="color: #fff; text-decoration: none;">Places</a>
         <a href="{{ route('app.bookings.index') }}" style="color: #fff; text-decoration: none;">Bookings</a>
         <a href="{{ route('app.access-codes.index') }}" style="color: #fff; text-decoration: none;">Access Codes</a>
+        <a href="{{ route('app.integrations.index') }}" style="color: #fff; text-decoration: none;">Integrations</a>
         <a href="/admin" style="color: #fff; text-decoration: none;">Admin</a>
         <form method="POST" action="{{ route('logout') }}" style="margin-left: auto;">
             @csrf

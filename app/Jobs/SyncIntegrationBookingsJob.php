@@ -23,7 +23,11 @@ class SyncIntegrationBookingsJob implements ShouldQueue
 
     public function handle(ICalSyncService $syncService): void
     {
-        $integration = Integration::findOrFail($this->integrationId);
+        $integration = Integration::find($this->integrationId);
+        if (!$integration) {
+            Log::warning('Integration not found for sync job', ['integration_id' => $this->integrationId]);
+            return;
+        }
 
         // Verificar se a Integration tem Places relacionados
         if ($integration->places->isEmpty()) {
@@ -35,9 +39,12 @@ class SyncIntegrationBookingsJob implements ShouldQueue
         foreach ($integration->places as $place) {
             try {
                 $syncService->syncPlaceIntegration($place->id, $integration->id);
-            } catch (\Exception $e) {
-                // Log erro e continuar com próximo Place
-                Log::error("Failed to sync bookings for Place {$place->id} and Integration {$integration->id}: " . $e->getMessage());
+            } catch (\Throwable $e) {
+                Log::error('Failed to sync bookings for integration place', [
+                    'place_id' => $place->id,
+                    'integration_id' => $integration->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
     }
