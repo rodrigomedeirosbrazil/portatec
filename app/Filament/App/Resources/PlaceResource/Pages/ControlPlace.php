@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace App\Filament\App\Resources\PlaceResource\Pages;
 
 use App\Enums\DeviceTypeEnum;
-use App\Events\DevicePulseEvent;
 use App\Filament\App\Resources\PlaceResource;
-use App\Models\CommandLog;
 use App\Models\Place;
 use App\Models\PlaceDeviceFunction;
+use App\Services\Device\DeviceCommandService;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -134,20 +133,12 @@ class ControlPlace extends Page implements HasTable
         }
 
         try {
-            broadcast(new DevicePulseEvent(
-                $deviceFunction->device->external_device_id,
-                ['pin' => $deviceFunction->pin],
-            ));
-
-            CommandLog::create([
-                'user_id' => auth()->id(),
-                'place_id' => $this->place->id,
-                'device_function_id' => $deviceFunction->id,
-                'command_type' => 'push_button',
-                'device_function_type' => $deviceFunction->type->value ?? null,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
+            app(DeviceCommandService::class)->sendCommand(
+                device: $deviceFunction->device,
+                action: 'push_button',
+                pin: (int) $deviceFunction->pin,
+                userId: auth()->id(),
+            );
 
             Notification::make()
                 ->title(__('app.command_sent'))
