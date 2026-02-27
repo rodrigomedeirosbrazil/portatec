@@ -10,8 +10,8 @@ use App\Filament\Resources\PlaceResource\Pages\EditPlace;
 use App\Filament\Resources\PlaceResource\Pages\ListPlaces;
 use App\Models\Place;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -25,7 +25,7 @@ class PlaceResource extends Resource
 {
     protected static ?string $model = Place::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-map-pin';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-map-pin';
 
     protected static ?string $modelLabel = 'Local';
 

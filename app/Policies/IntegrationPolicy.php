@@ -66,5 +66,4 @@ class IntegrationPolicy
     {
         return false;
     }
-
 }

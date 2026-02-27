@@ -23,8 +23,8 @@ class ICalParser implements ICalParserInterface
     /**
      * Parse iCal content and return Collection of BookingDTO
      *
-     * @param string $icalContent The iCal content to parse
-     * @param string|null $icalUrl Optional URL of the iCal file for platform-specific logic
+     * @param  string  $icalContent  The iCal content to parse
+     * @param  string|null  $icalUrl  Optional URL of the iCal file for platform-specific logic
      * @return Collection<BookingDTO>
      */
     public function parse(string $icalContent, ?string $icalUrl = null): Collection
@@ -32,6 +32,7 @@ class ICalParser implements ICalParserInterface
         // Validate iCal content
         if (! $this->hasIcalHeaders($icalContent)) {
             Log::warning('Invalid iCal content: missing BEGIN:VCALENDAR or END:VCALENDAR');
+
             return collect([]);
         }
 
@@ -59,6 +60,7 @@ class ICalParser implements ICalParserInterface
                         'error' => $e->getMessage(),
                         'uid' => $this->getEventUid($vevent),
                     ]);
+
                     continue;
                 }
             }
@@ -69,12 +71,14 @@ class ICalParser implements ICalParserInterface
                 'error' => $e->getMessage(),
                 'url' => $icalUrl,
             ]);
+
             return collect([]);
         } catch (\Throwable $e) {
             Log::error('Unexpected error parsing iCal', [
                 'error' => $e->getMessage(),
                 'url' => $icalUrl,
             ]);
+
             return collect([]);
         }
     }
@@ -92,7 +96,7 @@ class ICalParser implements ICalParserInterface
         $dtstart = $vevent->DTSTART ?? null;
         $dtend = $vevent->DTEND ?? null;
 
-        if (! $dtstart || !$dtend) {
+        if (! $dtstart || ! $dtend) {
             return null;
         }
 
@@ -130,7 +134,7 @@ class ICalParser implements ICalParserInterface
         $timeZoneName = self::DEFAULT_TIMEZONE;
 
         if ($this->dateWithUTCTime($date) || $forceDateUTC || $shouldRemoveHours) {
-            $dateTime = new DateTime('@' . $date->getDateTime()->getTimestamp());
+            $dateTime = new DateTime('@'.$date->getDateTime()->getTimestamp());
             $dateTime->setTimezone(new DateTimeZone($timeZoneName));
             $dateTime->setTime(0, 0);
 
@@ -142,12 +146,13 @@ class ICalParser implements ICalParserInterface
         }
 
         if ($this->dateWithLocalTime($date)) {
-            $dateTime = new DateTime('@' . $date->getDateTime()->getTimestamp());
+            $dateTime = new DateTime('@'.$date->getDateTime()->getTimestamp());
             $dateTime->setTime(0, 0);
+
             return Carbon::instance($dateTime);
         }
 
-        return Carbon::instance(new DateTime('@' . $date->getDateTime()->getTimestamp()));
+        return Carbon::instance(new DateTime('@'.$date->getDateTime()->getTimestamp()));
     }
 
     /**
@@ -156,6 +161,7 @@ class ICalParser implements ICalParserInterface
     private function dateWithUTCTime(VObjectDateTime $date): bool
     {
         $dateValue = $date->getValue();
+
         return (bool) (strlen($dateValue) == 16 && mb_substr($dateValue, -1) === 'Z');
     }
 
@@ -165,6 +171,7 @@ class ICalParser implements ICalParserInterface
     private function dateWithLocalTime(VObjectDateTime $date): bool
     {
         $dateValue = $date->getValue();
+
         return (bool) (strlen($dateValue) == 15 && mb_substr($dateValue, -7, 1) === 'T');
     }
 
@@ -184,6 +191,7 @@ class ICalParser implements ICalParserInterface
         if ($dtstart && $dtend) {
             $startTimestamp = $dtstart->getDateTime()->getTimestamp();
             $endTimestamp = $dtend->getDateTime()->getTimestamp();
+
             return md5("{$endTimestamp}|{$startTimestamp}");
         }
 
@@ -220,7 +228,7 @@ class ICalParser implements ICalParserInterface
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $text, $matches)) {
                 $name = trim($matches[1]);
-                if (!empty($name)) {
+                if (! empty($name)) {
                     return $name;
                 }
             }

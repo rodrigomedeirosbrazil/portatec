@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Events;
 
 use App\Models\AccessCode;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -22,8 +21,7 @@ class AccessCodeEvent implements ShouldBroadcast
     public function __construct(
         public AccessCode $accessCode,
         public string $action
-    ) {
-    }
+    ) {}
 
     /**
      * Get the channels the event should broadcast on.
@@ -33,7 +31,7 @@ class AccessCodeEvent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('place.' . $this->accessCode->place_id),
+            new PrivateChannel('place.'.$this->accessCode->place_id),
         ];
     }
 

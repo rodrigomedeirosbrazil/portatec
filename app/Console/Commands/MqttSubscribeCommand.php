@@ -43,7 +43,7 @@ class MqttSubscribeCommand extends Command
         pcntl_signal(SIGINT, fn () => $mqtt->interrupt());
         pcntl_signal(SIGTERM, fn () => $mqtt->interrupt());
 
-        $mqtt->loop(!$this->option('once'));
+        $mqtt->loop(! $this->option('once'));
         $mqtt->disconnect();
 
         return self::SUCCESS;
@@ -53,7 +53,7 @@ class MqttSubscribeCommand extends Command
     {
         $mqtt->subscribe($topic, function (string $topic, string $message) use ($handler): void {
             $payload = json_decode($message, true);
-            if (!is_array($payload)) {
+            if (! is_array($payload)) {
                 return;
             }
 

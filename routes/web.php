@@ -1,12 +1,18 @@
 <?php
 
-use App\Livewire\Dashboard;
+use App\Http\Controllers\Admin\StartImpersonationController;
+use App\Http\Controllers\App\StopImpersonationController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Livewire\AccessCodes\Create as CreateAccessCode;
 use App\Livewire\AccessCodes\Edit as EditAccessCode;
 use App\Livewire\AccessCodes\Index as IndexAccessCodes;
 use App\Livewire\Bookings\Create as CreateBooking;
 use App\Livewire\Bookings\Index as IndexBookings;
 use App\Livewire\Bookings\Show as ShowBooking;
+use App\Livewire\Dashboard;
 use App\Livewire\Devices\Control as ControlDevice;
 use App\Livewire\Devices\Index as IndexDevices;
 use App\Livewire\Devices\Show as ShowDevice;
@@ -16,12 +22,6 @@ use App\Livewire\Places\Create as CreatePlace;
 use App\Livewire\Places\Edit as EditPlace;
 use App\Livewire\Places\Index as IndexPlaces;
 use App\Livewire\Places\Show as ShowPlace;
-use App\Http\Controllers\Admin\StartImpersonationController;
-use App\Http\Controllers\App\StopImpersonationController;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\NewPasswordController;
-use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Models\ImpersonationSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

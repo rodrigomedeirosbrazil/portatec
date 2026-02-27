@@ -13,8 +13,11 @@ use Livewire\Component;
 class Create extends Component
 {
     public ?int $placeId = null;
+
     public ?string $guestName = null;
+
     public string $checkIn = '';
+
     public string $checkOut = '';
 
     public function mount(): void

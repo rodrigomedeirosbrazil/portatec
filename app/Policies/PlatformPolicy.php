@@ -66,5 +66,4 @@ class PlatformPolicy
     {
         return false;
     }
-
 }

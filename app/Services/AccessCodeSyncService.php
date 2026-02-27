@@ -23,7 +23,7 @@ class AccessCodeSyncService
      */
     public function syncAccessCodesToDevice(Device $device): void
     {
-        if (!$device->place_id) {
+        if (! $device->place_id) {
             return;
         }
 

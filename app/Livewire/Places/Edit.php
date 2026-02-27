@@ -12,6 +12,7 @@ use Livewire\Component;
 class Edit extends Component
 {
     public Place $place;
+
     public string $name = '';
 
     public function mount(Place $place): void

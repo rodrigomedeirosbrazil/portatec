@@ -33,8 +33,9 @@ class Control extends Component
             403
         );
 
-        if (!is_numeric($pin)) {
+        if (! is_numeric($pin)) {
             session()->flash('status', 'PIN inválido para envio de comando.');
+
             return;
         }
 

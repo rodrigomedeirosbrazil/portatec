@@ -24,14 +24,16 @@ class SyncIntegrationBookingsJob implements ShouldQueue
     public function handle(ICalSyncService $syncService): void
     {
         $integration = Integration::find($this->integrationId);
-        if (!$integration) {
+        if (! $integration) {
             Log::warning('Integration not found for sync job', ['integration_id' => $this->integrationId]);
+
             return;
         }
 
         // Verificar se a Integration tem Places relacionados
         if ($integration->places->isEmpty()) {
             Log::warning("Integration {$this->integrationId} has no related places");
+
             return;
         }
 

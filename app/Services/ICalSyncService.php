@@ -29,11 +29,11 @@ class ICalSyncService
             ->where('integration_id', $integrationId)
             ->first();
 
-        if (!$placeIntegration) {
+        if (! $placeIntegration) {
             throw new \RuntimeException("Place-Integration relationship not found for place={$placeId}, integration={$integrationId}");
         }
 
-        if (!$placeIntegration->pivot->external_id) {
+        if (! $placeIntegration->pivot->external_id) {
             throw new \RuntimeException("External ID not configured for place={$placeId}, integration={$integrationId}");
         }
 
@@ -88,7 +88,7 @@ class ICalSyncService
     {
         $response = Http::timeout(30)->get($url);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new \RuntimeException("Failed to download iCal from: {$url}; status={$response->status()}");
         }
 

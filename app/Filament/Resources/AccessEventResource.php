@@ -7,11 +7,11 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AccessEventResource\Pages\ListAccessEvents;
 use App\Models\AccessEvent;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -26,9 +26,9 @@ class AccessEventResource extends Resource
 {
     protected static ?string $model = AccessEvent::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-key';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-key';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Monitoring';
+    protected static string|\UnitEnum|null $navigationGroup = 'Monitoring';
 
     protected static ?int $navigationSort = 4;
 

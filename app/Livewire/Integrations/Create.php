@@ -14,7 +14,9 @@ use Livewire\Component;
 class Create extends Component
 {
     public ?int $platformId = null;
+
     public ?int $placeId = null;
+
     public string $externalId = '';
 
     public function mount(): void

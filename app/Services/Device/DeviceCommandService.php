@@ -21,7 +21,7 @@ class DeviceCommandService
 {
     public function sendCommand(Device $device, string $action, int $pin, ?int $userId = null): string
     {
-        if (!$device->external_device_id) {
+        if (! $device->external_device_id) {
             throw new \InvalidArgumentException('Device does not have external_device_id.');
         }
 
@@ -62,7 +62,7 @@ class DeviceCommandService
 
     public function syncAccessCodes(Device $device, Collection $accessCodes): void
     {
-        if (!$device->external_device_id) {
+        if (! $device->external_device_id) {
             return;
         }
 
@@ -90,7 +90,7 @@ class DeviceCommandService
     public function handleAck(string $chipId, array $payload): void
     {
         $device = Device::query()->where('external_device_id', $chipId)->first();
-        if (!$device) {
+        if (! $device) {
             return;
         }
 
@@ -103,6 +103,7 @@ class DeviceCommandService
 
         if ($deviceFunction) {
             $this->dispatchAckToPlaces($device, $deviceFunction, $command);
+
             return;
         }
 
@@ -114,7 +115,7 @@ class DeviceCommandService
     public function handlePulse(string $chipId, array $payload): void
     {
         $device = Device::query()->where('external_device_id', $chipId)->first();
-        if (!$device) {
+        if (! $device) {
             return;
         }
 
@@ -134,7 +135,7 @@ class DeviceCommandService
     public function handleAccessEvent(string $chipId, array $payload): void
     {
         $device = Device::query()->where('external_device_id', $chipId)->first();
-        if (!$device) {
+        if (! $device) {
             return;
         }
 

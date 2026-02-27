@@ -34,8 +34,9 @@ class SyncAccessCodesCommand extends Command
 
         if ($deviceId) {
             $device = Device::find($deviceId);
-            if (!$device) {
+            if (! $device) {
                 $this->error("Device not found: {$deviceId}");
+
                 return Command::FAILURE;
             }
 
@@ -48,8 +49,9 @@ class SyncAccessCodesCommand extends Command
 
         if ($placeId) {
             $place = Place::find($placeId);
-            if (!$place) {
+            if (! $place) {
                 $this->error("Place not found: {$placeId}");
+
                 return Command::FAILURE;
             }
 
@@ -57,6 +59,7 @@ class SyncAccessCodesCommand extends Command
 
             if ($devices->isEmpty()) {
                 $this->warn("No devices found for place: {$place->name}");
+
                 return Command::SUCCESS;
             }
 
@@ -78,6 +81,7 @@ class SyncAccessCodesCommand extends Command
 
         if ($places->isEmpty()) {
             $this->info('No places with devices found.');
+
             return Command::SUCCESS;
         }
 

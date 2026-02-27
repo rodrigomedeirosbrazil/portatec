@@ -25,8 +25,9 @@ class SyncBookingsCommand extends Command
 
         if ($this->option('platform')) {
             $platform = Platform::where('slug', $this->option('platform'))->first();
-            if (!$platform) {
+            if (! $platform) {
                 $this->error("Platform not found: {$this->option('platform')}");
+
                 return Command::FAILURE;
             }
             $query->where('platform_id', $platform->id);
@@ -40,6 +41,7 @@ class SyncBookingsCommand extends Command
 
         if ($integrations->isEmpty()) {
             $this->info('No active integrations found.');
+
             return Command::SUCCESS;
         }
 

@@ -8,9 +8,9 @@ use App\Models\Booking;
 use App\Observers\AccessCodeObserver;
 use App\Observers\BookingObserver;
 use App\Services\ICalParser;
+use Filament\Notifications\Livewire\Notifications;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
-use Filament\Notifications\Livewire\Notifications;
 
 class AppServiceProvider extends ServiceProvider
 {

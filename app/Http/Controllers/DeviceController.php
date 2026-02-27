@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Exception;
 use App\Models\Device;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -49,13 +49,13 @@ class DeviceController extends Controller
 
                     return response($response->body())
                         ->header('Content-Type', $response->header('Content-Type') ?: 'application/octet-stream')
-                        ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                        ->header('Content-Disposition', 'attachment; filename="'.$filename.'"')
                         ->header('Content-Length', strlen($response->body()));
                 }
 
                 return response()->json(['message' => 'Failed to download firmware'], 500);
             } catch (Exception $e) {
-                return response()->json(['message' => 'Error downloading firmware: ' . $e->getMessage()], 500);
+                return response()->json(['message' => 'Error downloading firmware: '.$e->getMessage()], 500);
             }
         }
 
