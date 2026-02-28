@@ -1,35 +1,35 @@
 <section>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div class="mb-4 flex items-center justify-between">
         <div>
-            <a href="{{ route('app.places.index') }}" style="color: #2563eb; text-decoration: none;">&larr; Voltar</a>
-            <h1 style="margin: 8px 0 0;">{{ $place->name }}</h1>
+            <a href="{{ route('app.places.index') }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar</a>
+            <h1 class="m-0 mt-2">{{ $place->name }}</h1>
         </div>
-        <a href="{{ route('app.places.edit', $place->id) }}" style="background: #111827; color: #fff; text-decoration: none; border-radius: 8px; padding: 8px 12px;">
+        <a href="{{ route('app.places.edit', $place->id) }}" class="rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700">
             Editar
         </a>
     </div>
 
-    <div style="display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 16px;">
-        <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px;">
+    <div class="mb-4 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
+        <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
             <strong>Dispositivos</strong>
-            <p style="margin: 6px 0 0;">{{ $place->devices->count() }}</p>
+            <p class="mt-1.5 m-0">{{ $place->devices->count() }}</p>
         </div>
-        <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px;">
+        <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
             <strong>Bookings (últimos 10)</strong>
-            <p style="margin: 6px 0 0;">{{ $place->bookings->count() }}</p>
+            <p class="mt-1.5 m-0">{{ $place->bookings->count() }}</p>
         </div>
-        <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px;">
+        <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
             <strong>PINs ativos</strong>
-            <p style="margin: 6px 0 0;">{{ $activeAccessCodes }}</p>
+            <p class="mt-1.5 m-0">{{ $activeAccessCodes }}</p>
         </div>
     </div>
 
-    <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px;">
-        <h2 style="margin-top: 0;">Dispositivos</h2>
-        <ul style="margin: 0; padding-left: 20px;">
+    <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+        <h2 class="mt-0">Dispositivos</h2>
+        <ul class="m-0 pl-5">
             @forelse ($place->devices as $device)
                 <li>
-                    <a href="{{ route('app.devices.show', $device->id) }}" style="color: #1d4ed8; text-decoration: none;">
+                    <a href="{{ route('app.devices.show', $device->id) }}" class="text-primary-700 no-underline hover:text-primary-500">
                         {{ $device->name }}
                     </a>
                     ({{ $device->brand->value ?? $device->brand }})

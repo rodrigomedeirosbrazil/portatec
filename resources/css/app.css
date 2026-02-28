@@ -8,4 +8,42 @@
 
 @theme {
   --font-family-sans: Figtree, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Primary (Confiança / Marca) */
+  --color-primary-900: #1E3A8A;
+  --color-primary-700: #1D4ED8;
+  --color-primary-500: #2563EB;
+  --color-primary-300: #93C5FD;
+  --color-primary-100: #DBEAFE;
+
+  /* Success (Acesso liberado / PIN válido) */
+  --color-success-700: #047857;
+  --color-success-500: #10B981;
+  --color-success-300: #6EE7B7;
+  --color-success-100: #D1FAE5;
+
+  /* Error (Acesso negado) */
+  --color-error-700: #B91C1C;
+  --color-error-500: #EF4444;
+  --color-error-300: #FCA5A5;
+  --color-error-100: #FEE2E2;
+
+  /* Neutros */
+  --color-neutral-900: #111827;
+  --color-neutral-700: #374151;
+  --color-neutral-500: #6B7280;
+  --color-neutral-300: #D1D5DB;
+  --color-neutral-100: #F3F4F6;
+}
+
+:root {
+  --color-primary-500: #2563EB;
+  --color-primary-700: #1D4ED8;
+  --color-success-500: #10B981;
+  --color-error-500: #EF4444;
+  --color-neutral-900: #111827;
+  --color-neutral-700: #374151;
+  --color-neutral-100: #F3F4F6;
+  --color-neutral-300: #D1D5DB;
+  --color-white: #FFFFFF;
 }

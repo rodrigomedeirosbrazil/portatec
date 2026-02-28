@@ -1,17 +1,17 @@
 <section>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div class="mb-4 flex items-center justify-between">
         <div>
-            <a href="{{ route('app.devices.show', $device->id) }}" style="color: #2563eb; text-decoration: none;">&larr; Voltar</a>
-            <h1 style="margin: 8px 0 0;">Controlar {{ $device->name }}</h1>
+            <a href="{{ route('app.devices.show', $device->id) }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar</a>
+            <h1 class="m-0 mt-2">Controlar {{ $device->name }}</h1>
         </div>
     </div>
 
-    <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px;">
-        <h2 style="margin-top: 0;">Ações disponíveis</h2>
+    <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+        <h2 class="mt-0">Ações disponíveis</h2>
 
         @forelse ($controllableFunctions as $function)
-            <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
-                <p style="margin: 0 0 10px; color: #374151;">
+            <div class="mb-2.5 rounded-lg border border-neutral-300 p-3">
+                <p class="m-0 mb-2.5 text-neutral-700">
                     {{ $function->type->label() }} (PIN {{ $function->pin }})
                 </p>
 
@@ -19,7 +19,7 @@
                     <button
                         wire:click="sendCommand('push_button', '{{ $function->pin }}')"
                         wire:loading.attr="disabled"
-                        style="background: #111827; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer;"
+                        class="cursor-pointer rounded-lg border-0 bg-primary-500 px-3 py-2 text-white hover:bg-primary-700 disabled:opacity-50"
                     >
                         Acionar
                     </button>
@@ -27,14 +27,14 @@
                     <button
                         wire:click="sendCommand('toggle', '{{ $function->pin }}')"
                         wire:loading.attr="disabled"
-                        style="background: #111827; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer;"
+                        class="cursor-pointer rounded-lg border-0 bg-primary-500 px-3 py-2 text-white hover:bg-primary-700 disabled:opacity-50"
                     >
                         Alternar
                     </button>
                 @endif
             </div>
         @empty
-            <p style="margin: 0; color: #4b5563;">Nenhuma função controlável encontrada para este dispositivo.</p>
+            <p class="m-0 text-neutral-500">Nenhuma função controlável encontrada para este dispositivo.</p>
         @endforelse
     </div>
 </section>

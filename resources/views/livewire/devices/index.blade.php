@@ -1,11 +1,11 @@
 <section>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h1 style="margin: 0;">Dispositivos</h1>
+    <div class="mb-4 flex items-center justify-between">
+        <h1 class="m-0">Dispositivos</h1>
     </div>
 
-    <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
-        <label for="place-filter" style="display: block; margin-bottom: 8px; font-weight: 600;">Filtrar por local</label>
-        <select id="place-filter" wire:model.live="placeId" style="width: 100%; max-width: 360px; padding: 8px; border-radius: 8px; border: 1px solid #d1d5db;">
+    <div class="mb-4 rounded-[10px] border border-neutral-300 bg-white p-3.5">
+        <label for="place-filter" class="mb-2 block font-semibold">Filtrar por local</label>
+        <select id="place-filter" wire:model.live="placeId" class="max-w-[360px] w-full rounded-lg border border-neutral-300 p-2">
             <option value="">Todos</option>
             @foreach ($places as $place)
                 <option value="{{ $place->id }}">{{ $place->name }}</option>
@@ -13,25 +13,25 @@
         </select>
     </div>
 
-    <div style="display: grid; gap: 12px;">
+    <div class="grid gap-3">
         @forelse ($devices as $device)
-            <article style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px;">
-                <h2 style="margin: 0 0 8px; font-size: 18px;">
-                    <a href="{{ route('app.devices.show', $device->id) }}" style="color: #111827; text-decoration: none;">
+            <article class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <h2 class="mb-2 text-lg">
+                    <a href="{{ route('app.devices.show', $device->id) }}" class="text-neutral-900 no-underline hover:text-neutral-700">
                         {{ $device->name }}
                     </a>
                 </h2>
-                <p style="margin: 0; color: #4b5563;">Local: {{ $device->place?->name ?? 'Sem local' }}</p>
-                <p style="margin: 4px 0 0; color: #4b5563;">Marca: {{ $device->brand->value ?? $device->brand }}</p>
-                <p style="margin: 4px 0 0; color: #4b5563;">Online: {{ $device->isAvailable() ? 'Sim' : 'Não' }}</p>
-                <p style="margin: 4px 0 0; color: #4b5563;">Funções: {{ $device->device_functions_count }}</p>
-                <div style="margin-top: 10px; display: flex; gap: 8px;">
-                    <a href="{{ route('app.devices.show', $device->id) }}" style="text-decoration: none; color: #1d4ed8;">Detalhes</a>
-                    <a href="{{ route('app.devices.control', $device->id) }}" style="text-decoration: none; color: #1d4ed8;">Controlar</a>
+                <p class="m-0 text-neutral-500">Local: {{ $device->place?->name ?? 'Sem local' }}</p>
+                <p class="mt-1 m-0 text-neutral-500">Marca: {{ $device->brand->value ?? $device->brand }}</p>
+                <p class="mt-1 m-0 text-neutral-500">Online: {{ $device->isAvailable() ? 'Sim' : 'Não' }}</p>
+                <p class="mt-1 m-0 text-neutral-500">Funções: {{ $device->device_functions_count }}</p>
+                <div class="mt-2.5 flex gap-2">
+                    <a href="{{ route('app.devices.show', $device->id) }}" class="text-primary-700 no-underline hover:text-primary-500">Detalhes</a>
+                    <a href="{{ route('app.devices.control', $device->id) }}" class="text-primary-700 no-underline hover:text-primary-500">Controlar</a>
                 </div>
             </article>
         @empty
-            <p style="color: #4b5563;">Nenhum dispositivo encontrado para os locais selecionados.</p>
+            <p class="text-neutral-500">Nenhum dispositivo encontrado para os locais selecionados.</p>
         @endforelse
     </div>
 </section>

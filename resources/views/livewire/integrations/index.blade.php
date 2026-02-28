@@ -1,26 +1,26 @@
 <section>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h1 style="margin: 0;">Integrações</h1>
-        <a href="{{ route('app.integrations.create') }}" style="background: #111827; color: #fff; text-decoration: none; border-radius: 8px; padding: 8px 12px;">
+    <div class="mb-4 flex items-center justify-between">
+        <h1 class="m-0">Integrações</h1>
+        <a href="{{ route('app.integrations.create') }}" class="rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700">
             Nova Integração
         </a>
     </div>
 
-    <div style="display: grid; gap: 12px;">
+    <div class="grid gap-3">
         @forelse ($integrations as $integration)
-            <article style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px;">
-                <h2 style="margin: 0 0 8px; font-size: 18px;">
+            <article class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <h2 class="mb-2 text-lg">
                     {{ $integration->platform?->name ?? 'Plataforma' }}
                 </h2>
-                <p style="margin: 0; color: #4b5563;">
+                <p class="m-0 text-neutral-500">
                     Places: {{ $integration->places->pluck('name')->join(', ') ?: 'Nenhum' }}
                 </p>
-                <p style="margin: 4px 0 0; color: #4b5563;">
+                <p class="mt-1 m-0 text-neutral-500">
                     Última atualização: {{ $integration->updated_at?->format('d/m/Y H:i') }}
                 </p>
             </article>
         @empty
-            <p style="color: #4b5563;">Nenhuma integração encontrada.</p>
+            <p class="text-neutral-500">Nenhuma integração encontrada.</p>
         @endforelse
     </div>
 </section>

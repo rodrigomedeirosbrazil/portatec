@@ -1,24 +1,24 @@
 <section>
-    <h1 style="margin: 0 0 16px;">Dashboard</h1>
+    <h1 class="m-0 mb-4">Dashboard</h1>
 
-    <div style="display: grid; gap: 12px;">
+    <div class="grid gap-3">
         @forelse ($places as $place)
-            <article style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px;">
-                <h2 style="margin: 0 0 8px; font-size: 18px;">
-                    <a href="{{ route('app.places.show', $place->id) }}" style="color: #111827; text-decoration: none;">
+            <article class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <h2 class="mb-2 text-lg">
+                    <a href="{{ route('app.places.show', $place->id) }}" class="text-neutral-900 no-underline hover:text-neutral-700">
                         {{ $place->name }}
                     </a>
                 </h2>
-                <p style="margin: 0; color: #4b5563;">
+                <p class="m-0 text-neutral-500">
                     Dispositivos online: {{ $onlineCountByPlace[$place->id] ?? 0 }} / {{ $place->devices_count }}
                 </p>
-                <p style="margin: 4px 0 0; color: #4b5563;">
+                <p class="mt-1 m-0 text-neutral-500">
                     Próximo check-in:
                     {{ optional($nextCheckInByPlace[$place->id] ?? null)->check_in?->format('d/m/Y H:i') ?? 'Sem reservas futuras' }}
                 </p>
             </article>
         @empty
-            <p style="color: #4b5563;">Nenhum place encontrado.</p>
+            <p class="text-neutral-500">Nenhum place encontrado.</p>
         @endforelse
     </div>
 </section>

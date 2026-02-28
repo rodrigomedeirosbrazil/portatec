@@ -1,11 +1,11 @@
 <section>
-    <a href="{{ route('app.integrations.index') }}" style="color: #2563eb; text-decoration: none;">&larr; Voltar</a>
-    <h1 style="margin: 8px 0 16px;">Nova Integração iCal</h1>
+    <a href="{{ route('app.integrations.index') }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar</a>
+    <h1 class="my-2 mb-4">Nova Integração iCal</h1>
 
-    <form wire:submit="save" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; display: grid; gap: 10px;">
+    <form wire:submit="save" class="grid gap-2.5 rounded-[10px] border border-neutral-300 bg-white p-3.5">
         <div>
             <label for="platformId">Plataforma</label><br>
-            <select id="platformId" wire:model="platformId" style="padding: 8px; width: 100%;">
+            <select id="platformId" wire:model="platformId" class="w-full p-2">
                 @foreach ($platforms as $platform)
                     <option value="{{ $platform->id }}">{{ $platform->name }}</option>
                 @endforeach
@@ -14,7 +14,7 @@
 
         <div>
             <label for="placeId">Place</label><br>
-            <select id="placeId" wire:model="placeId" style="padding: 8px; width: 100%;">
+            <select id="placeId" wire:model="placeId" class="w-full p-2">
                 @foreach ($places as $place)
                     <option value="{{ $place->id }}">{{ $place->name }}</option>
                 @endforeach
@@ -23,10 +23,10 @@
 
         <div>
             <label for="externalId">URL iCal</label><br>
-            <input id="externalId" type="url" wire:model="externalId" style="padding: 8px; width: 100%;">
+            <input id="externalId" type="url" wire:model="externalId" class="w-full p-2">
         </div>
 
-        <button type="submit" style="background: #111827; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer;">
+        <button type="submit" class="cursor-pointer rounded-lg border-0 bg-primary-500 px-3 py-2 text-white hover:bg-primary-700">
             Salvar Integração
         </button>
     </form>

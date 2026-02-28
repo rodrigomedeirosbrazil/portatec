@@ -1,11 +1,11 @@
 <section>
-    <a href="{{ route('app.bookings.index') }}" style="color: #2563eb; text-decoration: none;">&larr; Voltar</a>
-    <h1 style="margin: 8px 0 16px;">Detalhes do Booking</h1>
+    <a href="{{ route('app.bookings.index') }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar</a>
+    <h1 class="my-2 mb-4">Detalhes do Booking</h1>
 
-    <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px;">
-        <p style="margin: 0 0 8px;"><strong>Hóspede:</strong> {{ $booking->guest_name ?: 'Sem nome' }}</p>
-        <p style="margin: 0 0 8px;"><strong>Check-in:</strong> {{ $booking->check_in->format('d/m/Y H:i') }}</p>
-        <p style="margin: 0 0 8px;"><strong>Check-out:</strong> {{ $booking->check_out->format('d/m/Y H:i') }}</p>
-        <p style="margin: 0;"><strong>PIN:</strong> {{ $booking->accessCode?->pin ?? 'Ainda não gerado' }}</p>
+    <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+        <p class="mb-2"><strong>Hóspede:</strong> {{ $booking->guest_name ?: 'Sem nome' }}</p>
+        <p class="mb-2"><strong>Check-in:</strong> {{ $booking->check_in->format('d/m/Y H:i') }}</p>
+        <p class="mb-2"><strong>Check-out:</strong> {{ $booking->check_out->format('d/m/Y H:i') }}</p>
+        <p class="m-0"><strong>PIN:</strong> {{ $booking->accessCode?->pin ?? 'Ainda não gerado' }}</p>
     </div>
 </section>

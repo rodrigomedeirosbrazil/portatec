@@ -1,37 +1,37 @@
 <section>
-    <a href="{{ route('app.bookings.index') }}" style="color: #2563eb; text-decoration: none;">&larr; Voltar</a>
-    <h1 style="margin: 8px 0 16px;">Novo Booking</h1>
+    <a href="{{ route('app.bookings.index') }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar</a>
+    <h1 class="my-2 mb-4">Novo Booking</h1>
 
-    <form wire:submit="save" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; display: grid; gap: 10px;">
+    <form wire:submit="save" class="grid gap-2.5 rounded-[10px] border border-neutral-300 bg-white p-3.5">
         <div>
             <label for="placeId">Place</label><br>
-            <select id="placeId" wire:model="placeId" style="padding: 8px; width: 100%;">
+            <select id="placeId" wire:model="placeId" class="w-full p-2">
                 @foreach ($places as $place)
                     <option value="{{ $place->id }}">{{ $place->name }}</option>
                 @endforeach
             </select>
-            @error('placeId') <p style="color: #dc2626; margin: 4px 0 0;">{{ $message }}</p> @enderror
+            @error('placeId') <p class="mt-1 text-error-500">{{ $message }}</p> @enderror
         </div>
 
         <div>
             <label for="guestName">Hóspede</label><br>
-            <input id="guestName" type="text" wire:model="guestName" style="padding: 8px; width: 100%;">
-            @error('guestName') <p style="color: #dc2626; margin: 4px 0 0;">{{ $message }}</p> @enderror
+            <input id="guestName" type="text" wire:model="guestName" class="w-full p-2">
+            @error('guestName') <p class="mt-1 text-error-500">{{ $message }}</p> @enderror
         </div>
 
         <div>
             <label for="checkIn">Check-in</label><br>
-            <input id="checkIn" type="datetime-local" wire:model="checkIn" style="padding: 8px; width: 100%;">
-            @error('checkIn') <p style="color: #dc2626; margin: 4px 0 0;">{{ $message }}</p> @enderror
+            <input id="checkIn" type="datetime-local" wire:model="checkIn" class="w-full p-2">
+            @error('checkIn') <p class="mt-1 text-error-500">{{ $message }}</p> @enderror
         </div>
 
         <div>
             <label for="checkOut">Check-out</label><br>
-            <input id="checkOut" type="datetime-local" wire:model="checkOut" style="padding: 8px; width: 100%;">
-            @error('checkOut') <p style="color: #dc2626; margin: 4px 0 0;">{{ $message }}</p> @enderror
+            <input id="checkOut" type="datetime-local" wire:model="checkOut" class="w-full p-2">
+            @error('checkOut') <p class="mt-1 text-error-500">{{ $message }}</p> @enderror
         </div>
 
-        <button type="submit" style="background: #111827; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer;">
+        <button type="submit" class="cursor-pointer rounded-lg border-0 bg-primary-500 px-3 py-2 text-white hover:bg-primary-700">
             Salvar Booking
         </button>
     </form>

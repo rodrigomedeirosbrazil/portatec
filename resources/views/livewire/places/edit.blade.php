@@ -1,15 +1,15 @@
 <section>
-    <a href="{{ route('app.places.show', $place->id) }}" style="color: #2563eb; text-decoration: none;">&larr; Voltar</a>
-    <h1 style="margin: 8px 0 16px;">Editar Place</h1>
+    <a href="{{ route('app.places.show', $place->id) }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar</a>
+    <h1 class="my-2 mb-4">Editar Place</h1>
 
-    <form wire:submit="save" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px;">
-        <label for="name" style="display: block; margin-bottom: 6px;">Nome</label>
-        <input id="name" type="text" wire:model="name" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+    <form wire:submit="save" class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+        <label for="name" class="mb-1.5 block">Nome</label>
+        <input id="name" type="text" wire:model="name" class="w-full rounded-lg border border-neutral-300 p-2.5">
         @error('name')
-            <p style="color: #dc2626; margin: 6px 0 0;">{{ $message }}</p>
+            <p class="mt-1.5 text-error-500">{{ $message }}</p>
         @enderror
 
-        <button type="submit" style="margin-top: 12px; background: #111827; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer;">
+        <button type="submit" class="mt-3 cursor-pointer rounded-lg border-0 bg-primary-500 px-3 py-2 text-white hover:bg-primary-700">
             Atualizar
         </button>
     </form>

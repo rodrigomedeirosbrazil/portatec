@@ -4,32 +4,33 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ config('app.name') }} - Client</title>
+    @vite(['resources/css/app.css'])
     @livewireStyles
 </head>
-<body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f6f7f9;">
-    <nav style="background: #111827; color: #fff; padding: 12px 20px; display: flex; gap: 12px; align-items: center;">
-        <a href="{{ route('app.dashboard') }}" style="color: #fff; text-decoration: none; font-weight: 600;">Painel</a>
-        <a href="{{ route('app.places.index') }}" style="color: #fff; text-decoration: none;">Locais</a>
-        <a href="{{ route('app.devices.index') }}" style="color: #fff; text-decoration: none;">Dispositivos</a>
-        <a href="{{ route('app.bookings.index') }}" style="color: #fff; text-decoration: none;">Reservas</a>
-        <a href="{{ route('app.access-codes.index') }}" style="color: #fff; text-decoration: none;">Códigos de acesso</a>
-        <a href="{{ route('app.integrations.index') }}" style="color: #fff; text-decoration: none;">Integrações</a>
-        <a href="/admin" style="color: #fff; text-decoration: none;">Admin</a>
-        <form method="POST" action="{{ route('logout') }}" style="margin-left: auto;">
+<body class="font-sans m-0 bg-neutral-100">
+    <nav class="flex items-center gap-3 bg-primary-900 px-5 py-3 text-white">
+        <a href="{{ route('app.dashboard') }}" class="font-semibold text-white no-underline">Painel</a>
+        <a href="{{ route('app.places.index') }}" class="text-white no-underline">Locais</a>
+        <a href="{{ route('app.devices.index') }}" class="text-white no-underline">Dispositivos</a>
+        <a href="{{ route('app.bookings.index') }}" class="text-white no-underline">Reservas</a>
+        <a href="{{ route('app.access-codes.index') }}" class="text-white no-underline">Códigos de acesso</a>
+        <a href="{{ route('app.integrations.index') }}" class="text-white no-underline">Integrações</a>
+        <a href="/admin" class="text-white no-underline">Admin</a>
+        <form method="POST" action="{{ route('logout') }}" class="ml-auto">
             @csrf
-            <button type="submit" style="background: #374151; color: #fff; border: 0; border-radius: 6px; padding: 8px 12px; cursor: pointer;">
+            <button type="submit" class="cursor-pointer rounded-md border-0 bg-primary-700 px-3 py-2 text-white hover:bg-primary-900">
                 Sair
             </button>
         </form>
     </nav>
 
-    <main style="max-width: 980px; margin: 24px auto; padding: 0 16px;">
+    <main class="mx-auto max-w-[980px] px-4 py-6">
         @if (session()->has('impersonator_id'))
-            <div style="background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; padding: 10px 12px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div class="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-800">
                 <span>Voce esta em sessao assumida.</span>
                 <form method="POST" action="{{ route('app.impersonations.stop') }}">
                     @csrf
-                    <button type="submit" style="background: #92400e; color: #fff; border: 0; border-radius: 6px; padding: 8px 12px; cursor: pointer;">
+                    <button type="submit" class="cursor-pointer rounded-md border-0 bg-amber-800 px-3 py-2 text-white">
                         Finalizar sessao assumida
                     </button>
                 </form>
@@ -37,7 +38,7 @@
         @endif
 
         @if (session('status'))
-            <div style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 10px 12px; border-radius: 8px; margin-bottom: 16px;">
+            <div class="mb-4 rounded-lg border border-success-300 bg-success-100 px-3 py-2.5 text-success-700">
                 {{ session('status') }}
             </div>
         @endif
