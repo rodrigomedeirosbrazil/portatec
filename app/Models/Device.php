@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Device extends Model
@@ -26,6 +27,8 @@ class Device extends Model
         'brand',
         'default_pin',
         'last_sync',
+        'wifi_strength',
+        'firmware_version',
     ];
 
     protected $casts = [
@@ -44,9 +47,16 @@ class Device extends Model
         });
     }
 
-    public function placeDeviceFunctions(): HasMany
+    public function placeDeviceFunctions(): HasManyThrough
     {
-        return $this->hasMany(PlaceDeviceFunction::class);
+        return $this->hasManyThrough(
+            PlaceDeviceFunction::class,
+            DeviceFunction::class,
+            'device_id',
+            'device_function_id',
+            'id',
+            'id'
+        );
     }
 
     public function deviceFunctions(): HasMany

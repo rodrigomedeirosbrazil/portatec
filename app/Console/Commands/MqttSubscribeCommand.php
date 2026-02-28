@@ -28,7 +28,7 @@ class MqttSubscribeCommand extends Command
         });
 
         $this->subscribe($mqtt, 'device/+/status', function (string $chipId, array $payload) use ($service): void {
-            $service->handlePulse($chipId, $payload);
+            $service->handleStatus($chipId, $payload);
         });
 
         $this->subscribe($mqtt, 'device/+/event', function (string $chipId, array $payload) use ($service): void {

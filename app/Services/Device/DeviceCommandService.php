@@ -11,6 +11,7 @@ use App\Models\AccessEvent;
 use App\Models\CommandLog;
 use App\Models\Device;
 use App\Models\DeviceFunction;
+use App\Services\DeviceService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,10 @@ use PhpMqtt\Client\Facades\MQTT;
 
 class DeviceCommandService
 {
+    public function __construct(
+        private DeviceService $deviceService
+    ) {}
+
     public function sendCommand(Device $device, string $action, int $pin, ?int $userId = null): string
     {
         if (! $device->external_device_id) {
@@ -49,6 +54,7 @@ class DeviceCommandService
         }
 
         CommandLog::create([
+            'command_id' => $commandId,
             'user_id' => $userId,
             'place_id' => $placeId,
             'device_function_id' => $device->deviceFunctions()->where('pin', (string) $pin)->value('id'),
@@ -94,6 +100,13 @@ class DeviceCommandService
             return;
         }
 
+        $commandId = data_get($payload, 'command_id');
+        if ($commandId !== null) {
+            CommandLog::query()
+                ->where('command_id', (string) $commandId)
+                ->update(['acknowledged_at' => now()]);
+        }
+
         $pin = (string) data_get($payload, 'pin', '');
         $command = (string) data_get($payload, 'action', data_get($payload, 'command', 'ack'));
 
@@ -102,14 +115,30 @@ class DeviceCommandService
             : null;
 
         if ($deviceFunction) {
-            $this->dispatchAckToPlaces($device, $deviceFunction, $command);
+            $this->dispatchAckToPlaces($device, $deviceFunction, $command, $commandId !== null ? (string) $commandId : null);
 
             return;
         }
 
-        $device->deviceFunctions->each(function (DeviceFunction $function) use ($device, $command): void {
-            $this->dispatchAckToPlaces($device, $function, $command);
+        $device->deviceFunctions->each(function (DeviceFunction $function) use ($device, $command, $commandId): void {
+            $this->dispatchAckToPlaces($device, $function, $command, $commandId !== null ? (string) $commandId : null);
         });
+    }
+
+    public function handleStatus(string $chipId, array $payload): void
+    {
+        $device = Device::query()->where('external_device_id', $chipId)->first();
+        if (! $device) {
+            return;
+        }
+
+        $this->deviceService->updateStatus($chipId, $payload);
+
+        $device->refresh();
+        $placeIds = $device->placeDeviceFunctions()->pluck('place_id')->unique();
+        foreach ($placeIds as $placeId) {
+            PlaceDeviceStatusEvent::dispatch((int) $placeId, $device->id, $device->isAvailable());
+        }
     }
 
     public function handlePulse(string $chipId, array $payload): void
@@ -159,7 +188,7 @@ class DeviceCommandService
         ]);
     }
 
-    private function dispatchAckToPlaces(Device $device, DeviceFunction $deviceFunction, string $command): void
+    private function dispatchAckToPlaces(Device $device, DeviceFunction $deviceFunction, string $command, ?string $commandId = null): void
     {
         $placeIds = $deviceFunction->placeDeviceFunctions->pluck('place_id')->unique();
 
@@ -170,6 +199,7 @@ class DeviceCommandService
                 $command,
                 (int) $deviceFunction->pin,
                 (string) $deviceFunction->type->value,
+                $commandId,
             );
         }
     }
