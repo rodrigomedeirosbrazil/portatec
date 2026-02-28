@@ -10,7 +10,7 @@
 <body class="min-h-screen bg-neutral-100 text-neutral-900">
     <main class="mx-auto flex min-h-screen w-full max-w-md items-center px-6 py-10">
         <section class="w-full rounded-xl bg-white p-6 shadow-sm ring-1 ring-neutral-300">
-            <h1 class="mb-1 text-2xl font-semibold">Portatec</h1>
+            <img src="{{ asset('images/logo/portatec-logo-branco-horizontal.png') }}" alt="Portatec" class="mb-4 h-10 w-auto">
             <p class="mb-6 text-sm text-neutral-500">{{ $subtitle ?? 'Acesso ao painel do cliente' }}</p>
 
             @if (session('status'))

@@ -8,17 +8,19 @@
     @livewireStyles
 </head>
 <body class="font-sans m-0 bg-neutral-100">
-    <nav class="flex items-center gap-3 bg-primary-900 px-5 py-3 text-white">
-        <a href="{{ route('app.dashboard') }}" class="font-semibold text-white no-underline">Painel</a>
-        <a href="{{ route('app.places.index') }}" class="text-white no-underline">Locais</a>
-        <a href="{{ route('app.devices.index') }}" class="text-white no-underline">Dispositivos</a>
-        <a href="{{ route('app.bookings.index') }}" class="text-white no-underline">Reservas</a>
-        <a href="{{ route('app.access-codes.index') }}" class="text-white no-underline">Códigos de acesso</a>
-        <a href="{{ route('app.integrations.index') }}" class="text-white no-underline">Integrações</a>
-        <a href="/admin" class="text-white no-underline">Admin</a>
+    <nav class="flex items-center gap-6 border-b border-neutral-200 bg-white px-5 py-3 shadow-sm">
+        <a href="{{ route('app.dashboard') }}" class="flex items-center gap-6 no-underline">
+            <img src="{{ asset('images/logo/portatec-logo-branco-horizontal.png') }}" alt="Portatec" class="h-8 w-auto">
+        </a>
+        <a href="{{ route('app.places.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Locais</a>
+        <a href="{{ route('app.devices.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Dispositivos</a>
+        <a href="{{ route('app.bookings.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Reservas</a>
+        <a href="{{ route('app.access-codes.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Códigos de acesso</a>
+        <a href="{{ route('app.integrations.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Integrações</a>
+        <a href="/admin" class="text-neutral-700 no-underline hover:text-primary-700">Admin</a>
         <form method="POST" action="{{ route('logout') }}" class="ml-auto">
             @csrf
-            <button type="submit" class="cursor-pointer rounded-md border-0 bg-primary-700 px-3 py-2 text-white hover:bg-primary-900">
+            <button type="submit" class="cursor-pointer rounded-md border-0 bg-primary-500 px-3 py-2 text-white hover:bg-primary-700">
                 Sair
             </button>
         </form>
