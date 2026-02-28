@@ -19,6 +19,8 @@ class MqttSubscribeCommand extends Command
     {
         $mqtt = MQTT::connection();
 
+        Log::info('MQTT subscriber started', ['topics' => ['device/+/ack', 'device/+/pulse', 'device/+/status', 'device/+/event', 'device/+/access-codes/ack']]);
+
         $this->subscribe($mqtt, 'device/+/ack', function (string $chipId, array $payload) use ($service): void {
             $service->handleAck($chipId, $payload);
         });
@@ -54,6 +56,8 @@ class MqttSubscribeCommand extends Command
         $mqtt->subscribe($topic, function (string $topic, string $message) use ($handler): void {
             $payload = json_decode($message, true);
             if (! is_array($payload)) {
+                Log::warning('MQTT message is not valid JSON', ['topic' => $topic, 'message' => substr($message, 0, 200)]);
+
                 return;
             }
 
@@ -62,6 +66,8 @@ class MqttSubscribeCommand extends Command
             if ($chipId === '') {
                 return;
             }
+
+            Log::debug('MQTT message received', ['topic' => $topic, 'chip_id' => $chipId]);
 
             $handler($chipId, $payload);
         }, 1);

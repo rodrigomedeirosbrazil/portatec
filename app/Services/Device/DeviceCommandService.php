@@ -95,8 +95,10 @@ class DeviceCommandService
 
     public function handleAck(string $chipId, array $payload): void
     {
-        $device = Device::query()->where('external_device_id', $chipId)->first();
+        $device = $this->resolveDeviceByChipId($chipId);
         if (! $device) {
+            Log::warning('MQTT ack: device not found', ['chip_id' => $chipId, 'payload' => $payload]);
+
             return;
         }
 
@@ -127,8 +129,10 @@ class DeviceCommandService
 
     public function handleStatus(string $chipId, array $payload): void
     {
-        $device = Device::query()->where('external_device_id', $chipId)->first();
+        $device = $this->resolveDeviceByChipId($chipId);
         if (! $device) {
+            Log::warning('MQTT status: device not found', ['chip_id' => $chipId, 'payload' => $payload]);
+
             return;
         }
 
@@ -143,8 +147,10 @@ class DeviceCommandService
 
     public function handlePulse(string $chipId, array $payload): void
     {
-        $device = Device::query()->where('external_device_id', $chipId)->first();
+        $device = $this->resolveDeviceByChipId($chipId);
         if (! $device) {
+            Log::warning('MQTT pulse: device not found', ['chip_id' => $chipId, 'payload' => $payload]);
+
             return;
         }
 
@@ -163,8 +169,10 @@ class DeviceCommandService
 
     public function handleAccessEvent(string $chipId, array $payload): void
     {
-        $device = Device::query()->where('external_device_id', $chipId)->first();
+        $device = $this->resolveDeviceByChipId($chipId);
         if (! $device) {
+            Log::warning('MQTT event: device not found', ['chip_id' => $chipId, 'payload' => $payload]);
+
             return;
         }
 
@@ -186,6 +194,24 @@ class DeviceCommandService
                 : null,
             'metadata' => $payload,
         ]);
+    }
+
+    /**
+     * Resolve device by chip ID from MQTT topic. Accepts both "37feb9" and "esp-37feb9" formats
+     * to support ESP devices that use "esp-{id}" as their MQTT client id.
+     */
+    private function resolveDeviceByChipId(string $chipId): ?Device
+    {
+        $device = Device::query()->where('external_device_id', $chipId)->first();
+        if ($device) {
+            return $device;
+        }
+
+        if (str_starts_with($chipId, 'esp-')) {
+            return Device::query()->where('external_device_id', substr($chipId, 4))->first();
+        }
+
+        return Device::query()->where('external_device_id', 'esp-' . $chipId)->first();
     }
 
     private function dispatchAckToPlaces(Device $device, DeviceFunction $deviceFunction, string $command, ?string $commandId = null): void

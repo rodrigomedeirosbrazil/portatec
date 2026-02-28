@@ -168,6 +168,52 @@ class DeviceCommandServicePayloadMappingTest extends TestCase
         });
     }
 
+    public function test_handle_ack_resolves_device_with_esp_prefix_in_chip_id(): void
+    {
+        Event::fake([PlaceDeviceCommandAckEvent::class]);
+
+        $placeId = DB::table('places')->insertGetId([
+            'name' => 'MQTT Place',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $device = Device::create([
+            'place_id' => $placeId,
+            'name' => 'ESP Device',
+            'brand' => 'portatec',
+            'external_device_id' => '37feb9',
+        ]);
+
+        $deviceFunction = DeviceFunction::create([
+            'device_id' => $device->id,
+            'type' => 'button',
+            'pin' => '3',
+            'status' => null,
+        ]);
+
+        DB::table('place_device_functions')->insert([
+            'place_id' => $placeId,
+            'device_function_id' => $deviceFunction->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $service = app(DeviceCommandService::class);
+        $service->handleAck('esp-37feb9', [
+            'pin' => '3',
+            'action' => 'push_button',
+            'command_id' => 'cmd-esp-test',
+        ]);
+
+        Event::assertDispatched(PlaceDeviceCommandAckEvent::class, function (PlaceDeviceCommandAckEvent $event) use ($placeId, $device): bool {
+            return $event->placeId === $placeId
+                && $event->deviceId === $device->id
+                && $event->command === 'push_button'
+                && $event->pin === 3;
+        });
+    }
+
     public function test_handle_status_updates_device_with_esp_payload(): void
     {
         Event::fake([PlaceDeviceStatusEvent::class]);
