@@ -176,24 +176,64 @@ class DeviceCommandService
             return;
         }
 
-        $pin = (string) data_get($payload, 'pin', '');
-        $result = (string) data_get($payload, 'result', 'invalid');
+        $pin = (string) data_get($payload, 'pin', data_get($payload, 'default_pin', ''));
+        $result = $this->normalizeAccessResult(data_get($payload, 'result', 'invalid'));
+        $placeId = $device->place_id ?? $device->placeDeviceFunctions()->value('place_id');
 
-        $accessCode = AccessCode::query()
-            ->where('place_id', $device->place_id)
-            ->where('pin', $pin)
-            ->first();
+        $accessCode = null;
+        if ($placeId !== null && $pin !== '') {
+            $accessCode = AccessCode::query()
+                ->where('place_id', $placeId)
+                ->where('pin', $pin)
+                ->first();
+        }
 
-        AccessEvent::create([
-            'device_id' => $device->id,
-            'access_code_id' => $accessCode?->id,
-            'pin' => $pin,
-            'result' => $result,
-            'device_timestamp' => data_get($payload, 'timestamp_device')
-                ? Carbon::createFromTimestamp((int) data_get($payload, 'timestamp_device'))
-                : null,
-            'metadata' => $payload,
-        ]);
+        try {
+            $accessEvent = AccessEvent::create([
+                'device_id' => $device->id,
+                'access_code_id' => $accessCode?->id,
+                'pin' => $pin,
+                'result' => $result,
+                'device_timestamp' => data_get($payload, 'timestamp_device')
+                    ? Carbon::createFromTimestamp((int) data_get($payload, 'timestamp_device'))
+                    : null,
+                'metadata' => $payload,
+            ]);
+            Log::info('MQTT access event recorded', [
+                'chip_id' => $chipId,
+                'access_event_id' => $accessEvent->id,
+                'pin' => $pin,
+                'result' => $result,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('MQTT access event failed to create', [
+                'chip_id' => $chipId,
+                'payload' => $payload,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Normalize device result to allowed enum values: success, failed, expired, invalid.
+     */
+    private function normalizeAccessResult(mixed $result): string
+    {
+        $value = strtolower((string) $result);
+        $map = [
+            'ok' => 'success',
+            'granted' => 'success',
+            'valid' => 'success',
+            '1' => 'success',
+            'true' => 'success',
+            'denied' => 'failed',
+            '0' => 'failed',
+            'false' => 'failed',
+        ];
+
+        return $map[$value] ?? (in_array($value, ['success', 'failed', 'expired', 'invalid'], true) ? $value : 'invalid');
     }
 
     /**
