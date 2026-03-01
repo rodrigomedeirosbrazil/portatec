@@ -2,25 +2,23 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Actions\EditAction;
-use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Resources\UserResource\Pages\EditUser;
-use App\Filament\Resources\UserResource\Pages;
+use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Models\User;
-use Filament\Forms\Components\Select;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use STS\FilamentImpersonate\Actions\Impersonate;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-users';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
     protected static ?string $modelLabel = 'Usuário';
 
@@ -42,13 +40,6 @@ class UserResource extends Resource
                     ->password()
                     ->revealable()
                     ->maxLength(255),
-
-                Select::make('roles')
-                    ->label('System roles')
-                    ->relationship('roles', 'name')
-                    ->multiple()
-                    ->preload()
-                    ->searchable(),
             ]);
     }
 
@@ -66,10 +57,6 @@ class UserResource extends Resource
                 TextColumn::make('email')
                     ->searchable(),
 
-                TextColumn::make('roleNames')
-                    ->label('Roles')
-                    ->badge()->separator(','),
-
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -84,7 +71,14 @@ class UserResource extends Resource
                 //
             ])
             ->recordActions([
-                Impersonate::make(),
+                Action::make('impersonate_client')
+                    ->label('Entrar no app')
+                    ->icon('heroicon-o-arrow-right-circle')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Entrar no app como cliente')
+                    ->modalDescription('Esta acao iniciara uma sessao assumida no app cliente.')
+                    ->url(fn (User $record): string => route('admin.impersonations.start', ['user' => $record])),
                 EditAction::make(),
             ]);
     }

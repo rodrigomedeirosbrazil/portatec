@@ -11,14 +11,20 @@ class CommandLog extends Model
     use HasFactory;
 
     protected $fillable = [
+        'command_id',
         'user_id',
         'place_id',
         'device_function_id',
         'command_type',
         'command_payload',
+        'acknowledged_at',
         'device_function_type',
         'ip_address',
         'user_agent',
+    ];
+
+    protected $casts = [
+        'acknowledged_at' => 'datetime',
     ];
 
     /**

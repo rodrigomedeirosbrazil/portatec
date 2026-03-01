@@ -12,22 +12,43 @@ class DeviceService
 {
     public function updateStatus(string $chipId, array $data = []): void
     {
-        $device = Device::where('chip_id', $chipId)->firstOrFail();
+        $device = Device::where('external_device_id', $chipId)->first();
+        if (! $device) {
+            return;
+        }
 
-        $pin = data_get($data, 'pin');
+        $pin = data_get($data, 'pin') ?? data_get($data, 'sensor-pin');
 
         if ($pin !== null) {
-            $deviceFunction = $device->deviceFunctions()->where('pin', $pin)->firstOrFail();
+            $deviceFunction = $device->deviceFunctions()->where('pin', (string) $pin)->first();
 
-            if ($deviceFunction->type === DeviceTypeEnum::Sensor && isset($data['status'])) {
-                $deviceFunction->status = $data['status'];
-                $deviceFunction->save();
+            if ($deviceFunction && $deviceFunction->type === DeviceTypeEnum::Sensor) {
+                $status = data_get($data, 'status') ?? data_get($data, 'sensor_value');
+                if ($status !== null) {
+                    $deviceFunction->status = $status;
+                    $deviceFunction->save();
+                }
             }
+        }
+
+        $deviceName = data_get($data, 'device-name');
+        if ($deviceName !== null) {
+            $device->name = (string) $deviceName;
+        }
+
+        $wifiStrength = data_get($data, 'wifi-strength');
+        if ($wifiStrength !== null) {
+            $device->wifi_strength = (int) $wifiStrength;
+        }
+
+        $firmwareVersion = data_get($data, 'firmware-version');
+        if ($firmwareVersion !== null) {
+            $device->firmware_version = (string) $firmwareVersion;
         }
 
         $millis = data_get($data, 'millis');
         if ($millis !== null) {
-            $uptime = now()->subMilliseconds($millis)->diffForHumans();
+            $uptime = now()->subMilliseconds((int) $millis)->diffForHumans();
             Log::info(json_encode([
                 'device' => $device->id,
                 'uptime' => $uptime,

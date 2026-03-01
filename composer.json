@@ -7,7 +7,6 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "bezhansalleh/filament-shield": "^4.0",
         "filament/filament": "^4.0",
         "laravel/framework": "^11.31",
         "laravel/horizon": "^5.30",
@@ -15,7 +14,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "php-mqtt/laravel-client": "^1.5",
-        "stechstudio/filament-impersonate": "^4.0"
+        "sabre/vobject": "^4.5"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.14",

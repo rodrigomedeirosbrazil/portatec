@@ -2,8 +2,8 @@
 
 namespace App\Services\Tuya;
 
-use Exception;
 use App\Services\Tuya\DTOs\TuyaTicketDTO;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 

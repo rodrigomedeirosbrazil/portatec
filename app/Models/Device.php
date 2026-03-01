@@ -1,13 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Enums\DeviceBrandEnum;
+use App\Enums\DeviceTypeEnum;
 use App\Events\DeviceCreatedEvent;
 use App\Events\DeviceDeletedEvent;
-use App\Events\DeviceUpdatedEvent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Device extends Model
@@ -17,11 +22,17 @@ class Device extends Model
 
     protected $fillable = [
         'name',
-        'chip_id',
+        'external_device_id', // ID externo do dispositivo (Portatec ou Tuya)
+        'place_id',
+        'brand',
+        'default_pin',
         'last_sync',
+        'wifi_strength',
+        'firmware_version',
     ];
 
     protected $casts = [
+        'brand' => DeviceBrandEnum::class,
         'last_sync' => 'datetime',
     ];
 
@@ -31,19 +42,21 @@ class Device extends Model
             event(new DeviceCreatedEvent($device->id));
         });
 
-        static::updated(function (Device $device) {
-            $changes = $device->getChanges(); // Campos modificados e novos valores
-            event(new DeviceUpdatedEvent($device->id, $changes));
-        });
-
         static::deleted(function (Device $device) {
             event(new DeviceDeletedEvent($device->id));
         });
     }
 
-    public function placeDeviceFunctions(): HasMany
+    public function placeDeviceFunctions(): HasManyThrough
     {
-        return $this->hasMany(PlaceDeviceFunction::class);
+        return $this->hasManyThrough(
+            PlaceDeviceFunction::class,
+            DeviceFunction::class,
+            'device_id',
+            'device_function_id',
+            'id',
+            'id'
+        );
     }
 
     public function deviceFunctions(): HasMany
@@ -59,5 +72,16 @@ class Device extends Model
     public function deviceUsers(): HasMany
     {
         return $this->hasMany(DeviceUser::class);
+    }
+
+    public function place(): BelongsTo
+    {
+        return $this->belongsTo(Place::class);
+    }
+
+    // Método helper para obter funções por tipo
+    public function getFunctionByType(DeviceTypeEnum $type): ?DeviceFunction
+    {
+        return $this->deviceFunctions()->where('type', $type)->first();
     }
 }

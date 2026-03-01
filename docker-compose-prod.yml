@@ -44,6 +44,20 @@ services:
             timeout: 5s
         restart: always
 
+    mosquitto:
+        image: eclipse-mosquitto:2
+        volumes:
+            - './docker/prod/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf'
+            - './docker/prod/mosquitto/auth/passwd:/mosquitto/config/passwd'
+            - 'portatec-mosquitto-data:/mosquitto/data'
+            - 'portatec-mosquitto-log:/mosquitto/log'
+        ports:
+            - '1883:1883'
+            - '9001:9001'
+        networks:
+            - medeirostec-network
+        restart: always
+
 networks:
   medeirostec-network:
       external: true
@@ -52,4 +66,8 @@ networks:
 
 volumes:
     portatec-redis:
+        driver: local
+    portatec-mosquitto-data:
+        driver: local
+    portatec-mosquitto-log:
         driver: local

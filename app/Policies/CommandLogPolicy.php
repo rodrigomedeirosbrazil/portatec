@@ -4,67 +4,73 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\CommandLog;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class CommandLogPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    public function viewAny(User $user): bool
     {
-        return $authUser->can('view_any_command::log');
+        return true;
     }
 
-    public function view(AuthUser $authUser, CommandLog $commandLog): bool
+    public function view(User $user, CommandLog $commandLog): bool
     {
-        return $authUser->can('view_command::log');
+        return $this->hasPlaceAccess($user, $commandLog->place_id);
     }
 
-    public function create(AuthUser $authUser): bool
+    public function create(User $user): bool
     {
-        return $authUser->can('create_command::log');
+        return true;
     }
 
-    public function update(AuthUser $authUser, CommandLog $commandLog): bool
+    public function update(User $user, CommandLog $commandLog): bool
     {
-        return $authUser->can('update_command::log');
+        return false;
     }
 
-    public function delete(AuthUser $authUser, CommandLog $commandLog): bool
+    public function delete(User $user, CommandLog $commandLog): bool
     {
-        return $authUser->can('delete_command::log');
+        return false;
     }
 
-    public function restore(AuthUser $authUser, CommandLog $commandLog): bool
+    public function restore(User $user, CommandLog $commandLog): bool
     {
-        return $authUser->can('restore_command::log');
+        return false;
     }
 
-    public function forceDelete(AuthUser $authUser, CommandLog $commandLog): bool
+    public function forceDelete(User $user, CommandLog $commandLog): bool
     {
-        return $authUser->can('force_delete_command::log');
+        return false;
     }
 
-    public function forceDeleteAny(AuthUser $authUser): bool
+    public function forceDeleteAny(User $user): bool
     {
-        return $authUser->can('force_delete_any_command::log');
+        return false;
     }
 
-    public function restoreAny(AuthUser $authUser): bool
+    public function restoreAny(User $user): bool
     {
-        return $authUser->can('restore_any_command::log');
+        return false;
     }
 
-    public function replicate(AuthUser $authUser, CommandLog $commandLog): bool
+    public function replicate(User $user, CommandLog $commandLog): bool
     {
-        return $authUser->can('replicate_command::log');
+        return false;
     }
 
-    public function reorder(AuthUser $authUser): bool
+    public function reorder(User $user): bool
     {
-        return $authUser->can('reorder_command::log');
+        return false;
     }
 
+    private function hasPlaceAccess(User $user, int $placeId): bool
+    {
+        return $user->placeUsers()
+            ->where('place_id', $placeId)
+            ->exists();
+    }
 }

@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->redirectUsersTo(fn (Request $request) => auth()->user()?->hasRole('super_admin') ? '/admin' : '/app/dashboard');
         $middleware->trustProxies(at: [
             '172.21.0.0/16',
         ]);

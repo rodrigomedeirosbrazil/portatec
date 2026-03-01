@@ -2,167 +2,109 @@
 
 namespace Database\Seeders;
 
-use App\Enums\DeviceTypeEnum;
-use App\Enums\PlaceRoleEnum;
-use App\Models\Device;
-use App\Models\DeviceFunction;
-use App\Models\DeviceUser;
-use App\Models\Place;
-use App\Models\PlaceUser;
-use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Gera as permissões do Filament Shield para ambos os painéis
-        // Usa --panel para evitar prompt interativo e --option para evitar confirm
-        Artisan::call('shield:generate', [
-            '--all' => true,
-            '--panel' => 'app',
-            '--option' => 'policies_and_permissions',
+        $now = now();
+
+        $adminId = DB::table('users')->insertGetId([
+            'name' => 'Portatec Admin',
+            'email' => 'contato@medeirostec.com.br',
+            'password' => Hash::make('123'),
+            'email_verified_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        // Gera também para o painel admin (onde está o UserResource)
-        Artisan::call('shield:generate', [
-            '--all' => true,
-            '--panel' => 'admin',
-            '--option' => 'policies_and_permissions',
+        $hostId = DB::table('users')->insertGetId([
+            'name' => 'Host Demo',
+            'email' => 'host@portatec.test',
+            'password' => Hash::make('123'),
+            'email_verified_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        $superAdminRole = Role::firstOrCreate([
-            'name' => 'super_admin',
-            'guard_name' => 'web',
-        ]);
-
-        // Atribui todas as permissões ao super_admin
-        $permissions = Permission::where('guard_name', 'web')->get();
-        $superAdminRole->syncPermissions($permissions);
-
-        User::firstOrCreate(
-            ['email' => 'contato@medeirostec.com.br'],
-            [
-                'name' => 'Super Admin',
-                'password' => Hash::make('123'),
-                'email_verified_at' => now(),
-            ]
-        )->assignRole($superAdminRole);
-
-        $hostRole = Role::firstOrCreate([
-            'name' => 'host',
-            'guard_name' => 'web',
-        ]);
-
-        // Atribui permissões ao role host (acesso aos recursos do painel app)
-        // Host pode visualizar places, devices, command logs e access pins
-        $hostPermissions = Permission::where('guard_name', 'web')
-            ->where(function ($query) {
-                // Permissões de visualização para places
-                $query->where('name', 'view_any_place')
-                    ->orWhere('name', 'view_place')
-                    // Permissões de visualização para devices
-                    ->orWhere('name', 'view_any_device')
-                    ->orWhere('name', 'view_device')
-                    // Permissões de visualização para command logs
-                    ->orWhere('name', 'view_any_command::log')
-                    ->orWhere('name', 'view_command::log')
-                    // Permissões de visualização para access pins
-                    ->orWhere('name', 'view_any_access::pin')
-                    ->orWhere('name', 'view_access::pin');
-            })
-            ->get();
-
-        $hostRole->syncPermissions($hostPermissions);
-
-        // Cria/atualiza o role panel_user (já é criado pelo Shield, mas garantimos que existe)
-        $panelUserRole = Role::firstOrCreate([
-            'name' => 'panel_user',
-            'guard_name' => 'web',
-        ]);
-
-        // Panel User não precisa de permissões explícitas, apenas acesso básico ao painel
-        // As permissões são gerenciadas pelo Filament Shield automaticamente
-        // Garantimos que não tem permissões atribuídas (apenas acesso ao painel)
-        $panelUserRole->syncPermissions([]);
-
-        $rodrigo = User::firstOrCreate(
-            ['email' => 'rodrigo@medeirostec.com.br'],
-            [
-                'name' => 'Rodrigo',
-                'password' => Hash::make('123'),
-                'email_verified_at' => now(),
-            ]
-        );
-
-        if (!$rodrigo->hasRole($hostRole)) {
-            $rodrigo->assignRole($hostRole);
-        }
-
-        $maitte = User::firstOrCreate(
-            ['email' => 'maitte.andrade@gmail.com'],
-            [
-                'name' => 'Maittê',
-                'password' => Hash::make('123'),
-                'email_verified_at' => now(),
-            ]
-        );
-
-        if (!$maitte->hasRole($hostRole)) {
-            $maitte->assignRole($hostRole);
-        }
-
-        $place = Place::create([
+        $placeId = DB::table('places')->insertGetId([
             'name' => 'Beach House',
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        PlaceUser::create([
-            'place_id' => $place->id,
-            'user_id' => $rodrigo->id,
-            'role' => PlaceRoleEnum::Admin,
+        DB::table('platforms')->insert([
+            'name' => 'Airbnb',
+            'slug' => 'airbnb',
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        PlaceUser::create([
-            'place_id' => $place->id,
-            'user_id' => $maitte->id,
-            'role' => PlaceRoleEnum::Host,
+        DB::table('place_users')->insert([
+            [
+                'place_id' => $placeId,
+                'user_id' => $adminId,
+                'role' => 'admin',
+                'label' => 'Administrador',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'place_id' => $placeId,
+                'user_id' => $hostId,
+                'role' => 'host',
+                'label' => 'Host',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ]);
 
-        $portaoGaragem = Device::create([
-            'name' => 'Portão garagem',
-            'chip_id' => '123123',
+        $deviceId = DB::table('devices')->insertGetId([
+            'place_id' => $placeId,
+            'name' => 'Portao Garagem',
+            'brand' => 'portatec',
+            'external_device_id' => '37feb9',
+            'default_pin' => '123456',
+            'last_sync' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+            'deleted_at' => null,
         ]);
 
-        $portaoGaragemPulse = DeviceFunction::create([
-            'device_id' => $portaoGaragem->id,
-            'type' => DeviceTypeEnum::Button,
-            'pin' => 3,
+        $buttonFunctionId = DB::table('device_functions')->insertGetId([
+            'device_id' => $deviceId,
+            'type' => 'button',
+            'pin' => '3',
+            'status' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        $portaoGaragemSensor = DeviceFunction::create([
-            'device_id' => $portaoGaragem->id,
-            'type' => DeviceTypeEnum::Sensor,
-            'pin' => 0,
+        $sensorFunctionId = DB::table('device_functions')->insertGetId([
+            'device_id' => $deviceId,
+            'type' => 'sensor',
+            'pin' => '0',
+            'status' => false,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        $place->placeDeviceFunctions()->create([
-            'device_function_id' => $portaoGaragemPulse->id,
-        ]);
-
-        $place->placeDeviceFunctions()->create([
-            'device_function_id' => $portaoGaragemSensor->id,
-        ]);
-
-        DeviceUser::create([
-            'device_id' => $portaoGaragem->id,
-            'user_id' => $rodrigo->id,
+        DB::table('place_device_functions')->insert([
+            [
+                'place_id' => $placeId,
+                'device_function_id' => $buttonFunctionId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'place_id' => $placeId,
+                'device_function_id' => $sensorFunctionId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ]);
     }
 }

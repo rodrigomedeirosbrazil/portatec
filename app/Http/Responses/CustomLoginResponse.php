@@ -19,6 +19,6 @@ class CustomLoginResponse implements LoginResponse
             return redirect()->to($url);
         }
 
-        return redirect()->intended($superAdmin ? '/admin' : '/main');
+        return redirect()->intended($superAdmin ? '/admin' : '/app/dashboard');
     }
 }
