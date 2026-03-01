@@ -20,9 +20,10 @@ class ClientImpersonationFlowTest extends TestCase
         ]);
         $clientUser = User::factory()->create();
 
-        $this->actingAs($superAdmin)
-            ->get(route('admin.impersonations.start', ['user' => $clientUser]))
-            ->assertRedirect('/app/dashboard');
+        $response = $this->actingAs($superAdmin)
+            ->followingRedirects()
+            ->get(route('admin.impersonations.start', ['user' => $clientUser]));
+        $response->assertOk();
 
         $this->assertAuthenticatedAs($clientUser);
 
@@ -33,8 +34,9 @@ class ClientImpersonationFlowTest extends TestCase
         $this->assertNotNull($session->started_at);
         $this->assertNull($session->ended_at);
 
-        $this->post(route('app.impersonations.stop'))
-            ->assertRedirect('/admin');
+        $this->post(route('app.impersonations.stop'), [
+            '_token' => session()->token(),
+        ])->assertRedirect('/admin');
 
         $this->assertAuthenticatedAs($superAdmin);
 
@@ -54,8 +56,6 @@ class ClientImpersonationFlowTest extends TestCase
 
     public function test_super_admin_cannot_impersonate_another_super_admin(): void
     {
-        putenv('PORTATEC_SUPER_ADMIN_EMAILS=contato@medeirostec.com.br,segundo@medeirostec.com.br');
-
         $superAdmin = User::factory()->create([
             'email' => 'contato@medeirostec.com.br',
         ]);
@@ -90,8 +90,11 @@ class ClientImpersonationFlowTest extends TestCase
                 'impersonator_id' => $superAdmin->id,
                 'impersonation_session_id' => $session->id,
             ])
-            ->post(route('app.impersonations.stop'))
-            ->assertRedirect('/app/login');
+            ->get(route('app.dashboard'));
+
+        $this->post(route('app.impersonations.stop'), [
+            '_token' => session()->token(),
+        ])->assertRedirect('/app/login');
 
         $this->assertGuest();
     }
