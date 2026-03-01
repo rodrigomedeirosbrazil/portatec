@@ -6,14 +6,15 @@
         </a>
     </div>
 
-    <div class="mb-4">
-        <label for="place-filter">Place</label>
-        <select id="place-filter" wire:model.live="placeId" class="ml-2 rounded border border-neutral-300 px-2 py-1.5">
-            @foreach ($places as $place)
-                <option value="{{ $place->id }}">{{ $place->name }}</option>
-            @endforeach
-        </select>
-    </div>
+    <div class="mb-4 rounded-[10px] border border-neutral-300 bg-white p-3.5">
+        <x-place-select
+            :places="$places"
+            wire:model.live="placeId"
+            label="Filtrar por local"
+            :include-empty="true"
+            empty-option-label="Todos"
+            id="place-filter"
+        />
 
     <div class="grid gap-3">
         @forelse ($bookings as $booking)

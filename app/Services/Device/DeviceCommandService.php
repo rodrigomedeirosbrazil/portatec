@@ -251,7 +251,7 @@ class DeviceCommandService
             return Device::query()->where('external_device_id', substr($chipId, 4))->first();
         }
 
-        return Device::query()->where('external_device_id', 'esp-' . $chipId)->first();
+        return Device::query()->where('external_device_id', 'esp-'.$chipId)->first();
     }
 
     private function dispatchAckToPlaces(Device $device, DeviceFunction $deviceFunction, string $command, ?string $commandId = null): void

@@ -25,7 +25,12 @@
     </div>
 
     <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-        <h2 class="mt-0">Dispositivos</h2>
+        <div class="mb-3 flex items-center justify-between">
+            <h2 class="mt-0">Dispositivos</h2>
+            <a href="{{ route('app.places.devices.create', $place->id) }}" class="rounded-lg bg-primary-500 px-3 py-2 text-sm text-white no-underline hover:bg-primary-700">
+                Adicionar dispositivo
+            </a>
+        </div>
         <ul class="m-0 pl-5">
             @forelse ($place->devices as $device)
                 <li>

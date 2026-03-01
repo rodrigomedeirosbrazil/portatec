@@ -14,6 +14,7 @@ use App\Livewire\Bookings\Index as IndexBookings;
 use App\Livewire\Bookings\Show as ShowBooking;
 use App\Livewire\Dashboard;
 use App\Livewire\Devices\Control as ControlDevice;
+use App\Livewire\Devices\Create as CreateDevice;
 use App\Livewire\Devices\Index as IndexDevices;
 use App\Livewire\Devices\Show as ShowDevice;
 use App\Livewire\Integrations\Create as CreateIntegration;
@@ -75,6 +76,7 @@ Route::middleware('auth')
 
         Route::get('/places', IndexPlaces::class)->name('places.index');
         Route::get('/places/create', CreatePlace::class)->name('places.create');
+        Route::get('/places/{place}/devices/create', CreateDevice::class)->name('places.devices.create');
         Route::get('/places/{place}', ShowPlace::class)->name('places.show');
         Route::get('/places/{place}/edit', EditPlace::class)->name('places.edit');
 
@@ -87,6 +89,7 @@ Route::middleware('auth')
         Route::get('/access-codes/{accessCode}/edit', EditAccessCode::class)->name('access-codes.edit');
 
         Route::get('/devices', IndexDevices::class)->name('devices.index');
+        Route::get('/devices/create', CreateDevice::class)->name('devices.create');
         Route::get('/devices/{device}', ShowDevice::class)->name('devices.show');
         Route::get('/devices/{device}/control', ControlDevice::class)->name('devices.control');
 

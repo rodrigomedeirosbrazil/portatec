@@ -1,16 +1,20 @@
 <section>
     <div class="mb-4 flex items-center justify-between">
         <h1 class="m-0">Dispositivos</h1>
+        <a href="{{ route('app.devices.create') }}" class="rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700">
+            Novo dispositivo
+        </a>
     </div>
 
     <div class="mb-4 rounded-[10px] border border-neutral-300 bg-white p-3.5">
-        <label for="place-filter" class="mb-2 block font-semibold">Filtrar por local</label>
-        <select id="place-filter" wire:model.live="placeId" class="max-w-[360px] w-full rounded-lg border border-neutral-300 p-2">
-            <option value="">Todos</option>
-            @foreach ($places as $place)
-                <option value="{{ $place->id }}">{{ $place->name }}</option>
-            @endforeach
-        </select>
+        <x-place-select
+            :places="$places"
+            wire:model.live="placeId"
+            label="Filtrar por local"
+            :include-empty="true"
+            empty-option-label="Todos"
+            id="place-filter"
+        />
     </div>
 
     <div class="grid gap-3">

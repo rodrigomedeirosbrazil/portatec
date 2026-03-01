@@ -3,14 +3,13 @@
     <h1 class="my-2 mb-4">Novo Access Code</h1>
 
     <form wire:submit="save" class="grid gap-2.5 rounded-[10px] border border-neutral-300 bg-white p-3.5">
-        <div>
-            <label for="placeId">Place</label><br>
-            <select id="placeId" wire:model="placeId" class="w-full p-2">
-                @foreach ($places as $place)
-                    <option value="{{ $place->id }}">{{ $place->name }}</option>
-                @endforeach
-            </select>
-        </div>
+        <x-place-select
+            :places="$places"
+            wire:model="placeId"
+            label="Local"
+            :required="true"
+            error-name="placeId"
+        />
 
         <div>
             <label for="pin">PIN (opcional)</label><br>
