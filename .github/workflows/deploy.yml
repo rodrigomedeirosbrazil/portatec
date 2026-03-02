@@ -50,12 +50,6 @@ jobs:
         run: |
           scp -o StrictHostKeyChecking=no docker-compose-prod.yml ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_ADDRESS }}:${{ secrets.REMOTE_SERVER_PATH }}/docker-compose.yml
 
-      - name: Transfer Mosquitto config files to remote server
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_ADDRESS }} "mkdir -p ${{ secrets.REMOTE_SERVER_PATH }}/docker/prod/mosquitto/auth"
-          scp -o StrictHostKeyChecking=no docker/prod/mosquitto/mosquitto.conf ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_ADDRESS }}:${{ secrets.REMOTE_SERVER_PATH }}/docker/prod/mosquitto/mosquitto.conf
-          scp -o StrictHostKeyChecking=no docker/prod/mosquitto/auth/passwd ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_ADDRESS }}:${{ secrets.REMOTE_SERVER_PATH }}/docker/prod/mosquitto/auth/passwd
-
       - name: Deploy Docker containers using Docker Compose on remote server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_ADDRESS }} << 'ENDSSH'
