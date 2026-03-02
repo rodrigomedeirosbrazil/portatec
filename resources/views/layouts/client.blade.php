@@ -36,7 +36,7 @@
             {{-- Desktop: logo + links + Sair --}}
             <div class="hidden md:flex md:items-center md:gap-6">
                 <a href="{{ route('app.dashboard') }}" class="no-underline">
-                    <img src="{{ asset('images/logo/portatec-logo-preto-horizontal.png') }}" alt="Portatec" class="h-8 w-auto">
+                    <img src="{{ asset('images/logo/portatec-logo-branco-horizontal.png') }}" alt="Portatec" class="h-8 w-auto">
                 </a>
                 <a href="{{ route('app.places.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Locais</a>
                 <a href="{{ route('app.devices.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Dispositivos</a>
