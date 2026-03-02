@@ -35,7 +35,7 @@ class DeviceCommandService
             'command_id' => $commandId,
             'action' => $action,
             'pin' => $pin,
-            'timestamp' => now()->toIso8601String(),
+            'timestamp' => time(),
         ];
 
         $mqtt = MQTT::connection();
@@ -81,7 +81,7 @@ class DeviceCommandService
                 'start' => $accessCode->start->toIso8601String(),
                 'end' => $accessCode->end?->toIso8601String(),
             ])->values()->all(),
-            'timestamp' => now()->toIso8601String(),
+            'timestamp' => time(),
         ];
 
         $mqtt = MQTT::connection();
