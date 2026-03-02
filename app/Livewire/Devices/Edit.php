@@ -9,6 +9,7 @@ use App\Enums\DeviceTypeEnum;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Models\Place;
+use App\Models\PlaceDeviceFunction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -74,6 +75,27 @@ class Edit extends Component
         $this->deviceFunctions = array_values($this->deviceFunctions);
     }
 
+    private function syncPlaceDeviceFunctions(int $placeId): void
+    {
+        $this->device->load('deviceFunctions');
+
+        $functionIds = $this->device->deviceFunctions->pluck('id')->all();
+
+        PlaceDeviceFunction::query()
+            ->whereIn('device_function_id', $functionIds)
+            ->where('place_id', '!=', $placeId)
+            ->delete();
+
+        foreach ($functionIds as $deviceFunctionId) {
+            PlaceDeviceFunction::firstOrCreate(
+                [
+                    'place_id' => $placeId,
+                    'device_function_id' => $deviceFunctionId,
+                ]
+            );
+        }
+    }
+
     protected function rules(): array
     {
         return [
@@ -135,6 +157,8 @@ class Edit extends Component
                 ]);
             }
         }
+
+        $this->syncPlaceDeviceFunctions((int) $validated['placeId']);
 
         session()->flash('status', 'Dispositivo atualizado com sucesso.');
 
