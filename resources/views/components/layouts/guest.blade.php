@@ -16,7 +16,7 @@
     <main class="mx-auto flex min-h-screen w-full max-w-md items-center px-6 py-10">
         <section class="w-full rounded-xl bg-white p-6 shadow-sm ring-1 ring-neutral-300">
             <div class="mb-6 flex justify-center">
-                <img src="{{ asset('images/logo/portatec-logo-branco.png') }}" alt="Portatec" class="h-19 w-auto max-w-[200px]">
+                <img src="{{ asset('images/logo/portatec-logo-branco.png') }}" alt="Portatec" class="h-28 w-auto max-w-[280px]">
             </div>
             <p class="mb-6 text-sm text-neutral-500">{{ $subtitle ?? 'Acesso ao painel do cliente' }}</p>
 
