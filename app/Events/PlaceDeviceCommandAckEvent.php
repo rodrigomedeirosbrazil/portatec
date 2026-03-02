@@ -4,11 +4,11 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class PlaceDeviceCommandAckEvent implements ShouldBroadcast
+class PlaceDeviceCommandAckEvent implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;
@@ -28,5 +28,10 @@ class PlaceDeviceCommandAckEvent implements ShouldBroadcast
         return [
             new PrivateChannel("Place.Device.Command.Ack.{$this->placeId}"),
         ];
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'PlaceDeviceCommandAck';
     }
 }

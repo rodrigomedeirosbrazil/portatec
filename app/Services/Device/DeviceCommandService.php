@@ -95,6 +95,8 @@ class DeviceCommandService
 
     public function handleAck(string $chipId, array $payload): void
     {
+        Log::info('MQTT ack received', ['chip_id' => $chipId, 'payload' => $payload]);
+
         $device = $this->resolveDeviceByChipId($chipId);
         if (! $device) {
             Log::warning('MQTT ack: device not found', ['chip_id' => $chipId, 'payload' => $payload]);
@@ -258,6 +260,20 @@ class DeviceCommandService
     {
         $placeIds = $deviceFunction->placeDeviceFunctions->pluck('place_id')->unique();
 
+        if ($placeIds->isEmpty() && $device->place_id !== null) {
+            $placeIds = collect([$device->place_id]);
+        }
+
+        if ($placeIds->isEmpty()) {
+            Log::warning('MQTT ack: no place to broadcast', [
+                'device_id' => $device->id,
+                'device_function_id' => $deviceFunction->id,
+                'chip_id' => $device->external_device_id,
+            ]);
+
+            return;
+        }
+
         foreach ($placeIds as $placeId) {
             PlaceDeviceCommandAckEvent::dispatch(
                 (int) $placeId,
@@ -267,6 +283,13 @@ class DeviceCommandService
                 (string) $deviceFunction->type->value,
                 $commandId,
             );
+
+            Log::info('MQTT ack: PlaceDeviceCommandAckEvent dispatched', [
+                'place_id' => $placeId,
+                'device_id' => $device->id,
+                'pin' => $deviceFunction->pin,
+                'command_id' => $commandId,
+            ]);
         }
     }
 }

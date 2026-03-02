@@ -35,12 +35,13 @@ class Control extends Component
 
         if (! is_numeric($pin)) {
             session()->flash('status', 'PIN inválido para envio de comando.');
+            $this->dispatch('command-failed', deviceId: $this->device->id, pin: $pin);
 
             return;
         }
 
         try {
-            $service->sendCommand(
+            $commandId = $service->sendCommand(
                 device: $this->device,
                 action: $action,
                 pin: (int) $pin,
@@ -48,9 +49,12 @@ class Control extends Component
             );
 
             session()->flash('status', "Comando '{$action}' enviado para {$this->device->name}.");
+
+            $this->dispatch('command-sent', commandId: $commandId, deviceId: $this->device->id, pin: (int) $pin);
         } catch (\Throwable $exception) {
             report($exception);
             session()->flash('status', 'Erro ao enviar comando para o dispositivo.');
+            $this->dispatch('command-failed', deviceId: $this->device->id, pin: (int) $pin);
         }
     }
 
