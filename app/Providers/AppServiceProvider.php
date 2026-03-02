@@ -9,6 +9,7 @@ use App\Observers\AccessCodeObserver;
 use App\Observers\BookingObserver;
 use App\Services\ICalParser;
 use Filament\Notifications\Livewire\Notifications;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -31,5 +32,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Register Filament Livewire components
         Livewire::component('filament.livewire.notifications', Notifications::class);
+
+        // Corrige URLs malformadas (ex: /https:/admin/login) quando atrás de proxy reverso HTTPS
+        $appUrl = config('app.url');
+        if ($appUrl && str_starts_with($appUrl, 'https://')) {
+            URL::forceScheme('https');
+            URL::forceRootUrl(rtrim($appUrl, '/'));
+        }
     }
 }
