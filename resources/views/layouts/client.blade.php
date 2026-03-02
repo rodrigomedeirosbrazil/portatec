@@ -6,6 +6,11 @@
     <title>{{ config('app.name') }} - Client</title>
     @vite(['resources/css/app.css'])
     @livewireStyles
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}">
 </head>
 <body class="font-sans m-0 bg-neutral-100">
     <nav class="flex items-center gap-6 border-b border-neutral-200 bg-white px-5 py-3 shadow-sm">
