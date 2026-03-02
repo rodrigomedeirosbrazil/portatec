@@ -47,8 +47,8 @@ services:
     mosquitto:
         image: eclipse-mosquitto:2
         volumes:
-            - './docker/prod/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf'
-            - './docker/prod/mosquitto/auth/passwd:/mosquitto/config/passwd'
+            - './mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf'
+            - './mosquitto/auth/passwd:/etc/mosquitto/passwd'
             - 'portatec-mosquitto-data:/mosquitto/data'
             - 'portatec-mosquitto-log:/mosquitto/log'
         ports:
