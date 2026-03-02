@@ -36,6 +36,10 @@
   --color-neutral-100: #F3F4F6;
 }
 
+[x-cloak] {
+  display: none !important;
+}
+
 :root {
   --color-primary-500: #2563EB;
   --color-primary-700: #1D4ED8;
