@@ -4,9 +4,14 @@
             <a href="{{ route('app.places.index') }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar</a>
             <h1 class="m-0 mt-2">{{ $place->name }}</h1>
         </div>
-        <a href="{{ route('app.places.edit', $place->id) }}" class="rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700">
-            Editar
-        </a>
+        <div class="flex gap-2">
+            <a href="{{ route('app.places.control', $place->id) }}" class="rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700">
+                Controle
+            </a>
+            <a href="{{ route('app.places.edit', $place->id) }}" class="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-700 no-underline hover:bg-neutral-50">
+                Editar
+            </a>
+        </div>
     </div>
 
     <div class="mb-4 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">

@@ -20,6 +20,7 @@ use App\Livewire\Devices\Index as IndexDevices;
 use App\Livewire\Devices\Show as ShowDevice;
 use App\Livewire\Integrations\Create as CreateIntegration;
 use App\Livewire\Integrations\Index as IndexIntegrations;
+use App\Livewire\Places\Control as ControlPlace;
 use App\Livewire\Places\Create as CreatePlace;
 use App\Livewire\Places\Edit as EditPlace;
 use App\Livewire\Places\Index as IndexPlaces;
@@ -79,6 +80,7 @@ Route::middleware('auth')
         Route::get('/places/create', CreatePlace::class)->name('places.create');
         Route::get('/places/{place}/devices/create', CreateDevice::class)->name('places.devices.create');
         Route::get('/places/{place}', ShowPlace::class)->name('places.show');
+        Route::get('/places/{place}/control', ControlPlace::class)->name('places.control');
         Route::get('/places/{place}/edit', EditPlace::class)->name('places.edit');
 
         Route::get('/bookings', IndexBookings::class)->name('bookings.index');

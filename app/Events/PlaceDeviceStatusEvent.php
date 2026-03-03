@@ -26,4 +26,9 @@ class PlaceDeviceStatusEvent implements ShouldBroadcast
             new PrivateChannel("Place.Device.Status.{$this->placeId}"),
         ];
     }
+
+    public function broadcastAs(): string
+    {
+        return 'PlaceDeviceStatus';
+    }
 }
