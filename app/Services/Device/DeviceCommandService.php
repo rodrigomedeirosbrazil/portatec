@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Device;
 
+use App\Enums\DeviceTypeEnum;
 use App\Events\PlaceDeviceCommandAckEvent;
+use App\Events\PlaceDeviceFunctionStatusEvent;
 use App\Events\PlaceDeviceStatusEvent;
 use App\Models\AccessCode;
 use App\Models\AccessEvent;
@@ -142,6 +144,22 @@ class DeviceCommandService
 
         $device->refresh();
         $placeIds = $device->placeDeviceFunctions()->pluck('place_id')->unique();
+
+        $pin = data_get($payload, 'pin') ?? data_get($payload, 'sensor-pin');
+        if ($pin !== null) {
+            $deviceFunction = $device->deviceFunctions()->where('pin', (string) $pin)->first();
+            if ($deviceFunction && $deviceFunction->type === DeviceTypeEnum::Sensor && $deviceFunction->status !== null) {
+                foreach ($placeIds as $placeId) {
+                    PlaceDeviceFunctionStatusEvent::dispatch(
+                        (int) $placeId,
+                        $device->id,
+                        (string) $pin,
+                        $deviceFunction->status
+                    );
+                }
+            }
+        }
+
         foreach ($placeIds as $placeId) {
             PlaceDeviceStatusEvent::dispatch((int) $placeId, $device->id, $device->isAvailable());
         }

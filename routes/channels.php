@@ -20,3 +20,8 @@ Broadcast::channel('Place.Device.Command.Ack.{placeId}', function ($user, $place
     return $user->hasRole('super_admin')
         || $user->placeUsers()->where('place_id', (int) $placeId)->exists();
 });
+
+Broadcast::channel('Place.Device.Function.Status.{placeId}', function ($user, $placeId) {
+    return $user->hasRole('super_admin')
+        || $user->placeUsers()->where('place_id', (int) $placeId)->exists();
+});

@@ -84,4 +84,10 @@ class Device extends Model
     {
         return $this->deviceFunctions()->where('type', $type)->first();
     }
+
+    /** Retorna a função de sensor usada para exibir status (primeiro sensor do dispositivo). */
+    public function getStatusFunction(): ?DeviceFunction
+    {
+        return $this->deviceFunctions()->where('type', DeviceTypeEnum::Sensor)->first();
+    }
 }
