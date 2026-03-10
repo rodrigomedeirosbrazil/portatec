@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Integrations;
 
+use App\Jobs\SyncIntegrationBookingsJob;
 use App\Models\Integration;
 use App\Models\Place;
 use App\Models\Platform;
@@ -70,6 +71,8 @@ class Create extends Component
         $integration->places()->syncWithoutDetaching([
             $validated['placeId'] => ['external_id' => $validated['externalId']],
         ]);
+
+        SyncIntegrationBookingsJob::dispatch($integration->id, $validated['placeId']);
 
         session()->flash('status', 'Integração criada com sucesso.');
 
