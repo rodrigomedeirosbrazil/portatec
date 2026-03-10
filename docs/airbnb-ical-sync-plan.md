@@ -26,9 +26,9 @@
    - [x] Rejeitar explicitamente `/hosting/reservations/details/...` e mostrar orientação.
    - [x] Exibir nota de timezone: banco em UTC e operação atual em UTC-3.
 4. Scheduler e jobs
-   - [ ] Rodar `bookings:sync` diariamente às 6h BRT (09h UTC).
-   - [ ] Para cada integração com `external_id` válido, enfileirar `SyncIntegrationBookingsJob` separado.
-   - [ ] Ajustar `bookings:sync` com `--now` para execução imediata sem fila.
+   - [x] Rodar `bookings:sync` diariamente às 6h BRT (09h UTC).
+   - [x] Para cada integração com `external_id` válido, enfileirar `SyncIntegrationBookingsJob` separado.
+   - [x] Ajustar `bookings:sync` com `--now` para execução imediata sem fila.
 
 ## Testing and Validation
 - [ ] Fixture `listing-1119719631343107812.ics` cobrindo 5 bookings válidos e 3 bloqueios ignorados.
@@ -42,6 +42,6 @@
 - [x] SyncService preserva histórico via soft delete + recriação.
 - [x] Falhas de download/parse não removem dados existentes.
 - [x] Integração Livewire requer `.ics` e orienta sobre URL de detalhes.
-- [ ] Scheduler diário 6h BRT enfileira job por iCal.
-- [ ] `bookings:sync --now` disponível para execuções imediatas.
+- [x] Scheduler diário 6h BRT enfileira job por iCal.
+- [x] `bookings:sync --now` disponível para execuções imediatas.
 - [ ] Testes cobrindo parser, sync service, Livewire e scheduler.
