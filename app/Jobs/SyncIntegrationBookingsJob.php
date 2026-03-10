@@ -7,15 +7,18 @@ namespace App\Jobs;
 use App\Models\Integration;
 use App\Services\ICalSyncService;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class SyncIntegrationBookingsJob implements ShouldQueue
+class SyncIntegrationBookingsJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public int $uniqueFor = 3600;
 
     public function __construct(
         public int $integrationId,
@@ -50,5 +53,10 @@ class SyncIntegrationBookingsJob implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    public function uniqueId(): string
+    {
+        return "{$this->integrationId}:{$this->placeId}";
     }
 }

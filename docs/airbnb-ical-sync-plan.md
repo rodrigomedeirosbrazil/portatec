@@ -21,6 +21,7 @@
 2. Sincronização e histórico
    - [x] Manter `createOrUpdateBooking` com soft delete e recriação quando check-in/out ou hóspede mudarem.
    - [x] Se download/parse falhar, abortar sync sem remover bookings existentes.
+   - [x] Deduplicar bookings ativos por `external_id` antes de aplicar o sync.
 3. Integrações e interface
    - [x] Validar no Livewire `Integrations\Create` que Airbnb só aceita URL `.ics`.
    - [x] Rejeitar explicitamente `/hosting/reservations/details/...` e mostrar orientação.
@@ -30,6 +31,7 @@
    - [x] Rodar `bookings:sync` diariamente às 6h BRT (09h UTC).
    - [x] Para cada integração com `external_id` válido, enfileirar `SyncIntegrationBookingsJob` separado.
    - [x] Ajustar `bookings:sync` com `--now` para execução imediata sem fila.
+   - [x] Evitar concorrência por integração/place com job único.
 
 ## Testing and Validation
 - [x] Fixture `listing-1119719631343107812.ics` cobrindo 5 bookings válidos e 3 bloqueios ignorados.
@@ -42,8 +44,10 @@
 - [x] Parser ajustado para Airbnb (detecção, filtros, `guest_name`, horários UTC).
 - [x] SyncService preserva histórico via soft delete + recriação.
 - [x] Falhas de download/parse não removem dados existentes.
+- [x] SyncService deduplica bookings ativos por `external_id`.
 - [x] Integração Livewire requer `.ics` e orienta sobre URL de detalhes.
 - [x] Nova integracao dispara sync imediato.
 - [x] Scheduler diário 6h BRT enfileira job por iCal.
 - [x] `bookings:sync --now` disponível para execuções imediatas.
+- [x] Job de sync evita concorrência por integração/place.
 - [x] Testes cobrindo parser, sync service, Livewire e scheduler.
