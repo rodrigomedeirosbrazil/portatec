@@ -35,7 +35,7 @@
 - [x] Teste unitário do parser validando extração do código, conversão de horários e rejeição de feeds inválidos/HTML.
 - [x] Teste de `ICalSyncService` com parser real + HTTP fake garantindo soft delete + recriação e PIN via observer.
 - [x] Teste Livewire `Integrations\Create` para validação `.ics` e mensagem de timezone.
-- [ ] Cobertura de schedule garantindo execução diária 6h BRT e job por integração.
+- [x] Cobertura de schedule garantindo execução diária 6h BRT e job por integração.
 
 ## Checklist
 - [x] Parser ajustado para Airbnb (detecção, filtros, `guest_name`, horários UTC).
@@ -44,4 +44,4 @@
 - [x] Integração Livewire requer `.ics` e orienta sobre URL de detalhes.
 - [x] Scheduler diário 6h BRT enfileira job por iCal.
 - [x] `bookings:sync --now` disponível para execuções imediatas.
-- [ ] Testes cobrindo parser, sync service, Livewire e scheduler.
+- [x] Testes cobrindo parser, sync service, Livewire e scheduler.
