@@ -5,7 +5,7 @@
 - Já existem parser/serviço/job básicos, mas faltam regras específicas do Airbnb, scheduler diário e retenção de histórico.
 
 ## Goals
-1. Sincronizar apenas eventos "Reserved" do Airbnb, ignorando "Not available", mantendo `guest_name` legível (ex.: `Airbnb HMNH8885JB`) e convertendo `VALUE=DATE` para 14h/11h UTC.
+1. Sincronizar apenas eventos "Reserved" do Airbnb, ignorando "Not available", mantendo `guest_name` legível (ex.: `Airbnb HMNH8885JB`) e convertendo `VALUE=DATE` para 14h/11h BRT (armazenado em UTC).
 2. Garantir que mudanças de reserva gerem soft delete do booking antigo e criação de um novo, preservando histórico.
 3. Agendar processo diário às 6h BRT, disparando um job por iCal para evitar bloqueios.
 4. Validar que o formulário de integração exige URL export `.ics` (não `/hosting/reservations/details/...`).
@@ -17,7 +17,7 @@
    - [x] Detectar Airbnb por `PRODID`/URL e extrair código do `/hosting/reservations/details/<codigo>`.
    - [x] Importar somente `SUMMARY: Reserved` com URL de detalhes e ignorar `Airbnb (Not available)`.
    - [x] Definir `guest_name` como `Airbnb <codigo>` quando possível, com fallback legível.
-   - [x] Converter `VALUE=DATE` para `check_in` 14:00 UTC e `check_out` 11:00 UTC (sistema em UTC-3).
+   - [x] Converter `VALUE=DATE` para `check_in` 14:00 BRT e `check_out` 11:00 BRT (armazenado em UTC).
 2. Sincronização e histórico
    - [x] Manter `createOrUpdateBooking` com soft delete e recriação quando check-in/out ou hóspede mudarem.
    - [x] Se download/parse falhar, abortar sync sem remover bookings existentes.
