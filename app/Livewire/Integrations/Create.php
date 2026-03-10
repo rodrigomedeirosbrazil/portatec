@@ -38,6 +38,7 @@ class Create extends Component
     public function save()
     {
         $validated = $this->validate();
+        $platform = Platform::find($validated['platformId']);
 
         $hasAccess = Auth::user()
             ->placeUsers()
@@ -45,6 +46,21 @@ class Create extends Component
             ->exists();
 
         abort_unless($hasAccess, 403);
+
+        if ($platform?->slug === 'airbnb') {
+            if (str_contains($validated['externalId'], '/hosting/reservations/details/')) {
+                $this->addError('externalId', 'Use a URL de exportacao iCal (.ics), nao o link de detalhes da reserva.');
+
+                return;
+            }
+
+            $path = parse_url($validated['externalId'], PHP_URL_PATH) ?? '';
+            if (! str_ends_with($path, '.ics')) {
+                $this->addError('externalId', 'A URL do Airbnb deve terminar com .ics.');
+
+                return;
+            }
+        }
 
         $integration = Integration::firstOrCreate([
             'platform_id' => $validated['platformId'],

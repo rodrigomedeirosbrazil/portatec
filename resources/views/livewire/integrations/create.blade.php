@@ -24,6 +24,9 @@
         <div>
             <label for="externalId">URL iCal</label><br>
             <input id="externalId" type="url" wire:model="externalId" class="w-full p-2">
+            <p class="mt-1 text-sm text-neutral-500">
+                Use a URL de exportacao iCal (.ics). O sistema grava em UTC e opera em UTC-3 por enquanto.
+            </p>
         </div>
 
         <button type="submit" class="cursor-pointer rounded-lg border-0 bg-primary-500 px-3 py-2 text-white hover:bg-primary-700">
