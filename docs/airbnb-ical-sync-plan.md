@@ -31,10 +31,10 @@
    - [x] Ajustar `bookings:sync` com `--now` para execução imediata sem fila.
 
 ## Testing and Validation
-- [ ] Fixture `listing-1119719631343107812.ics` cobrindo 5 bookings válidos e 3 bloqueios ignorados.
-- [ ] Teste unitário do parser validando extração do código, conversão de horários e rejeição de feeds inválidos/HTML.
-- [ ] Teste de `ICalSyncService` com parser real + HTTP fake garantindo soft delete + recriação e PIN via observer.
-- [ ] Teste Livewire `Integrations\Create` para validação `.ics` e mensagem de timezone.
+- [x] Fixture `listing-1119719631343107812.ics` cobrindo 5 bookings válidos e 3 bloqueios ignorados.
+- [x] Teste unitário do parser validando extração do código, conversão de horários e rejeição de feeds inválidos/HTML.
+- [x] Teste de `ICalSyncService` com parser real + HTTP fake garantindo soft delete + recriação e PIN via observer.
+- [x] Teste Livewire `Integrations\Create` para validação `.ics` e mensagem de timezone.
 - [ ] Cobertura de schedule garantindo execução diária 6h BRT e job por integração.
 
 ## Checklist
