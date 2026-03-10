@@ -4,23 +4,22 @@ declare(strict_types=1);
 
 namespace App\Events;
 
-use App\Models\AccessCode;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
 class AccessCodeEvent implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, InteractsWithSockets;
 
     /**
      * Create a new event instance.
      */
     public function __construct(
-        public AccessCode $accessCode,
-        public string $action
+        public array $accessCode,
+        public string $action,
+        public int $placeId
     ) {}
 
     /**
@@ -31,7 +30,7 @@ class AccessCodeEvent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('place.'.$this->accessCode->place_id),
+            new PrivateChannel('place.'.$this->placeId),
         ];
     }
 
