@@ -19,6 +19,7 @@ use App\Livewire\Devices\Edit as EditDevice;
 use App\Livewire\Devices\Index as IndexDevices;
 use App\Livewire\Devices\Show as ShowDevice;
 use App\Livewire\Integrations\Create as CreateIntegration;
+use App\Livewire\Integrations\Edit as EditIntegration;
 use App\Livewire\Integrations\Index as IndexIntegrations;
 use App\Livewire\Places\Control as ControlPlace;
 use App\Livewire\Places\Create as CreatePlace;
@@ -99,6 +100,7 @@ Route::middleware('auth')
 
         Route::get('/integrations', IndexIntegrations::class)->name('integrations.index');
         Route::get('/integrations/create', CreateIntegration::class)->name('integrations.create');
+        Route::get('/integrations/{integration}/edit', EditIntegration::class)->name('integrations.edit');
 
         Route::post('/impersonations/stop', StopImpersonationController::class)->name('impersonations.stop');
     });

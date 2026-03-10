@@ -11,6 +11,19 @@ use Livewire\Component;
 
 class Index extends Component
 {
+    public function deleteIntegration(int $integrationId): void
+    {
+        $integration = Integration::query()
+            ->where('user_id', Auth::id())
+            ->whereKey($integrationId)
+            ->firstOrFail();
+
+        $integration->places()->detach();
+        $integration->delete();
+
+        session()->flash('status', 'Integração removida com sucesso.');
+    }
+
     public function render(): View
     {
         $integrations = Integration::query()

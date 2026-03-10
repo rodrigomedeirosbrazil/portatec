@@ -5,7 +5,7 @@
     <form wire:submit="save" class="grid gap-2.5 rounded-[10px] border border-neutral-300 bg-white p-3.5">
         <div>
             <label for="platformId">Plataforma</label><br>
-            <select id="platformId" wire:model="platformId" class="w-full p-2">
+            <select id="platformId" wire:model="platformId" class="w-full rounded-md border border-neutral-300 p-2">
                 @foreach ($platforms as $platform)
                     <option value="{{ $platform->id }}">{{ $platform->name }}</option>
                 @endforeach
@@ -14,7 +14,7 @@
 
         <div>
             <label for="placeId">Place</label><br>
-            <select id="placeId" wire:model="placeId" class="w-full p-2">
+            <select id="placeId" wire:model="placeId" class="w-full rounded-md border border-neutral-300 p-2">
                 @foreach ($places as $place)
                     <option value="{{ $place->id }}">{{ $place->name }}</option>
                 @endforeach
@@ -23,7 +23,7 @@
 
         <div>
             <label for="externalId">URL iCal</label><br>
-            <input id="externalId" type="url" wire:model="externalId" class="w-full p-2">
+            <input id="externalId" type="url" wire:model="externalId" class="w-full rounded-md border border-neutral-300 p-2">
             <p class="mt-1 text-sm text-neutral-500">
                 Use a URL de exportacao iCal (.ics). O sistema grava em UTC e opera em UTC-3 por enquanto.
             </p>
