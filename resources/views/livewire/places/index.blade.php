@@ -1,8 +1,8 @@
 <section>
     <div class="mb-4 flex items-center justify-between">
-        <h1 class="m-0">Places</h1>
+        <h1 class="m-0">Locais</h1>
         <a href="{{ route('app.places.create') }}" class="rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700">
-            Novo Place
+            Novo Local
         </a>
     </div>
 
@@ -15,11 +15,11 @@
                     </a>
                 </h2>
                 <p class="m-0 text-neutral-500">
-                    Devices: {{ $place->devices_count }} | Bookings: {{ $place->bookings_count }} | Access Codes: {{ $place->access_codes_count }}
+                    Dispositivos: {{ $place->devices_count }} | Reservas: {{ $place->bookings_count }} | PINs: {{ $place->access_codes_count }}
                 </p>
             </article>
         @empty
-            <p class="text-neutral-500">Você ainda não possui places.</p>
+            <p class="text-neutral-500">Você ainda não possui locais.</p>
         @endforelse
     </div>
 </section>

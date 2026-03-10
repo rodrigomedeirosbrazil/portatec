@@ -13,6 +13,8 @@ class Show extends Component
 {
     public Booking $booking;
 
+    public bool $canDelete = false;
+
     public function mount(Booking $booking): void
     {
         $this->booking = $booking->load('accessCode');
@@ -21,6 +23,20 @@ class Show extends Component
             Auth::user()->placeUsers()->where('place_id', $this->booking->place_id)->exists(),
             403
         );
+
+        $this->canDelete = $this->booking->source === 'manual';
+    }
+
+    public function deleteBooking(): void
+    {
+        if (! $this->canDelete) {
+            abort(403);
+        }
+
+        $this->booking->delete();
+
+        session()->flash('status', 'Reserva removida com sucesso.');
+        $this->redirectRoute('app.bookings.index', navigate: true);
     }
 
     public function render(): View
