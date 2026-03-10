@@ -7,4 +7,5 @@ Schedule::command('access-codes:sync')
     ->at('02:00');
 
 Schedule::command('bookings:sync')
-    ->everyThreeHours();
+    ->dailyAt('06:00')
+    ->timezone('America/Sao_Paulo');

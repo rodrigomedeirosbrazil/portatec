@@ -20,7 +20,7 @@
             <p class="mt-1.5 m-0">{{ $place->devices->count() }}</p>
         </div>
         <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-            <strong>Bookings (últimos 10)</strong>
+            <strong>Reservas (últimos 10)</strong>
             <p class="mt-1.5 m-0">{{ $place->bookings->count() }}</p>
         </div>
         <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">

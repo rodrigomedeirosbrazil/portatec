@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Integrations;
 
+use App\Jobs\SyncIntegrationBookingsJob;
 use App\Models\Integration;
 use App\Models\Place;
 use App\Models\Platform;
@@ -38,6 +39,7 @@ class Create extends Component
     public function save()
     {
         $validated = $this->validate();
+        $platform = Platform::find($validated['platformId']);
 
         $hasAccess = Auth::user()
             ->placeUsers()
@@ -45,6 +47,21 @@ class Create extends Component
             ->exists();
 
         abort_unless($hasAccess, 403);
+
+        if ($platform?->slug === 'airbnb') {
+            if (str_contains($validated['externalId'], '/hosting/reservations/details/')) {
+                $this->addError('externalId', 'Use a URL de exportacao iCal (.ics), nao o link de detalhes da reserva.');
+
+                return;
+            }
+
+            $path = parse_url($validated['externalId'], PHP_URL_PATH) ?? '';
+            if (! str_ends_with($path, '.ics')) {
+                $this->addError('externalId', 'A URL do Airbnb deve terminar com .ics.');
+
+                return;
+            }
+        }
 
         $integration = Integration::firstOrCreate([
             'platform_id' => $validated['platformId'],
@@ -54,6 +71,8 @@ class Create extends Component
         $integration->places()->syncWithoutDetaching([
             $validated['placeId'] => ['external_id' => $validated['externalId']],
         ]);
+
+        SyncIntegrationBookingsJob::dispatch($integration->id, $validated['placeId']);
 
         session()->flash('status', 'Integração criada com sucesso.');
 

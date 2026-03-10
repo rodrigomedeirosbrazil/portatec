@@ -10,5 +10,6 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
         $this->withoutVite();
+        config(['broadcasting.default' => 'null']);
     }
 }

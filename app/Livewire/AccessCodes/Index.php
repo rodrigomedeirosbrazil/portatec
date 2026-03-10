@@ -33,7 +33,7 @@ class Index extends Component
         $accessCodes = AccessCode::query()
             ->whereIn('place_id', $userPlaceIds)
             ->when($this->placeId, fn ($query) => $query->where('place_id', $this->placeId))
-            ->latest('start')
+            ->orderBy('start')
             ->limit(100)
             ->get();
 

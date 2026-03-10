@@ -7,18 +7,22 @@ namespace App\Jobs;
 use App\Models\Integration;
 use App\Services\ICalSyncService;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class SyncIntegrationBookingsJob implements ShouldQueue
+class SyncIntegrationBookingsJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public int $uniqueFor = 3600;
+
     public function __construct(
-        public int $integrationId
+        public int $integrationId,
+        public int $placeId
     ) {}
 
     public function handle(ICalSyncService $syncService): void
@@ -30,24 +34,29 @@ class SyncIntegrationBookingsJob implements ShouldQueue
             return;
         }
 
-        // Verificar se a Integration tem Places relacionados
-        if ($integration->places->isEmpty()) {
-            Log::warning("Integration {$this->integrationId} has no related places");
+        $place = $integration->places()->whereKey($this->placeId)->first();
+        if (! $place) {
+            Log::warning('Integration place not found for sync job', [
+                'integration_id' => $this->integrationId,
+                'place_id' => $this->placeId,
+            ]);
 
             return;
         }
 
-        // Para cada Place relacionado à Integration
-        foreach ($integration->places as $place) {
-            try {
-                $syncService->syncPlaceIntegration($place->id, $integration->id);
-            } catch (\Throwable $e) {
-                Log::error('Failed to sync bookings for integration place', [
-                    'place_id' => $place->id,
-                    'integration_id' => $integration->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+        try {
+            $syncService->syncPlaceIntegration($place->id, $integration->id);
+        } catch (\Throwable $e) {
+            Log::error('Failed to sync bookings for integration place', [
+                'place_id' => $place->id,
+                'integration_id' => $integration->id,
+                'error' => $e->getMessage(),
+            ]);
         }
+    }
+
+    public function uniqueId(): string
+    {
+        return "{$this->integrationId}:{$this->placeId}";
     }
 }

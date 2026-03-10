@@ -6,7 +6,6 @@ namespace App\Services;
 
 use App\Contracts\ICalParserInterface;
 use App\DTOs\BookingDTO;
-use App\Libraries\Integrations\Support\Helpers\ICalHelper;
 use Carbon\Carbon;
 use DateTime;
 use DateTimeZone;
@@ -19,6 +18,14 @@ use Sabre\VObject\Reader;
 class ICalParser implements ICalParserInterface
 {
     private const DEFAULT_TIMEZONE = 'UTC';
+
+    private const LOCAL_TIMEZONE = 'America/Sao_Paulo';
+
+    private const PLATFORM_AIRBNB = 'airbnb';
+
+    private const AIRBNB_CHECKIN_HOUR = 14;
+
+    private const AIRBNB_CHECKOUT_HOUR = 11;
 
     /**
      * Parse iCal content and return Collection of BookingDTO
@@ -33,7 +40,7 @@ class ICalParser implements ICalParserInterface
         if (! $this->hasIcalHeaders($icalContent)) {
             Log::warning('Invalid iCal content: missing BEGIN:VCALENDAR or END:VCALENDAR');
 
-            return collect([]);
+            throw new \RuntimeException('Invalid iCal content: missing BEGIN:VCALENDAR or END:VCALENDAR');
         }
 
         try {
@@ -43,15 +50,17 @@ class ICalParser implements ICalParserInterface
                 return collect([]);
             }
 
-            $platform = $icalUrl ? ICalHelper::getPlatformByIcalUrl($icalUrl) : null;
-            $forceDateUTC = $icalUrl ? ICalHelper::shouldForceDateUTC($icalUrl) : false;
-            $shouldRemoveHours = $icalUrl ? ICalHelper::shouldRemoveHours($icalUrl) : false;
+            $platform = $this->detectPlatform($vCalendar, $icalUrl);
 
             $bookings = collect([]);
 
             foreach ($vCalendar->VEVENT as $vevent) {
                 try {
-                    $bookingDTO = $this->parseEvent($vevent, $platform, $forceDateUTC, $shouldRemoveHours);
+                    if ($platform === self::PLATFORM_AIRBNB && ! $this->isAirbnbReservationEvent($vevent)) {
+                        continue;
+                    }
+
+                    $bookingDTO = $this->parseEvent($vevent, $platform);
                     if ($bookingDTO !== null) {
                         $bookings->push($bookingDTO);
                     }
@@ -72,14 +81,14 @@ class ICalParser implements ICalParserInterface
                 'url' => $icalUrl,
             ]);
 
-            return collect([]);
+            throw new \RuntimeException('Failed to parse iCal content', 0, $e);
         } catch (\Throwable $e) {
             Log::error('Unexpected error parsing iCal', [
                 'error' => $e->getMessage(),
                 'url' => $icalUrl,
             ]);
 
-            return collect([]);
+            throw $e;
         }
     }
 
@@ -88,9 +97,7 @@ class ICalParser implements ICalParserInterface
      */
     private function parseEvent(
         $vevent,
-        ?string $platform,
-        bool $forceDateUTC,
-        bool $shouldRemoveHours
+        ?string $platform
     ): ?BookingDTO {
         // Extract required fields
         $dtstart = $vevent->DTSTART ?? null;
@@ -101,8 +108,8 @@ class ICalParser implements ICalParserInterface
         }
 
         // Parse dates
-        $checkIn = $this->parseDateTime($dtstart, $forceDateUTC, $shouldRemoveHours);
-        $checkOut = $this->parseDateTime($dtend, $forceDateUTC, $shouldRemoveHours);
+        $checkIn = $this->parseDateTime($dtstart, $platform, false);
+        $checkOut = $this->parseDateTime($dtend, $platform, true);
 
         // Adjust end date if needed (for platforms that support one-day end date)
         if ($platform) {
@@ -113,7 +120,7 @@ class ICalParser implements ICalParserInterface
         $externalId = $this->getExternalId($vevent);
 
         // Extract guest name
-        $guestName = $this->extractGuestName($vevent);
+        $guestName = $this->determineGuestName($vevent, $platform);
 
         return new BookingDTO(
             externalId: $externalId,
@@ -128,19 +135,25 @@ class ICalParser implements ICalParserInterface
      */
     private function parseDateTime(
         VObjectDateTime $date,
-        bool $forceDateUTC = false,
-        bool $shouldRemoveHours = false
+        ?string $platform,
+        bool $isEnd
     ): Carbon {
+        if ($this->isDateOnly($date)) {
+            if ($platform === self::PLATFORM_AIRBNB) {
+                return $this->parseAirbnbDateOnly($date, $isEnd);
+            }
+
+            $dateValue = $date->getValue();
+
+            return Carbon::createFromFormat('Ymd', $dateValue, self::DEFAULT_TIMEZONE)->startOfDay();
+        }
+
         $timeZoneName = self::DEFAULT_TIMEZONE;
 
-        if ($this->dateWithUTCTime($date) || $forceDateUTC || $shouldRemoveHours) {
+        if ($this->dateWithUTCTime($date)) {
             $dateTime = new DateTime('@'.$date->getDateTime()->getTimestamp());
             $dateTime->setTimezone(new DateTimeZone($timeZoneName));
             $dateTime->setTime(0, 0);
-
-            if ($shouldRemoveHours) {
-                return Carbon::parse($dateTime->format('Y-m-d'))->startOfDay();
-            }
 
             return Carbon::instance($dateTime);
         }
@@ -173,6 +186,13 @@ class ICalParser implements ICalParserInterface
         $dateValue = $date->getValue();
 
         return (bool) (strlen($dateValue) == 15 && mb_substr($dateValue, -7, 1) === 'T');
+    }
+
+    private function isDateOnly(VObjectDateTime $date): bool
+    {
+        $dateValue = $date->getValue();
+
+        return strlen($dateValue) === 8 && ! str_contains($dateValue, 'T');
     }
 
     /**
@@ -239,6 +259,22 @@ class ICalParser implements ICalParserInterface
         return trim($text);
     }
 
+    private function determineGuestName($vevent, ?string $platform): string
+    {
+        if ($platform !== self::PLATFORM_AIRBNB) {
+            return $this->extractGuestName($vevent);
+        }
+
+        $description = isset($vevent->DESCRIPTION) ? (string) $vevent->DESCRIPTION : '';
+        $code = $this->extractAirbnbReservationCode($description);
+
+        if ($code) {
+            return 'Airbnb '.$code;
+        }
+
+        return 'Airbnb Reserved';
+    }
+
     /**
      * Adjust end date for platforms that support one-day end date
      */
@@ -248,7 +284,7 @@ class ICalParser implements ICalParserInterface
             return $checkOut;
         }
 
-        if (ICalHelper::shouldAddOneDayOnEndDateWhenIsSameDate($platform)) {
+        if ($this->shouldAddOneDayOnEndDateWhenSameDate($platform)) {
             // If check-in and check-out are on the same day, add one day
             if ($checkIn->format('Y-m-d') === $checkOut->format('Y-m-d')) {
                 return $checkOut->copy()->addDay();
@@ -284,5 +320,57 @@ class ICalParser implements ICalParserInterface
     private function getEventUid($vevent): string
     {
         return isset($vevent->UID) ? (string) $vevent->UID : 'unknown';
+    }
+
+    private function detectPlatform($vCalendar, ?string $icalUrl): ?string
+    {
+        $prodId = isset($vCalendar->PRODID) ? (string) $vCalendar->PRODID : '';
+
+        if (stripos($prodId, 'Airbnb') !== false) {
+            return self::PLATFORM_AIRBNB;
+        }
+
+        if ($icalUrl && stripos($icalUrl, 'airbnb.com') !== false) {
+            return self::PLATFORM_AIRBNB;
+        }
+
+        return null;
+    }
+
+    private function isAirbnbReservationEvent($vevent): bool
+    {
+        $summary = isset($vevent->SUMMARY) ? (string) $vevent->SUMMARY : '';
+        if (stripos($summary, 'reserved') === false) {
+            return false;
+        }
+
+        $description = isset($vevent->DESCRIPTION) ? (string) $vevent->DESCRIPTION : '';
+
+        return $this->extractAirbnbReservationCode($description) !== null;
+    }
+
+    private function extractAirbnbReservationCode(string $description): ?string
+    {
+        if (preg_match('/reservations\\/details\\/([A-Z0-9]+)/i', $description, $matches)) {
+            return strtoupper($matches[1]);
+        }
+
+        return null;
+    }
+
+    private function parseAirbnbDateOnly(VObjectDateTime $date, bool $isEnd): Carbon
+    {
+        $dateValue = $date->getValue();
+        $localDate = Carbon::createFromFormat('Ymd', $dateValue, self::LOCAL_TIMEZONE);
+        $hour = $isEnd ? self::AIRBNB_CHECKOUT_HOUR : self::AIRBNB_CHECKIN_HOUR;
+
+        return $localDate->copy()
+            ->setTime($hour, 0)
+            ->setTimezone(self::DEFAULT_TIMEZONE);
+    }
+
+    private function shouldAddOneDayOnEndDateWhenSameDate(?string $platform): bool
+    {
+        return false;
     }
 }

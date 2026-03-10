@@ -20,7 +20,11 @@ class AccessCodeObserver
     public function created(AccessCode $accessCode): void
     {
         // Dispara evento para notificar UI (manter comportamento existente)
-        AccessCodeEvent::dispatch($accessCode, 'create');
+        AccessCodeEvent::dispatch(
+            $accessCode->attributesToArray(),
+            'create',
+            $accessCode->place_id
+        );
 
         // Sincroniza com dispositivos
         $this->syncService->syncNewAccessCode($accessCode);
@@ -32,7 +36,11 @@ class AccessCodeObserver
     public function updated(AccessCode $accessCode): void
     {
         // Dispara evento para notificar UI (manter comportamento existente)
-        AccessCodeEvent::dispatch($accessCode, 'update');
+        AccessCodeEvent::dispatch(
+            $accessCode->attributesToArray(),
+            'update',
+            $accessCode->place_id
+        );
 
         // Sincroniza com dispositivos
         $this->syncService->syncUpdatedAccessCode($accessCode);
@@ -44,7 +52,11 @@ class AccessCodeObserver
     public function deleted(AccessCode $accessCode): void
     {
         // Dispara evento para notificar UI (manter comportamento existente)
-        AccessCodeEvent::dispatch($accessCode, 'delete');
+        AccessCodeEvent::dispatch(
+            $accessCode->attributesToArray(),
+            'delete',
+            $accessCode->place_id
+        );
 
         // Remove dos dispositivos
         $this->syncService->syncDeletedAccessCode($accessCode);

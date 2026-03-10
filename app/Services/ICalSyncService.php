@@ -54,6 +54,8 @@ class ICalSyncService
                 ->get()
                 ->keyBy('external_id');
 
+            $existingBookings = $this->dedupeExistingBookings($existingBookings);
+
             $currentExternalIds = [];
             foreach ($bookingDTOs as $bookingDTO) {
                 $currentExternalIds[] = $bookingDTO->externalId;
@@ -152,5 +154,36 @@ class ICalSyncService
             'check_out' => $bookingDTO->checkOut,
             'source' => 'ical',
         ]);
+    }
+
+    private function dedupeExistingBookings(Collection $existingBookings): Collection
+    {
+        if ($existingBookings->isEmpty()) {
+            return $existingBookings;
+        }
+
+        $grouped = $existingBookings->groupBy('external_id');
+        $keptIds = [];
+
+        foreach ($grouped as $externalId => $bookings) {
+            $bookings = $bookings->sortByDesc('updated_at')->values();
+            $kept = $bookings->first();
+            if ($kept) {
+                $keptIds[] = $kept->id;
+            }
+
+            if ($bookings->count() > 1) {
+                $bookings->slice(1)->each(function (Booking $booking): void {
+                    $booking->deletion_reason = BookingDeletionReasonEnum::Other;
+                    $booking->delete();
+                });
+            }
+        }
+
+        if (empty($keptIds)) {
+            return collect([]);
+        }
+
+        return Booking::whereIn('id', $keptIds)->get()->keyBy('external_id');
     }
 }

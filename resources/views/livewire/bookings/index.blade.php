@@ -1,8 +1,8 @@
 <section>
     <div class="mb-4 flex items-center justify-between">
-        <h1 class="m-0">Bookings</h1>
+        <h1 class="m-0">Reservas</h1>
         <a href="{{ route('app.bookings.create') }}" class="rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700">
-            Novo Booking
+            Nova Reserva
         </a>
     </div>
 
@@ -29,7 +29,7 @@
                 </p>
             </article>
         @empty
-            <p class="text-neutral-500">Nenhum booking encontrado.</p>
+            <p class="text-neutral-500">Nenhuma reserva encontrada.</p>
         @endforelse
     </div>
 </section>

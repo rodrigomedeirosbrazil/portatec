@@ -33,7 +33,7 @@ class Index extends Component
         $bookings = Booking::query()
             ->whereIn('place_id', $userPlaceIds)
             ->when($this->placeId, fn ($query) => $query->where('place_id', $this->placeId))
-            ->latest('check_in')
+            ->orderBy('check_in')
             ->limit(50)
             ->get();
 
