@@ -34,7 +34,8 @@ RUN mkdir -p storage/app \
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer && composer install --no-dev
 
-# Install npm dependencies and build assets
+# Install npm dependencies and build assets (VITE_* are placeholders here; real values
+# come from .env at runtime, so entrypoint runs `npm run build` again to embed Reverb URL)
 RUN npm ci && npm run build
 
 RUN su www-data -s /bin/bash -c "php artisan optimize"
