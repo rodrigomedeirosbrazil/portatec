@@ -13,11 +13,11 @@
 
 ## Step-by-step Implementation
 1. Parser (Airbnb)
-   - [ ] Remover dependência de `ICalHelper` inexistente.
-   - [ ] Detectar Airbnb por `PRODID`/URL e extrair código do `/hosting/reservations/details/<codigo>`.
-   - [ ] Importar somente `SUMMARY: Reserved` com URL de detalhes e ignorar `Airbnb (Not available)`.
-   - [ ] Definir `guest_name` como `Airbnb <codigo>` quando possível, com fallback legível.
-   - [ ] Converter `VALUE=DATE` para `check_in` 14:00 UTC e `check_out` 11:00 UTC (sistema em UTC-3).
+   - [x] Remover dependência de `ICalHelper` inexistente.
+   - [x] Detectar Airbnb por `PRODID`/URL e extrair código do `/hosting/reservations/details/<codigo>`.
+   - [x] Importar somente `SUMMARY: Reserved` com URL de detalhes e ignorar `Airbnb (Not available)`.
+   - [x] Definir `guest_name` como `Airbnb <codigo>` quando possível, com fallback legível.
+   - [x] Converter `VALUE=DATE` para `check_in` 14:00 UTC e `check_out` 11:00 UTC (sistema em UTC-3).
 2. Sincronização e histórico
    - [ ] Manter `createOrUpdateBooking` com soft delete e recriação quando check-in/out ou hóspede mudarem.
    - [ ] Se download/parse falhar, abortar sync sem remover bookings existentes.
@@ -38,7 +38,7 @@
 - [ ] Cobertura de schedule garantindo execução diária 6h BRT e job por integração.
 
 ## Checklist
-- [ ] Parser ajustado para Airbnb (detecção, filtros, `guest_name`, horários UTC).
+- [x] Parser ajustado para Airbnb (detecção, filtros, `guest_name`, horários UTC).
 - [ ] SyncService preserva histórico via soft delete + recriação.
 - [ ] Falhas de download/parse não removem dados existentes.
 - [ ] Integração Livewire requer `.ics` e orienta sobre URL de detalhes.
