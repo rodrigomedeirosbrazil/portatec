@@ -88,7 +88,12 @@ class ICalSyncService
 
     private function downloadICal(string $url): string
     {
-        $response = Http::timeout(30)->get($url);
+        $response = Http::timeout(30)
+            ->withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (compatible; Portatec-iCal/1.0; +https://portatec.com)',
+                'Accept' => 'text/calendar, text/plain, */*',
+            ])
+            ->get($url);
 
         if (! $response->successful()) {
             throw new \RuntimeException("Failed to download iCal from: {$url}; status={$response->status()}");
