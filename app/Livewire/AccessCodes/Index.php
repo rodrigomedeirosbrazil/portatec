@@ -16,9 +16,25 @@ class Index extends Component
 
     public function mount(): void
     {
+        $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
+
+        if (request()->has('place_id')) {
+            $requestedId = (int) request()->input('place_id');
+            if ($userPlaceIds->contains($requestedId)) {
+                $this->placeId = $requestedId;
+            }
+        }
+
         if ($this->placeId === null) {
             $this->placeId = Auth::user()->placeUsers()->value('place_id');
         }
+    }
+
+    public function updatedPlaceId()
+    {
+        $params = $this->placeId !== null ? ['place_id' => $this->placeId] : [];
+
+        return redirect()->to(route('app.access-codes.index', $params));
     }
 
     public function render(): View
