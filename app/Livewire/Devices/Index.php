@@ -7,6 +7,7 @@ namespace App\Livewire\Devices;
 use App\Models\Device;
 use App\Models\Place;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -16,18 +17,16 @@ class Index extends Component
 
     public function mount(): void
     {
-        $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
+        $allowedPlaceIds = $this->allowedPlaceIds();
 
         if (request()->has('place_id')) {
             $requestedId = (int) request()->input('place_id');
-            if ($userPlaceIds->contains($requestedId)) {
+            if ($allowedPlaceIds->contains($requestedId)) {
                 $this->placeId = $requestedId;
             }
         }
 
-        if ($this->placeId === null) {
-            $this->placeId = Auth::user()->placeUsers()->value('place_id');
-        }
+        // Default to "Todos" (null) so the page shows all devices (own + shared)
     }
 
     public function updatedPlaceId()
@@ -41,14 +40,21 @@ class Index extends Component
     {
         $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
 
+        $allowedPlaceIds = $this->allowedPlaceIds();
         $places = Place::query()
-            ->whereIn('id', $userPlaceIds)
+            ->whereIn('id', $allowedPlaceIds->toArray())
             ->orderBy('name')
             ->get();
 
         $devices = Device::query()
+            ->with(['place'])
             ->withCount('deviceFunctions')
-            ->whereIn('place_id', $userPlaceIds)
+            ->where(function ($query) use ($userPlaceIds): void {
+                if ($userPlaceIds->isNotEmpty()) {
+                    $query->whereIn('place_id', $userPlaceIds);
+                }
+                $query->orWhereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()));
+            })
             ->when($this->placeId, fn ($query) => $query->where('place_id', $this->placeId))
             ->orderBy('name')
             ->get();
@@ -57,5 +63,24 @@ class Index extends Component
             'places' => $places,
             'devices' => $devices,
         ])->layout('layouts.client');
+    }
+
+    /**
+     * Place IDs the user may filter by: their places + places of devices shared with them.
+     *
+     * @return Collection<int, int>
+     */
+    private function allowedPlaceIds(): Collection
+    {
+        $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
+
+        $sharedDevicePlaceIds = Device::query()
+            ->whereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()))
+            ->whereNotNull('place_id')
+            ->pluck('place_id')
+            ->unique()
+            ->values();
+
+        return $userPlaceIds->merge($sharedDevicePlaceIds)->unique()->filter()->values();
     }
 }

@@ -18,20 +18,12 @@ class Control extends Component
     {
         $this->device = $device->load(['place', 'deviceFunctions']);
 
-        abort_unless(
-            $this->device->place_id !== null
-            && Auth::user()->placeUsers()->where('place_id', $this->device->place_id)->exists(),
-            403
-        );
+        abort_unless(Auth::user()->can('view', $this->device), 403);
     }
 
     public function sendCommand(DeviceCommandService $service, string $action, string $pin): void
     {
-        abort_unless(
-            $this->device->place_id !== null
-            && Auth::user()->placeUsers()->where('place_id', $this->device->place_id)->exists(),
-            403
-        );
+        abort_unless(Auth::user()->can('view', $this->device), 403);
 
         if (! is_numeric($pin)) {
             session()->flash('status', 'PIN inválido para envio de comando.');

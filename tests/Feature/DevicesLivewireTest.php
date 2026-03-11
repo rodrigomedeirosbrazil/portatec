@@ -106,4 +106,45 @@ class DevicesLivewireTest extends TestCase
             ->get("/app/devices/{$foreignDeviceId}/control")
             ->assertForbidden();
     }
+
+    public function test_user_sees_shared_devices_and_can_open_show_and_control(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $placeA = DB::table('places')->insertGetId(['name' => 'Casa A', 'created_at' => now(), 'updated_at' => now()]);
+        $placeB = DB::table('places')->insertGetId(['name' => 'Casa B', 'created_at' => now(), 'updated_at' => now()]);
+
+        DB::table('place_users')->insert([
+            ['place_id' => $placeA, 'user_id' => $user->id, 'role' => 'admin', 'label' => 'Admin', 'created_at' => now(), 'updated_at' => now()],
+            ['place_id' => $placeB, 'user_id' => $otherUser->id, 'role' => 'admin', 'label' => 'Admin', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $deviceInPlaceB = DB::table('devices')->insertGetId([
+            'place_id' => $placeB,
+            'name' => 'Portao Casa B compartilhado',
+            'brand' => 'portatec',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('device_user')->insert([
+            'device_id' => $deviceInPlaceB,
+            'user_id' => $user->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->get('/app/devices');
+        $response->assertOk();
+        $response->assertSee('Portao Casa B compartilhado');
+
+        $this->actingAs($user)
+            ->get("/app/devices/{$deviceInPlaceB}")
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->get("/app/devices/{$deviceInPlaceB}/control")
+            ->assertOk();
+    }
 }

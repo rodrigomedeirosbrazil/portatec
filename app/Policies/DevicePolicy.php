@@ -19,7 +19,7 @@ class DevicePolicy
 
     public function view(User $user, Device $device): bool
     {
-        return $device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id);
+        return $this->hasAccess($user, $device);
     }
 
     public function create(User $user): bool
@@ -29,17 +29,17 @@ class DevicePolicy
 
     public function update(User $user, Device $device): bool
     {
-        return $device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id);
+        return $this->hasAccess($user, $device);
     }
 
     public function delete(User $user, Device $device): bool
     {
-        return $device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id);
+        return $this->hasAccess($user, $device);
     }
 
     public function restore(User $user, Device $device): bool
     {
-        return $device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id);
+        return $this->hasAccess($user, $device);
     }
 
     public function forceDelete(User $user, Device $device): bool
@@ -65,6 +65,15 @@ class DevicePolicy
     public function reorder(User $user): bool
     {
         return false;
+    }
+
+    private function hasAccess(User $user, Device $device): bool
+    {
+        if ($device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id)) {
+            return true;
+        }
+
+        return $user->devices()->where('devices.id', $device->id)->exists();
     }
 
     private function hasPlaceAccess(User $user, int $placeId): bool

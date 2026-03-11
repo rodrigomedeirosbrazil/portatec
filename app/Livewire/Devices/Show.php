@@ -18,11 +18,7 @@ class Show extends Component
     {
         $this->device = $device->load(['place', 'deviceFunctions']);
 
-        abort_unless(
-            $this->device->place_id !== null
-            && Auth::user()->placeUsers()->where('place_id', $this->device->place_id)->exists(),
-            403
-        );
+        abort_unless(Auth::user()->can('view', $this->device), 403);
     }
 
     public function render(): View

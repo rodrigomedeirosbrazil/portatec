@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DeviceUser extends Model
 {
+    protected $table = 'device_user';
+
     protected $fillable = [
         'device_id',
         'user_id',
