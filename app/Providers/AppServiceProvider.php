@@ -9,6 +9,7 @@ use App\Observers\AccessCodeObserver;
 use App\Observers\BookingObserver;
 use App\Services\ICalParser;
 use Filament\Notifications\Livewire\Notifications;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
@@ -27,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Paginator::defaultView('vendor.pagination.tailwind');
+
         AccessCode::observe(AccessCodeObserver::class);
         Booking::observe(BookingObserver::class);
 
