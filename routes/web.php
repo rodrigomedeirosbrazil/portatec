@@ -24,6 +24,7 @@ use App\Livewire\Integrations\Index as IndexIntegrations;
 use App\Livewire\Places\Control as ControlPlace;
 use App\Livewire\Places\Create as CreatePlace;
 use App\Livewire\Places\Edit as EditPlace;
+use App\Livewire\Places\AttachDevice as AttachDeviceToPlace;
 use App\Livewire\Places\ClonePlace;
 use App\Livewire\Places\Index as IndexPlaces;
 use App\Livewire\Places\Members as MembersPlace;
@@ -81,7 +82,7 @@ Route::middleware('auth')
 
         Route::get('/places', IndexPlaces::class)->name('places.index');
         Route::get('/places/create', CreatePlace::class)->name('places.create');
-        Route::get('/places/{place}/devices/create', CreateDevice::class)->name('places.devices.create');
+        Route::get('/places/{place}/devices/attach', AttachDeviceToPlace::class)->name('places.devices.attach');
         Route::get('/places/{place}/members', MembersPlace::class)->name('places.members');
         Route::get('/places/{place}/clone', ClonePlace::class)->name('places.clone');
         Route::get('/places/{place}', ShowPlace::class)->name('places.show');

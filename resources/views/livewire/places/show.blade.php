@@ -60,17 +60,25 @@
     <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
         <div class="mb-3 flex items-center justify-between">
             <h2 class="mt-0">Dispositivos</h2>
-            <a href="{{ route('app.places.devices.create', $place->id) }}" class="rounded-lg bg-primary-500 px-3 py-2 text-sm text-white no-underline hover:bg-primary-700">
+            <a href="{{ route('app.places.devices.attach', $place->id) }}" class="rounded-lg bg-primary-500 px-3 py-2 text-sm text-white no-underline hover:bg-primary-700">
                 Adicionar dispositivo
             </a>
         </div>
         <ul class="m-0 pl-5">
             @forelse ($place->devices as $device)
-                <li>
+                <li class="flex flex-wrap items-center gap-2 py-1">
                     <a href="{{ route('app.devices.show', $device->id) }}" class="text-primary-700 no-underline hover:text-primary-500">
                         {{ $device->name }}
                     </a>
-                    ({{ $device->brand->value ?? $device->brand }})
+                    <span class="text-neutral-500">({{ $device->brand->value ?? $device->brand }})</span>
+                    <button
+                        type="button"
+                        wire:click="removeDevice({{ $device->id }})"
+                        wire:confirm="Remover o dispositivo &quot;{{ $device->name }}&quot; deste local? Ele continuará existindo e poderá ser associado a outro local."
+                        class="rounded border border-red-200 bg-red-50 px-2 py-1 text-sm text-red-700 hover:bg-red-100"
+                    >
+                        Remover do local
+                    </button>
                 </li>
             @empty
                 <li>Nenhum dispositivo associado.</li>

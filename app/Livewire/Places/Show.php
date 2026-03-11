@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Livewire\Places;
 
+use App\Models\Device;
 use App\Models\Place;
+use App\Models\PlaceDeviceFunction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -26,6 +28,28 @@ class Show extends Component
             $this->place->placeUsers()->where('user_id', Auth::id())->exists(),
             403
         );
+    }
+
+    public function removeDevice(int $deviceId): void
+    {
+        $this->authorize('update', $this->place);
+
+        $device = Device::query()
+            ->where('id', $deviceId)
+            ->where('place_id', $this->place->id)
+            ->firstOrFail();
+
+        $deviceFunctionIds = $device->deviceFunctions()->pluck('id');
+
+        PlaceDeviceFunction::query()
+            ->where('place_id', $this->place->id)
+            ->whereIn('device_function_id', $deviceFunctionIds)
+            ->delete();
+
+        $device->update(['place_id' => null]);
+
+        $this->place->load('devices');
+        $this->dispatch('device-removed');
     }
 
     public function render(): View
