@@ -24,7 +24,9 @@ use App\Livewire\Integrations\Index as IndexIntegrations;
 use App\Livewire\Places\Control as ControlPlace;
 use App\Livewire\Places\Create as CreatePlace;
 use App\Livewire\Places\Edit as EditPlace;
+use App\Livewire\Places\ClonePlace;
 use App\Livewire\Places\Index as IndexPlaces;
+use App\Livewire\Places\Members as MembersPlace;
 use App\Livewire\Places\Show as ShowPlace;
 use App\Models\ImpersonationSession;
 use Illuminate\Http\Request;
@@ -80,6 +82,8 @@ Route::middleware('auth')
         Route::get('/places', IndexPlaces::class)->name('places.index');
         Route::get('/places/create', CreatePlace::class)->name('places.create');
         Route::get('/places/{place}/devices/create', CreateDevice::class)->name('places.devices.create');
+        Route::get('/places/{place}/members', MembersPlace::class)->name('places.members');
+        Route::get('/places/{place}/clone', ClonePlace::class)->name('places.clone');
         Route::get('/places/{place}', ShowPlace::class)->name('places.show');
         Route::get('/places/{place}/control', ControlPlace::class)->name('places.control');
         Route::get('/places/{place}/edit', EditPlace::class)->name('places.edit');

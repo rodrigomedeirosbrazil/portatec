@@ -19,6 +19,7 @@ class Show extends Component
             'devices',
             'bookings' => fn ($q) => $q->latest('check_in')->limit(10),
             'accessCodes',
+            'placeUsers.user',
         ]);
 
         abort_unless(

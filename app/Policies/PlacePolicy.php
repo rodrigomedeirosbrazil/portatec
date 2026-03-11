@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\PlaceRoleEnum;
 use App\Models\Place;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -59,7 +60,12 @@ class PlacePolicy
 
     public function replicate(User $user, Place $place): bool
     {
-        return false;
+        return $this->hasPlaceAdminAccess($user, $place->id);
+    }
+
+    public function manageMembers(User $user, Place $place): bool
+    {
+        return $this->hasPlaceAdminAccess($user, $place->id);
     }
 
     public function reorder(User $user): bool
@@ -71,6 +77,14 @@ class PlacePolicy
     {
         return $user->placeUsers()
             ->where('place_id', $placeId)
+            ->exists();
+    }
+
+    private function hasPlaceAdminAccess(User $user, int $placeId): bool
+    {
+        return $user->placeUsers()
+            ->where('place_id', $placeId)
+            ->where('role', PlaceRoleEnum::Admin)
             ->exists();
     }
 }

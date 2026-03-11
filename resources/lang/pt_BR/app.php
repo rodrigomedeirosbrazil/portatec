@@ -139,6 +139,22 @@ return [
         'host' => 'Anfitrião',
     ],
 
+    // Membros do local
+    'members' => 'Membros',
+    'manage_members' => 'Gerir membros',
+    'add_member' => 'Adicionar pessoa',
+    'member_already_in_place' => 'Esta pessoa já faz parte do local.',
+    'member_added' => 'Pessoa adicionada ao local.',
+    'member_removed' => 'Pessoa removida do local.',
+    'cannot_remove_last_admin' => 'Não é possível remover o último administrador do local.',
+    'label' => 'Rótulo',
+
+    // Clonar local
+    'clone_place' => 'Clonar local',
+    'clone_place_new_name' => 'Nome do novo local',
+    'clone_place_add_people' => 'Adicionar pessoas ao novo local',
+    'place_cloned' => 'Local clonado com sucesso.',
+
     // Status do dispositivo
     'device_statuses' => [
         'open' => 'Aberto',
