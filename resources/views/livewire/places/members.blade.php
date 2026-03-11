@@ -44,29 +44,52 @@
     <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
         <h2 class="mt-0 mb-3">{{ __('app.add_member') }}</h2>
         <form wire:submit="addMember" class="space-y-3">
-            <div>
-                <label for="userSearch" class="mb-1 block text-sm font-medium">Buscar usuário (nome ou e-mail)</label>
-                <input
-                    id="userSearch"
-                    type="text"
-                    wire:model.live.debounce.300ms="userSearch"
-                    class="w-full rounded-lg border border-neutral-300 p-2.5"
-                    placeholder="Digite para buscar..."
-                />
-            </div>
-            <div>
-                <label for="addUserId" class="mb-1 block text-sm font-medium">{{ __('app.user') }}</label>
-                <select
-                    id="addUserId"
-                    wire:model="addUserId"
-                    class="w-full rounded-lg border border-neutral-300 p-2.5"
-                    required
-                >
-                    <option value="">Selecione um usuário</option>
-                    @foreach ($usersNotInPlace as $u)
-                        <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>
-                    @endforeach
-                </select>
+            <div x-data="{ open: false }" class="relative">
+                <label for="userSearch" class="mb-1 block text-sm font-medium">Buscar e selecionar usuário (nome ou e-mail)</label>
+                @if ($selectedUser)
+                    <div class="flex items-center justify-between gap-2 rounded-lg border border-neutral-300 bg-neutral-50 p-2.5">
+                        <span><strong>{{ $selectedUser->name }}</strong> <span class="text-neutral-500">({{ $selectedUser->email }})</span></span>
+                        <button type="button" wire:click="clearSelectedUser" class="text-sm text-primary-600 hover:text-primary-700 hover:underline">
+                            Alterar
+                        </button>
+                    </div>
+                @else
+                    <input
+                        id="userSearch"
+                        type="text"
+                        wire:model.live.debounce.300ms="userSearch"
+                        @focus="open = true"
+                        @blur="setTimeout(() => open = false, 200)"
+                        class="w-full rounded-lg border border-neutral-300 p-2.5"
+                        placeholder="Digite ao menos 2 caracteres para buscar..."
+                        autocomplete="off"
+                    />
+                    <div
+                        x-show="open"
+                        x-cloak
+                        x-transition
+                        class="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-auto rounded-lg border border-neutral-300 bg-white shadow-lg"
+                    >
+                        @if ($usersNotInPlace->isNotEmpty())
+                            <ul class="m-0 list-none p-1" role="listbox">
+                                @foreach ($usersNotInPlace as $u)
+                                    <li>
+                                        <button
+                                            type="button"
+                                            wire:click="selectUser({{ $u->id }})"
+                                            role="option"
+                                            class="w-full cursor-pointer rounded px-3 py-2 text-left text-neutral-800 hover:bg-neutral-100"
+                                        >
+                                            <strong>{{ $u->name }}</strong> <span class="text-neutral-500">({{ $u->email }})</span>
+                                        </button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @elseif (strlen($userSearch) >= 2)
+                            <p class="p-3 text-neutral-500">Nenhum usuário encontrado ou todos já são membros.</p>
+                        @endif
+                    </div>
+                @endif
                 @error('addUserId')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror

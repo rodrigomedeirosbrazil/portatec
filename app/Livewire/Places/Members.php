@@ -32,21 +32,22 @@ class Members extends Component
 
     public function getUsersNotInPlaceProperty(): \Illuminate\Support\Collection
     {
-        $existingIds = $this->place->placeUsers->pluck('user_id')->all();
-
-        $query = User::query()
-            ->whereNotIn('id', $existingIds)
-            ->orderBy('name');
-
-        if ($this->userSearch !== '') {
-            $term = '%'.addcslashes($this->userSearch, '%_').'%';
-            $query->where(function ($q) use ($term): void {
-                $q->where('name', 'like', $term)
-                    ->orWhere('email', 'like', $term);
-            });
+        if (strlen($this->userSearch) < 2) {
+            return collect();
         }
 
-        return $query->limit(20)->get();
+        $existingIds = $this->place->placeUsers->pluck('user_id')->all();
+        $term = '%'.addcslashes($this->userSearch, '%_').'%';
+
+        return User::query()
+            ->whereNotIn('id', $existingIds)
+            ->where(function ($q) use ($term): void {
+                $q->where('name', 'like', $term)
+                    ->orWhere('email', 'like', $term);
+            })
+            ->orderBy('name')
+            ->limit(10)
+            ->get();
     }
 
     protected function rules(): array
@@ -56,6 +57,25 @@ class Members extends Component
             'addRole' => ['required', 'string', 'in:admin,host'],
             'addLabel' => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    public function selectUser(int $id): void
+    {
+        $exists = $this->place->placeUsers()->where('user_id', $id)->exists();
+        if ($exists) {
+            return;
+        }
+        $user = User::query()->find($id);
+        if ($user instanceof User) {
+            $this->addUserId = $id;
+        }
+    }
+
+    public function clearSelectedUser(): void
+    {
+        $this->addUserId = null;
+        $this->userSearch = '';
+        $this->resetErrorBag('addUserId');
     }
 
     public function addMember(): void
@@ -80,10 +100,9 @@ class Members extends Component
         ]);
 
         $this->place->load(['placeUsers.user']);
-        $this->addUserId = null;
+        $this->clearSelectedUser();
         $this->addRole = 'host';
         $this->addLabel = '';
-        $this->userSearch = '';
 
         session()->flash('status', __('app.member_added'));
     }
@@ -114,10 +133,15 @@ class Members extends Component
 
     public function render(): View
     {
+        $selectedUser = $this->addUserId !== null
+            ? User::query()->find($this->addUserId)
+            : null;
+
         return view('livewire.places.members', [
             'placeUsers' => $this->place->placeUsers,
             'usersNotInPlace' => $this->usersNotInPlace,
             'placeRoles' => PlaceRoleEnum::toArray(),
+            'selectedUser' => $selectedUser,
         ])->layout('layouts.client');
     }
 }
