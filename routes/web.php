@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\StartImpersonationController;
 use App\Http\Controllers\App\StopImpersonationController;
+use App\Http\Controllers\App\TuyaOAuthController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -21,11 +22,11 @@ use App\Livewire\Devices\Show as ShowDevice;
 use App\Livewire\Integrations\Create as CreateIntegration;
 use App\Livewire\Integrations\Edit as EditIntegration;
 use App\Livewire\Integrations\Index as IndexIntegrations;
+use App\Livewire\Places\AttachDevice as AttachDeviceToPlace;
+use App\Livewire\Places\ClonePlace;
 use App\Livewire\Places\Control as ControlPlace;
 use App\Livewire\Places\Create as CreatePlace;
 use App\Livewire\Places\Edit as EditPlace;
-use App\Livewire\Places\AttachDevice as AttachDeviceToPlace;
-use App\Livewire\Places\ClonePlace;
 use App\Livewire\Places\Index as IndexPlaces;
 use App\Livewire\Places\Members as MembersPlace;
 use App\Livewire\Places\Show as ShowPlace;
@@ -106,6 +107,9 @@ Route::middleware('auth')
         Route::get('/integrations', IndexIntegrations::class)->name('integrations.index');
         Route::get('/integrations/create', CreateIntegration::class)->name('integrations.create');
         Route::get('/integrations/{integration}/edit', EditIntegration::class)->name('integrations.edit');
+
+        Route::get('/places/{place}/tuya/redirect', [TuyaOAuthController::class, 'redirect'])->name('places.tuya.redirect');
+        Route::get('/auth/tuya/callback', [TuyaOAuthController::class, 'callback'])->name('tuya.callback');
 
         Route::post('/impersonations/stop', StopImpersonationController::class)->name('impersonations.stop');
     });
