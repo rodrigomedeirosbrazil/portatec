@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Tuya;
 
 use App\Services\Tuya\DTOs\TuyaTicketDTO;
@@ -9,19 +11,13 @@ use Illuminate\Support\Facades\Log;
 
 class TuyaService
 {
-    private Client $client;
-
-    public function __construct()
-    {
-        $this->client = new Client;
-    }
+    public function __construct(
+        private Client $client
+    ) {}
 
     public function getDevices(string $uid)
     {
-        if (
-            ! $this->client->isAuthenticated()
-            && ! $this->client->authenticate()
-        ) {
+        if (! $this->client->isAuthenticated()) {
             throw new Exception('Failed to authenticate');
         }
 
@@ -48,10 +44,7 @@ class TuyaService
 
     public function sendPulse(string $deviceId): bool
     {
-        if (
-            ! $this->client->isAuthenticated()
-            && ! $this->client->authenticate()
-        ) {
+        if (! $this->client->isAuthenticated()) {
             throw new Exception('Failed to authenticate');
         }
 
@@ -90,10 +83,7 @@ class TuyaService
 
     public function getPasswordTicket(string $deviceId): ?TuyaTicketDTO
     {
-        if (
-            ! $this->client->isAuthenticated()
-            && ! $this->client->authenticate()
-        ) {
+        if (! $this->client->isAuthenticated()) {
             throw new Exception('Failed to authenticate');
         }
 
@@ -159,10 +149,7 @@ class TuyaService
         ?int $invalidTime = null,
         ?int $type = null,
     ): ?int {
-        if (
-            ! $this->client->isAuthenticated()
-            && ! $this->client->authenticate()
-        ) {
+        if (! $this->client->isAuthenticated()) {
             throw new Exception('Failed to authenticate');
         }
 
@@ -219,10 +206,7 @@ class TuyaService
         string $deviceId,
         int $passwordId,
     ): bool {
-        if (
-            ! $this->client->isAuthenticated()
-            && ! $this->client->authenticate()
-        ) {
+        if (! $this->client->isAuthenticated()) {
             throw new Exception('Failed to authenticate');
         }
 

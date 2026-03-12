@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Tuya;
 
 use App\Services\Tuya\DTOs\TuyaAuthenticationDTO;
@@ -9,20 +11,25 @@ use Illuminate\Support\Facades\Http;
 
 class Client
 {
-    private $http;
+    private string $accessToken;
 
-    private string $clientId;
+    public function __construct(
+        private string $baseUrl,
+        private string $clientId,
+        private string $clientSecret,
+        string $accessToken = '',
+    ) {
+        $this->accessToken = $accessToken;
+    }
 
-    private string $clientSecret;
-
-    private ?TuyaAuthenticationDTO $authenticationDTO;
-
-    public function __construct()
+    public static function fromConfig(?string $accessToken = null): self
     {
-        $this->http = Http::baseUrl(config('tuya.base_url'));
-        $this->clientId = config('tuya.client_id');
-        $this->clientSecret = config('tuya.client_secret');
-        $this->authenticationDTO = null;
+        return new self(
+            baseUrl: config('tuya.base_url'),
+            clientId: config('tuya.client_id'),
+            clientSecret: config('tuya.client_secret'),
+            accessToken: $accessToken ?? '',
+        );
     }
 
     public function getClientId(): string
@@ -35,67 +42,89 @@ class Client
         return $this->clientSecret;
     }
 
-    public function authenticate(): bool
+    public function setAccessToken(string $accessToken): void
     {
-        $response = $this->sendRequest(
-            method: Request::METHOD_GET,
-            urlPath: '/v1.0/token?grant_type=1',
-        );
-
-        if ($response->successful() && $response->json('success')) {
-            $data = json_decode($response->body(), true);
-            $this->authenticationDTO = new TuyaAuthenticationDTO(
-                accessToken: data_get($data, 'result.access_token'),
-                refreshToken: data_get($data, 'result.refresh_token'),
-                expireTime: data_get($data, 'result.expire_time'),
-                uid: data_get($data, 'result.uid'),
-            );
-
-            return true;
-        }
-
-        return false;
+        $this->accessToken = $accessToken;
     }
 
-    public function refreshToken(): bool
+    public function isAuthenticated(): bool
     {
-        $urlPath = "/v1.0/token/{$this->authenticationDTO->refreshToken}";
-        $response = $this->sendRequest(
+        return $this->accessToken !== '';
+    }
+
+    /**
+     * Exchange OAuth authorization code for tokens. Uses empty access_token for signature.
+     */
+    public function exchangeCodeForToken(string $code, string $redirectUri): ?TuyaAuthenticationDTO
+    {
+        $urlPath = '/v1.0/token?grant_type=2&code='.urlencode($code).'&redirect_uri='.urlencode($redirectUri);
+        $response = $this->sendRequestWithAccessToken(
             method: Request::METHOD_GET,
             urlPath: $urlPath,
+            accessToken: '',
         );
 
-        if ($response->successful() && $response->json('success')) {
-            $data = json_decode($response->body(), true);
-            $this->authenticationDTO = new TuyaAuthenticationDTO(
-                accessToken: data_get($data, 'result.access_token'),
-                refreshToken: data_get($data, 'result.refresh_token'),
-                expireTime: data_get($data, 'result.expire_time'),
-                uid: data_get($data, 'result.uid'),
-            );
-
-            return true;
+        if (! $response->successful() || ! $response->json('success')) {
+            return null;
         }
 
-        return false;
+        $data = $response->json();
+        $result = $data['result'] ?? [];
+
+        return new TuyaAuthenticationDTO(
+            accessToken: (string) ($result['access_token'] ?? ''),
+            refreshToken: (string) ($result['refresh_token'] ?? ''),
+            expireTime: (string) ($result['expire_time'] ?? '0'),
+            uid: (string) ($result['uid'] ?? ''),
+        );
+    }
+
+    /**
+     * Refresh tokens using refresh_token. Signature uses current (possibly expired) access token.
+     */
+    public function refreshToken(string $refreshToken, string $currentAccessToken): ?TuyaAuthenticationDTO
+    {
+        $urlPath = '/v1.0/token/'.urlencode($refreshToken);
+        $response = $this->sendRequestWithAccessToken(
+            method: Request::METHOD_GET,
+            urlPath: $urlPath,
+            accessToken: $currentAccessToken,
+        );
+
+        if (! $response->successful() || ! $response->json('success')) {
+            return null;
+        }
+
+        $data = $response->json();
+        $result = $data['result'] ?? [];
+
+        return new TuyaAuthenticationDTO(
+            accessToken: (string) ($result['access_token'] ?? ''),
+            refreshToken: (string) ($result['refresh_token'] ?? ''),
+            expireTime: (string) ($result['expire_time'] ?? '0'),
+            uid: (string) ($result['uid'] ?? ''),
+        );
     }
 
     public function sendRequest(string $method, string $urlPath, ?array $body = null): Response
     {
-        $stringRequest = $this->getStringRequest(
-            method: $method,
-            headers: [],
-            body: $body,
-            urlPath: $urlPath,
-        );
+        return $this->sendRequestWithAccessToken($method, $urlPath, $this->accessToken, $body);
+    }
 
-        $timestamp = now()->timestamp * 1000;
+    private function sendRequestWithAccessToken(
+        string $method,
+        string $urlPath,
+        string $accessToken,
+        ?array $body = null,
+    ): Response {
+        $stringRequest = $this->getStringRequest($method, [], $body, $urlPath);
+        $timestamp = (string) (now()->timestamp * 1000);
         $nonce = '';
 
         $sign = $this->getSignString(
             clientId: $this->clientId,
             clientSecret: $this->clientSecret,
-            accessToken: $this->authenticationDTO?->accessToken ?? '',
+            accessToken: $accessToken,
             timestamp: $timestamp,
             nonce: $nonce,
             stringRequest: $stringRequest,
@@ -108,56 +137,40 @@ class Client
             'sign_method' => 'HMAC-SHA256',
         ];
 
-        if ($this->authenticationDTO?->accessToken) {
-            $headers['access_token'] = $this->authenticationDTO->accessToken;
+        if ($accessToken !== '') {
+            $headers['access_token'] = $accessToken;
         }
-        $response = $this->http
-            ->replaceHeaders($headers)
-            ->send($method, $urlPath, [
-                'json' => $body,
-            ]);
 
-        return $response;
+        $http = Http::baseUrl($this->baseUrl);
+
+        return $http
+            ->withHeaders($headers)
+            ->send($method, $urlPath, ['json' => $body]);
     }
 
-    public function getSignString(string $clientId, string $clientSecret, string $accessToken, string $timestamp, string $nonce, string $stringRequest)
-    {
-        $str = implode('', [
-            $clientId,
-            $accessToken,
-            $timestamp,
-            $nonce,
-            $stringRequest,
-        ]);
-
+    public function getSignString(
+        string $clientId,
+        string $clientSecret,
+        string $accessToken,
+        string $timestamp,
+        string $nonce,
+        string $stringRequest,
+    ): string {
+        $str = $clientId.$accessToken.$timestamp.$nonce.$stringRequest;
         $hash = hash_hmac('sha256', $str, $clientSecret, false);
 
         return strtoupper($hash);
     }
 
-    public function getStringRequest(string $method, ?array $headers, ?array $body, string $urlPath)
+    public function getStringRequest(string $method, ?array $headers, ?array $body, string $urlPath): string
     {
-        $jsonBody = $body == null ? '' : json_encode($body);
-
+        $jsonBody = $body === null ? '' : json_encode($body);
         $hashedBody = hash('sha256', $jsonBody);
-
-        $headersString = $headers == null ? '' : collect($headers)
-            ->ksort()
-            ->map(function ($value, $key) {
-                return "$key:$value";
-            })
+        $headersString = $headers === null ? '' : collect($headers)
+            ->sortKeys()
+            ->map(fn ($value, $key) => "{$key}:{$value}")
             ->implode(PHP_EOL);
 
-        return implode(PHP_EOL, [
-            $method,
-            $hashedBody,
-            $headersString,
-            $urlPath,
-        ]);
-    }
-
-    public function isAuthenticated(): bool
-    {
-        return $this->authenticationDTO != null;
+        return implode(PHP_EOL, [$method, $hashedBody, $headersString, $urlPath]);
     }
 }
