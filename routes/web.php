@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Webhooks\TuyaWebhookController;
 use App\Livewire\AccessCodes\Create as CreateAccessCode;
 use App\Livewire\AccessCodes\Edit as EditAccessCode;
 use App\Livewire\AccessCodes\Index as IndexAccessCodes;
@@ -37,6 +38,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/app/login');
 Route::redirect('/login', '/app/login');
+
+Route::post('/webhooks/tuya', TuyaWebhookController::class)->name('webhooks.tuya');
 
 Route::middleware('guest')->prefix('app')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
