@@ -42,26 +42,14 @@ class TuyaService
         return null;
     }
 
-    public function sendPulse(string $deviceId): bool
+    public function sendDeviceCommands(string $deviceId, array $commands): bool
     {
         if (! $this->client->isAuthenticated()) {
             throw new Exception('Failed to authenticate');
         }
 
         $urlPath = "/v1.0/iot-03/devices/{$deviceId}/commands";
-
-        $body = [
-            'commands' => [
-                [
-                    'code' => 'switch_1',
-                    'value' => true,
-                ],
-                [
-                    'code' => 'countdown_1',
-                    'value' => 1,
-                ],
-            ],
-        ];
+        $body = ['commands' => $commands];
 
         $response = $this->client->sendRequest(
             method: Request::METHOD_POST,
@@ -73,12 +61,28 @@ class TuyaService
             return true;
         }
 
-        Log::error('Failed to send pulse', [
+        Log::error('Tuya send device commands failed', [
+            'device_id' => $deviceId,
             'status' => $response->status(),
             'body' => $response->body(),
         ]);
 
         return false;
+    }
+
+    public function sendSwitch(string $deviceId, bool $on): bool
+    {
+        return $this->sendDeviceCommands($deviceId, [
+            ['code' => 'switch_1', 'value' => $on],
+        ]);
+    }
+
+    public function sendPulse(string $deviceId): bool
+    {
+        return $this->sendDeviceCommands($deviceId, [
+            ['code' => 'switch_1', 'value' => true],
+            ['code' => 'countdown_1', 'value' => 1],
+        ]);
     }
 
     public function getPasswordTicket(string $deviceId): ?TuyaTicketDTO
@@ -154,8 +158,16 @@ class TuyaService
         }
 
         $ticket = $this->getPasswordTicket($deviceId);
+        if ($ticket === null) {
+            Log::error('Tuya create temporary password: no ticket', ['device_id' => $deviceId]);
+
+            return null;
+        }
 
         $encryptedPassword = $this->encryptPasswordWithTicket($this->client->getClientSecret(), $password, $ticket);
+        if ($encryptedPassword === null) {
+            return null;
+        }
 
         $urlPath = "/v1.0/devices/{$deviceId}/door-lock/temp-password";
 
