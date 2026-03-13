@@ -105,7 +105,7 @@
             </div>
         @endif
 
-        {{ $slot }}
+        {!! $slot !!}
     </main>
 
     @livewireScripts

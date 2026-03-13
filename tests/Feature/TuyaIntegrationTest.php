@@ -37,7 +37,7 @@ class TuyaIntegrationTest extends TestCase
         $response->assertRedirect(route('app.tuya.devices'));
     }
 
-    public function test_show_qr_redirects_with_message_when_get_qr_token_fails(): void
+    public function test_show_qr_shows_error_view_when_get_qr_token_fails(): void
     {
         Http::fake([config('tuya.base_url').'/*' => Http::response(['success' => false], 500)]);
 
@@ -45,8 +45,9 @@ class TuyaIntegrationTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('app.tuya.connect'));
 
-        $response->assertRedirect(route('app.tuya.connect'));
-        $response->assertSessionHas('status');
+        $response->assertOk();
+        $response->assertSee('Não foi possível obter o código QR', false);
+        $response->assertSee('Tentar novamente', false);
     }
 
     public function test_poll_login_returns_linked_false_when_not_logged_in_via_qr(): void

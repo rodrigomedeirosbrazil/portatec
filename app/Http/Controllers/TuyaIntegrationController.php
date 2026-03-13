@@ -32,8 +32,11 @@ class TuyaIntegrationController extends Controller
 
         $tokenData = $this->tuyaService->getQRToken();
         if (! $tokenData) {
-            return redirect()->route('app.tuya.connect')
-                ->with('status', 'Não foi possível obter o código QR. Tente novamente.');
+            return view('layouts.client', [
+                'slot' => view('tuya.connect', [
+                    'error' => 'Não foi possível obter o código QR. Verifique as configurações (TUYA_CLIENT_ID, TUYA_CLIENT_SECRET) e tente novamente.',
+                ]),
+            ]);
         }
 
         return view('layouts.client', [
