@@ -13,4 +13,5 @@ return [
     'client_id' => env('TUYA_CLIENT_ID'),
     'client_secret' => env('TUYA_CLIENT_SECRET'),
     'base_url' => env('TUYA_BASE_URL', 'https://openapi.tuyaus.com'),
+    'schema' => env('TUYA_SCHEMA', 'smartlife'),
 ];
