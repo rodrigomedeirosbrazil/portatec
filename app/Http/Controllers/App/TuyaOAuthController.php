@@ -30,7 +30,17 @@ class TuyaOAuthController extends Controller
             'state' => $state,
         ]);
 
-        $authUrl = config('tuya.oauth_authorize_url').'?'.$params;
+        $authorizeUrl = config('tuya.oauth_authorize_url');
+        if (empty($authorizeUrl) || ! str_starts_with($authorizeUrl, 'http')) {
+            $authorizeUrl = 'https://openapi.tuyaus.com/login.action';
+        }
+        $authUrl = rtrim($authorizeUrl, '?').(str_contains($authorizeUrl, '?') ? '&' : '?').$params;
+
+        $authHost = parse_url($authUrl, PHP_URL_HOST);
+        $appHost = $request->getHost();
+        if ($authHost !== null && strtolower($authHost) === strtolower($appHost)) {
+            abort(500, 'Tuya OAuth misconfiguration: oauth_authorize_url must point to Tuya (e.g. openapi.tuyaus.com), not to this app. Check TUYA_OAUTH_AUTHORIZE_URL in .env.');
+        }
 
         return redirect()->away($authUrl);
     }
