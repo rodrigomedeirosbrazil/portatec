@@ -54,6 +54,11 @@ class Place extends Model
             ->withTimestamps();
     }
 
+    public function tuyaDevices(): HasMany
+    {
+        return $this->hasMany(TuyaDevice::class);
+    }
+
     public function getValidAccessCodes()
     {
         return $this->accessCodes()

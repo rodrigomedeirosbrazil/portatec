@@ -41,6 +41,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Integration::class);
     }
 
+    public function tuyaAccounts(): HasMany
+    {
+        return $this->hasMany(TuyaAccount::class);
+    }
+
     public function placeUsers(): HasMany
     {
         return $this->hasMany(PlaceUser::class);
