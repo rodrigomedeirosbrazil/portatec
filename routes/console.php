@@ -1,6 +1,9 @@
 <?php
 
+use App\Jobs\RefreshTuyaTokenJob;
 use Illuminate\Support\Facades\Schedule;
+
+Schedule::job(new RefreshTuyaTokenJob)->everyFiveMinutes();
 
 Schedule::command('access-codes:sync')
     ->daily()
