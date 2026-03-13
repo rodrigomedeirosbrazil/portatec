@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: [
             '172.21.0.0/16',
         ]);
+        $middleware->validateCsrfTokens(except: ['webhooks/tuya']);
     })
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR |

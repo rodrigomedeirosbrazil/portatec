@@ -19,8 +19,12 @@ PortaTec is a comprehensive property management system designed for short-term r
 
 - **Automation Features**
   - Smart device control (lights, thermostats, locks)
+  - Tuya Smart integration (OAuth, device sync, commands, webhooks)
   - Automated check-in and check-out processes
   - Scheduled maintenance notifications
+
+- **Integrations**
+  - **Tuya Smart**: OAuth 2.0 per property (place); tokens stored in `tuya_credentials`. Device sync via API (getDevices) creates/updates devices with brand Tuya. Commands (switch, pulse) and temporary PINs on Tuya locks via `TuyaService` and `DeviceCommandService`. Webhook at POST `/webhooks/tuya` for status notifications; job updates device `last_sync` and emits status events.
 
 - **User Management**
   - Multi-level user access control

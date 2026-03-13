@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace App\Services\Device;
 
+use App\Enums\DeviceBrandEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Events\PlaceDeviceCommandAckEvent;
 use App\Events\PlaceDeviceFunctionStatusEvent;
 use App\Events\PlaceDeviceStatusEvent;
 use App\Models\AccessCode;
+use App\Models\AccessCodeTuyaPassword;
 use App\Models\AccessEvent;
 use App\Models\CommandLog;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Services\DeviceService;
+use App\Services\Tuya\TuyaClientFactory;
+use App\Services\Tuya\TuyaService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -23,7 +27,8 @@ use PhpMqtt\Client\Facades\MQTT;
 class DeviceCommandService
 {
     public function __construct(
-        private DeviceService $deviceService
+        private DeviceService $deviceService,
+        private TuyaClientFactory $tuyaClientFactory
     ) {}
 
     public function sendCommand(Device $device, string $action, int $pin, ?int $userId = null): string
@@ -40,30 +45,44 @@ class DeviceCommandService
             'timestamp' => time(),
         ];
 
-        $mqtt = MQTT::connection();
-        $mqtt->publish(
-            topic: "device/{$device->external_device_id}/command",
-            message: json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            qualityOfService: 1
-        );
-        $mqtt->disconnect();
-
         $placeId = $device->place_id
             ?? $device->placeDeviceFunctions()->value('place_id');
 
-        if ($placeId === null) {
-            return $commandId;
+        if ($device->brand === DeviceBrandEnum::Tuya && $device->place_id !== null) {
+            $place = $device->place;
+            $client = $this->tuyaClientFactory->clientForPlace($place);
+            if ($client !== null) {
+                $tuyaService = new TuyaService($client);
+                $deviceId = $device->external_device_id;
+                $sent = match ($action) {
+                    'pulse' => $tuyaService->sendPulse($deviceId),
+                    default => $tuyaService->sendSwitch($deviceId, true),
+                };
+                if (! $sent) {
+                    Log::warning('Tuya send command failed', ['device_id' => $device->id, 'action' => $action]);
+                }
+            }
+        } else {
+            $mqtt = MQTT::connection();
+            $mqtt->publish(
+                topic: "device/{$device->external_device_id}/command",
+                message: json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                qualityOfService: 1
+            );
+            $mqtt->disconnect();
         }
 
-        CommandLog::create([
-            'command_id' => $commandId,
-            'user_id' => $userId,
-            'place_id' => $placeId,
-            'device_function_id' => $device->deviceFunctions()->where('pin', (string) $pin)->value('id'),
-            'command_type' => $action,
-            'command_payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'device_function_type' => $device->deviceFunctions()->where('pin', (string) $pin)->value('type'),
-        ]);
+        if ($placeId !== null) {
+            CommandLog::create([
+                'command_id' => $commandId,
+                'user_id' => $userId,
+                'place_id' => $placeId,
+                'device_function_id' => $device->deviceFunctions()->where('pin', (string) $pin)->value('id'),
+                'command_type' => $action,
+                'command_payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'device_function_type' => $device->deviceFunctions()->where('pin', (string) $pin)->value('type'),
+            ]);
+        }
 
         return $commandId;
     }
@@ -71,6 +90,12 @@ class DeviceCommandService
     public function syncAccessCodes(Device $device, Collection $accessCodes): void
     {
         if (! $device->external_device_id) {
+            return;
+        }
+
+        if ($device->brand === DeviceBrandEnum::Tuya && $device->place_id !== null) {
+            $this->syncAccessCodesToTuyaLock($device, $accessCodes);
+
             return;
         }
 
@@ -93,6 +118,58 @@ class DeviceCommandService
             qualityOfService: 1
         );
         $mqtt->disconnect();
+    }
+
+    private function syncAccessCodesToTuyaLock(Device $device, Collection $accessCodes): void
+    {
+        $place = $device->place;
+        $client = $this->tuyaClientFactory->clientForPlace($place);
+        if ($client === null) {
+            return;
+        }
+
+        $tuyaService = new TuyaService($client);
+        $deviceId = $device->external_device_id;
+        $validIds = $accessCodes->pluck('id')->all();
+
+        AccessCodeTuyaPassword::query()
+            ->where('device_id', $device->id)
+            ->whereNotIn('access_code_id', $validIds)
+            ->get()
+            ->each(function (AccessCodeTuyaPassword $row) use ($tuyaService, $deviceId): void {
+                $tuyaService->deleteTemporaryPassword($deviceId, (int) $row->tuya_password_id);
+                $row->delete();
+            });
+
+        foreach ($accessCodes as $accessCode) {
+            $existing = AccessCodeTuyaPassword::query()
+                ->where('access_code_id', $accessCode->id)
+                ->where('device_id', $device->id)
+                ->first();
+
+            if ($existing !== null) {
+                continue;
+            }
+
+            $effectiveTime = $accessCode->start->timestamp;
+            $invalidTime = $accessCode->end?->timestamp ?? $accessCode->start->addYears(10)->timestamp;
+            $name = 'AC-'.$accessCode->id;
+            $passwordId = $tuyaService->createTemporaryPassword(
+                $deviceId,
+                $name,
+                $accessCode->pin,
+                $effectiveTime,
+                $invalidTime,
+            );
+
+            if ($passwordId !== null) {
+                AccessCodeTuyaPassword::query()->create([
+                    'access_code_id' => $accessCode->id,
+                    'device_id' => $device->id,
+                    'tuya_password_id' => $passwordId,
+                ]);
+            }
+        }
     }
 
     public function handleAck(string $chipId, array $payload): void

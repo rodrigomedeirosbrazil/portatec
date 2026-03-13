@@ -8,6 +8,8 @@ use App\Models\Booking;
 use App\Observers\AccessCodeObserver;
 use App\Observers\BookingObserver;
 use App\Services\ICalParser;
+use App\Services\Tuya\Client as TuyaClient;
+use App\Services\Tuya\TuyaService;
 use Filament\Notifications\Livewire\Notifications;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
@@ -24,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->app->bind(ICalParserInterface::class, ICalParser::class);
+
+        $this->app->bind(TuyaService::class, function () {
+            return new TuyaService(TuyaClient::fromConfig());
+        });
     }
 
     public function boot(): void
