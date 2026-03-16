@@ -7,7 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Place;
 use App\Models\TuyaAccount;
 use App\Models\TuyaDevice;
-use App\Services\Tuya\TuyaService;
+use App\Services\Tuya\TuyaSharingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +16,7 @@ use Illuminate\View\View;
 class TuyaIntegrationController extends Controller
 {
     public function __construct(
-        private TuyaService $tuyaService
+        private TuyaSharingService $tuyaService
     ) {}
 
     public function showQRCode(): RedirectResponse|View
@@ -30,42 +30,63 @@ class TuyaIntegrationController extends Controller
             return redirect()->route('app.tuya.devices');
         }
 
-        $tokenData = $this->tuyaService->getQRToken();
+        return $this->renderConnectView();
+    }
+
+    public function startConnect(Request $request): View
+    {
+        $validated = $request->validate([
+            'user_code' => ['required', 'string'],
+        ]);
+
+        $tokenData = $this->tuyaService->createQr($validated['user_code']);
         if (! $tokenData) {
-            return view('layouts.client', [
-                'slot' => view('tuya.connect', [
-                    'error' => 'Não foi possível obter o código QR. Verifique as configurações (TUYA_CLIENT_ID, TUYA_CLIENT_SECRET) e tente novamente.',
-                ]),
-            ]);
+            return $this->renderConnectView('Não foi possível gerar o QR code. Verifique o User Code e as credenciais de Device Sharing.');
         }
 
-        return view('layouts.client', [
-            'slot' => view('tuya.connect', [
-                'qrcode_url' => $tokenData['qrcode'],
-                'expire_time' => $tokenData['expire_time'],
-                'poll_token' => $tokenData['token'],
-            ]),
+        $request->session()->put([
+            'tuya_user_code' => $validated['user_code'],
+            'tuya_qr_token' => $tokenData['token'],
+            'tuya_qr_payload' => $tokenData['qr_payload'],
+            'tuya_qr_expire_time' => $tokenData['expire_time'],
         ]);
+
+        return $this->renderConnectView();
     }
 
     public function pollLogin(string $token): JsonResponse
     {
-        $status = $this->tuyaService->pollLoginStatus($token);
-        if (! $status || ! $status['is_login']) {
+        $userCode = (string) session('tuya_user_code', '');
+        if ($userCode === '') {
+            return response()->json(['linked' => false, 'error' => 'missing_user_code']);
+        }
+
+        $status = $this->tuyaService->pollLogin($userCode, $token);
+        if (! $status || ! $status['ok']) {
             return response()->json(['linked' => false]);
         }
+
+        $tokenInfo = $status['token_info'] ?? [];
+        $accessToken = $tokenInfo['access_token'] ?? null;
+        $refreshToken = $tokenInfo['refresh_token'] ?? null;
 
         TuyaAccount::query()->updateOrCreate(
             ['user_id' => auth()->id()],
             [
-                'uid' => $status['uid'],
-                'access_token' => $status['access_token'],
-                'refresh_token' => $status['refresh_token'],
-                'expires_at' => now()->addSeconds($status['expire_time']),
-                'platform_url' => $status['platform_url'],
+                'user_code' => $userCode,
+                'uid' => $status['uid'] ?? '',
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+                'token_info' => $tokenInfo,
+                'terminal_id' => $status['terminal_id'] ?? null,
+                'endpoint' => $status['endpoint'] ?? null,
+                'expires_at' => now()->addSeconds((int) ($status['expire_time'] ?? 7200)),
+                'platform_url' => $status['endpoint'] ?? config('tuya.base_url'),
                 'active' => true,
             ]
         );
+
+        session()->forget(['tuya_qr_token', 'tuya_qr_payload', 'tuya_qr_expire_time']);
 
         return response()->json(['linked' => true]);
     }
@@ -168,10 +189,32 @@ class TuyaIntegrationController extends Controller
 
     public function disconnect(): RedirectResponse
     {
+        $account = TuyaAccount::query()
+            ->where('user_id', auth()->id())
+            ->where('active', true)
+            ->first();
+
+        if ($account) {
+            $this->tuyaService->disconnect($account);
+        }
+
         TuyaAccount::query()
             ->where('user_id', auth()->id())
             ->update(['active' => false]);
 
         return redirect()->route('app.dashboard')->with('status', 'Conta Tuya desvinculada.');
+    }
+
+    private function renderConnectView(?string $error = null): View
+    {
+        return view('layouts.client', [
+            'slot' => view('tuya.connect', [
+                'error' => $error,
+                'user_code' => session('tuya_user_code'),
+                'qrcode_payload' => session('tuya_qr_payload'),
+                'expire_time' => session('tuya_qr_expire_time'),
+                'poll_token' => session('tuya_qr_token'),
+            ]),
+        ]);
     }
 }

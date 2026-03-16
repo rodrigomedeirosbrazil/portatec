@@ -109,6 +109,7 @@ Route::middleware('auth')
         Route::get('/integrations/{integration}/edit', EditIntegration::class)->name('integrations.edit');
 
         Route::get('/tuya/connect', [TuyaIntegrationController::class, 'showQRCode'])->name('tuya.connect');
+        Route::post('/tuya/connect', [TuyaIntegrationController::class, 'startConnect'])->name('tuya.connect.start');
         Route::get('/tuya/poll/{token}', [TuyaIntegrationController::class, 'pollLogin'])->name('tuya.poll');
         Route::get('/tuya/devices', [TuyaIntegrationController::class, 'listDevices'])->name('tuya.devices');
         Route::post('/tuya/devices/assign-place', [TuyaIntegrationController::class, 'assignDeviceToPlace'])->name('tuya.devices.assign-place');
