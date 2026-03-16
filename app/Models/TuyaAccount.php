@@ -15,9 +15,13 @@ class TuyaAccount extends Model
 
     protected $fillable = [
         'user_id',
+        'user_code',
         'uid',
         'access_token',
         'refresh_token',
+        'token_info',
+        'terminal_id',
+        'endpoint',
         'expires_at',
         'platform_url',
         'active',
@@ -26,6 +30,8 @@ class TuyaAccount extends Model
     protected $casts = [
         'access_token' => 'encrypted',
         'refresh_token' => 'encrypted',
+        'user_code' => 'encrypted',
+        'token_info' => 'array',
         'expires_at' => 'datetime',
         'active' => 'boolean',
     ];
