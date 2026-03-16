@@ -24,6 +24,9 @@ class TuyaIntegrationTest extends TestCase
             'tuya.client_secret' => 'test_client_secret',
             'tuya.base_url' => 'https://openapi.tuyaus.com',
             'tuya.schema' => 'smartlife',
+            'tuya.sharing.service_url' => 'https://tuya-sharing.test',
+            'tuya.sharing.client_id' => 'sharing_client_id',
+            'tuya.sharing.schema' => 'haauthorize',
         ]);
     }
 
@@ -37,55 +40,84 @@ class TuyaIntegrationTest extends TestCase
         $response->assertRedirect(route('app.tuya.devices'));
     }
 
-    public function test_show_qr_shows_error_view_when_get_qr_token_fails(): void
+    public function test_show_qr_shows_form_when_no_account(): void
     {
-        Http::fake([config('tuya.base_url').'/*' => Http::response(['success' => false], 500)]);
-
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->get(route('app.tuya.connect'));
 
         $response->assertOk();
-        $response->assertSee('Não foi possível obter o código QR', false);
-        $response->assertSee('Tentar novamente', false);
+        $response->assertSee('Código do Usuário', false);
     }
 
-    public function test_poll_login_returns_linked_false_when_not_logged_in_via_qr(): void
+    public function test_start_connect_shows_error_when_qr_fails(): void
     {
-        Http::fake([
-            '*' => Http::response([
-                'success' => true,
-                'result' => ['is_login' => false],
-            ], 200),
-        ]);
+        Http::fake([config('tuya.sharing.service_url').'/sharing/qr' => Http::response([], 500)]);
 
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->getJson(route('app.tuya.poll', ['token' => 'some-token']));
+        $response = $this->actingAs($user)->post(route('app.tuya.connect.start'), [
+            'user_code' => 'user-code',
+        ]);
 
         $response->assertOk();
-        $response->assertJson(['linked' => false]);
+        $response->assertSee('Não foi possível gerar o QR code', false);
     }
 
-    public function test_poll_login_creates_account_and_returns_linked_true(): void
+    public function test_start_connect_renders_qr_when_successful(): void
     {
         Http::fake([
-            '*' => Http::response([
-                'success' => true,
+            config('tuya.sharing.service_url').'/sharing/qr' => Http::response([
                 'result' => [
-                    'is_login' => true,
-                    'uid' => 'tuya-uid-123',
-                    'access_token' => 'at',
-                    'refresh_token' => 'rt',
-                    'expire_time' => 7200,
-                    'platform_url' => 'https://openapi.tuyaus.com',
+                    'token' => 'qr-token',
+                    'expire_time' => 120,
                 ],
             ], 200),
         ]);
 
         $user = User::factory()->create();
 
+        $response = $this->actingAs($user)->post(route('app.tuya.connect.start'), [
+            'user_code' => 'user-code',
+        ]);
+
+        $response->assertOk();
+        $response->assertSee('Este código expira', false);
+    }
+
+    public function test_poll_login_returns_linked_false_when_missing_user_code(): void
+    {
+        $user = User::factory()->create();
+
         $response = $this->actingAs($user)->getJson(route('app.tuya.poll', ['token' => 'some-token']));
+
+        $response->assertOk();
+        $response->assertJson(['linked' => false, 'error' => 'missing_user_code']);
+    }
+
+    public function test_poll_login_creates_account_and_returns_linked_true(): void
+    {
+        Http::fake([
+            config('tuya.sharing.service_url').'/sharing/login-result' => Http::response([
+                'result' => [
+                    'ok' => true,
+                    'uid' => 'tuya-uid-123',
+                    'token_info' => [
+                        'access_token' => 'at',
+                        'refresh_token' => 'rt',
+                    ],
+                    'terminal_id' => 'term-1',
+                    'endpoint' => 'https://openapi.tuyaus.com',
+                    'expire_time' => 7200,
+                ],
+            ], 200),
+        ]);
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->withSession(['tuya_user_code' => 'user-code'])
+            ->getJson(route('app.tuya.poll', ['token' => 'some-token']));
 
         $response->assertOk();
         $response->assertJson(['linked' => true]);
@@ -109,11 +141,17 @@ class TuyaIntegrationTest extends TestCase
     public function test_list_devices_shows_page_when_account_exists(): void
     {
         $user = User::factory()->create();
-        $account = TuyaAccount::factory()->create(['user_id' => $user->id, 'active' => true]);
+        $account = TuyaAccount::factory()->create([
+            'user_id' => $user->id,
+            'active' => true,
+            'user_code' => 'user-code',
+            'token_info' => ['access_token' => 'at'],
+            'terminal_id' => 'term-1',
+            'endpoint' => 'https://openapi.tuyaus.com',
+        ]);
 
         Http::fake([
-            '*' => Http::response([
-                'success' => true,
+            config('tuya.sharing.service_url').'/sharing/devices' => Http::response([
                 'result' => ['devices' => []],
             ], 200),
         ]);
