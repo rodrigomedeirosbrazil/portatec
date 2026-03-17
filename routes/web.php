@@ -21,11 +21,12 @@ use App\Livewire\Devices\Show as ShowDevice;
 use App\Livewire\Integrations\Create as CreateIntegration;
 use App\Livewire\Integrations\Edit as EditIntegration;
 use App\Livewire\Integrations\Index as IndexIntegrations;
+use App\Livewire\Integrations\TuyaConnect;
+use App\Livewire\Places\AttachDevice as AttachDeviceToPlace;
+use App\Livewire\Places\ClonePlace;
 use App\Livewire\Places\Control as ControlPlace;
 use App\Livewire\Places\Create as CreatePlace;
 use App\Livewire\Places\Edit as EditPlace;
-use App\Livewire\Places\AttachDevice as AttachDeviceToPlace;
-use App\Livewire\Places\ClonePlace;
 use App\Livewire\Places\Index as IndexPlaces;
 use App\Livewire\Places\Members as MembersPlace;
 use App\Livewire\Places\Show as ShowPlace;
@@ -104,6 +105,7 @@ Route::middleware('auth')
         Route::get('/devices/{device}/control', ControlDevice::class)->name('devices.control');
 
         Route::get('/integrations', IndexIntegrations::class)->name('integrations.index');
+        Route::get('/integrations/tuya-connect', TuyaConnect::class)->name('integrations.tuya-connect');
         Route::get('/integrations/create', CreateIntegration::class)->name('integrations.create');
         Route::get('/integrations/{integration}/edit', EditIntegration::class)->name('integrations.edit');
 

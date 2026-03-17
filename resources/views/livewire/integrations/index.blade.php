@@ -1,9 +1,19 @@
 <section>
-    <div class="mb-4 flex items-center justify-between">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 class="m-0">Integrações</h1>
-        <a href="{{ route('app.integrations.create') }}" class="rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700">
-            Nova Integração
-        </a>
+        <div class="flex gap-2">
+            <a href="{{ route('app.integrations.tuya-connect') }}"
+               wire:navigate
+               class="rounded-lg border border-primary-500 bg-white px-3 py-2
+                      text-primary-600 no-underline hover:bg-primary-50">
+                Conectar via Tuya
+            </a>
+            <a href="{{ route('app.integrations.create') }}"
+               class="rounded-lg bg-primary-500 px-3 py-2
+                      text-white no-underline hover:bg-primary-700">
+                Nova Integração
+            </a>
+        </div>
     </div>
 
     <div class="grid gap-3">

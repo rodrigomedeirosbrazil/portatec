@@ -17,6 +17,12 @@ class Integration extends Model
     protected $fillable = [
         'platform_id',
         'user_id',
+        'tuya_user_code',
+        'tuya_access_token',
+        'tuya_refresh_token',
+        'tuya_token_expires_at',
+        'tuya_uid',
+        'tuya_endpoint',
     ];
 
     public function platform(): BelongsTo
