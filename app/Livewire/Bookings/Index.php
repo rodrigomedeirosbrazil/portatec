@@ -117,7 +117,7 @@ class Index extends Component
             })
             ->when($this->status === 'future', fn ($query) => $query->where('check_in', '>', $now))
             ->when($this->guest !== '', function ($query): void {
-                $term = '%' . addcslashes($this->guest, '%_') . '%';
+                $term = '%'.addcslashes($this->guest, '%_').'%';
                 $query->where('guest_name', 'like', $term);
             })
             ->when($this->source !== '', fn ($query) => $query->where('source', $this->source))
