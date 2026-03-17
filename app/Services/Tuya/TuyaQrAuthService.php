@@ -13,11 +13,10 @@ use Illuminate\Support\Facades\Log;
 class TuyaQrAuthService
 {
     /**
-     * Client ID do app Tuya Smart/SmartLife (usado apenas se não houver client_id no config).
-     * A assinatura deve usar o mesmo client_id e client_secret do projeto no portal Tuya.
+     * Usa Cloud Authorization: client_id e client_secret do projeto no portal iot.tuya.com
+     * (TUYA_CLIENT_ID e TUYA_CLIENT_SECRET no .env). O algoritmo de assinatura é o mesmo
+     * do Client.php; o client_id fixo do app HA não pode ser usado fora do binário do HA.
      */
-    private const DEFAULT_CLIENT_ID = 'HA_3y9q4ak7g4ephrvke';
-
     private const SCHEMA = 'tuyaSmart';
 
     public const ENDPOINTS = [
@@ -54,7 +53,8 @@ class TuyaQrAuthService
             $msg = data_get($response, 'msg', '');
             if ((int) $code === 1004) {
                 throw new \RuntimeException(
-                    'Assinatura rejeitada pela Tuya (sign invalid). Verifique se TUYA_CLIENT_ID e TUYA_CLIENT_SECRET no .env correspondem ao seu projeto no portal Tuya (iot.tuya.com).'
+                    'Assinatura rejeitada (sign invalid). Verifique no .env: TUYA_CLIENT_ID e TUYA_CLIENT_SECRET '
+                    .'do seu projeto em iot.tuya.com; região/endpoint compatível; API habilitada no projeto.'
                 );
             }
             if ($msg !== '') {
@@ -166,12 +166,14 @@ class TuyaQrAuthService
 
     private function request(string $method, string $urlPath, ?array $body, ?string $accessToken): ?array
     {
-        $clientId = config('tuya.client_id') ?: self::DEFAULT_CLIENT_ID;
+        $clientId = config('tuya.client_id');
         $clientSecret = config('tuya.client_secret');
         $timestamp = (string) (now()->timestamp * 1000);
         $nonce = '';
 
-        $stringToSign = $this->buildStringToSign($method, $urlPath, $body);
+        // POST: usar o mesmo JSON no hash e no body para evitar "sign invalid"
+        $jsonBody = ($method === 'POST' && $body !== null) ? json_encode($body) : null;
+        $stringToSign = $this->buildStringToSign($method, $urlPath, $body, $jsonBody);
         $sign = $this->sign($clientId, $clientSecret, $accessToken ?? '', $timestamp, $nonce, $stringToSign);
 
         $headers = [
@@ -190,7 +192,9 @@ class TuyaQrAuthService
 
         $response = match ($method) {
             'GET' => $http->get($urlPath),
-            'POST' => $http->post($urlPath, $body ?? []),
+            'POST' => $jsonBody !== null
+                ? $http->withBody($jsonBody, 'application/json')->post($urlPath)
+                : $http->post($urlPath, []),
             default => $http->send($method, $urlPath),
         };
 
@@ -222,11 +226,13 @@ class TuyaQrAuthService
         return $data;
     }
 
-    private function buildStringToSign(string $method, string $urlPath, ?array $body): string
+    private function buildStringToSign(string $method, string $urlPath, ?array $body, ?string $jsonBody = null): string
     {
-        $hashedBody = hash('sha256', $body !== null ? json_encode($body) : '');
+        $raw = $jsonBody ?? ($body !== null ? json_encode($body) : '');
+        $hashedBody = hash('sha256', $raw);
 
-        return implode("\n", [$method, $hashedBody, '', $urlPath]);
+        // Tuya doc: "line-feed characters (\n)" entre as partes
+        return $method."\n".$hashedBody."\n\n".$urlPath;
     }
 
     private function sign(
@@ -237,7 +243,10 @@ class TuyaQrAuthService
         string $nonce,
         string $stringToSign,
     ): string {
-        $str = $clientId.$accessToken.$timestamp.$nonce.$stringToSign;
+        // Token management API: str = client_id + t + nonce + stringToSign (sem access_token)
+        $str = $accessToken !== ''
+            ? $clientId.$accessToken.$timestamp.$nonce.$stringToSign
+            : $clientId.$timestamp.$nonce.$stringToSign;
 
         return strtoupper(hash_hmac('sha256', $str, $clientSecret, false));
     }
