@@ -21,8 +21,6 @@ class TuyaConnect extends Component
 
     public string $userCode = '';
 
-    public string $endpoint = 'https://openapi.tuyaus.com';
-
     public string $qrUrl = '';
 
     public ?int $qrExpiresAt = null;
@@ -37,11 +35,6 @@ class TuyaConnect extends Component
 
     public string $errorMessage = '';
 
-    public function endpoints(): array
-    {
-        return TuyaQrAuthService::ENDPOINTS;
-    }
-
     public function generateQr(): void
     {
         $this->resetValidation();
@@ -49,13 +42,12 @@ class TuyaConnect extends Component
 
         $this->validate([
             'userCode' => ['required', 'string', 'min:1'],
-            'endpoint' => ['required', 'string'],
         ], [], [
             'userCode' => 'Código do Usuário',
         ]);
 
         try {
-            $service = new TuyaQrAuthService($this->endpoint);
+            $service = new TuyaQrAuthService;
             $dto = $service->generateQrCode(trim($this->userCode));
         } catch (\RuntimeException $e) {
             $this->errorMessage = $e->getMessage();
@@ -64,7 +56,7 @@ class TuyaConnect extends Component
         }
 
         if (! $dto) {
-            $this->errorMessage = 'Não foi possível gerar o QR code. Verifique o código do usuário e a região.';
+            $this->errorMessage = 'Não foi possível gerar o QR code. Verifique o código do usuário.';
 
             return;
         }
@@ -82,8 +74,8 @@ class TuyaConnect extends Component
         }
 
         try {
-            $service = new TuyaQrAuthService($this->endpoint);
-            $token = $service->pollLogin($this->qrCode);
+            $service = new TuyaQrAuthService;
+            $token = $service->pollLogin($this->qrCode, trim($this->userCode));
 
             if ($token === null) {
                 return;
@@ -174,7 +166,7 @@ class TuyaConnect extends Component
                 'tuya_refresh_token' => $token->refreshToken,
                 'tuya_token_expires_at' => now()->addSeconds($token->expireTime),
                 'tuya_uid' => $token->uid,
-                'tuya_endpoint' => $this->endpoint,
+                'tuya_endpoint' => config('tuya.base_url', 'https://openapi.tuyaus.com'),
             ],
         );
 

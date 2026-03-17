@@ -12,54 +12,56 @@ use Illuminate\Support\Facades\Log;
 
 class TuyaQrAuthService
 {
-    /**
-     * Usa Cloud Authorization: client_id e client_secret do projeto no portal iot.tuya.com
-     * (TUYA_CLIENT_ID e TUYA_CLIENT_SECRET no .env). O algoritmo de assinatura é o mesmo
-     * do Client.php; o client_id fixo do app HA não pode ser usado fora do binário do HA.
-     */
+    private const CLIENT_ID = 'HA_3y9q4ak7g4ephrvke';
+
     private const SCHEMA = 'tuyaSmart';
 
-    public const ENDPOINTS = [
-        'América (padrão)' => 'https://openapi.tuyaus.com',
-        'Europa' => 'https://openapi.tuyaeu.com',
-        'China' => 'https://openapi.tuyacn.com',
-        'Índia' => 'https://openapi.tuyain.com',
-    ];
+    private const BASE_URL = 'https://apigw.iotbing.com';
 
-    public function __construct(
-        private readonly string $endpoint = 'https://openapi.tuyaus.com',
-    ) {}
+    /** Base URL para getDevices (API openapi com assinatura HMAC). */
+    private const OPENAPI_BASE_URL = 'https://openapi.tuyaus.com';
+
+    /** Guardado após generateQrCode para uso no pollLogin. */
+    private string $userCode = '';
 
     /**
      * Etapa 1 — Gera o QR code para o user_code informado.
+     * POST simples para apigw.iotbing.com, sem assinatura.
      */
     public function generateQrCode(string $userCode): ?TuyaQrCodeDTO
     {
-        $response = $this->post('/v1.0/iot-03/users/login', [
-            'schema' => self::SCHEMA,
-            'user_code' => $userCode,
-        ]);
+        $this->userCode = $userCode;
 
-        if (! $response) {
+        $url = self::BASE_URL.'/v1.0/m/life/home-assistant/qrcode/tokens'
+            .'?clientid='.self::CLIENT_ID
+            .'&usercode='.urlencode($userCode)
+            .'&schema='.self::SCHEMA;
+
+        $response = Http::post($url);
+
+        if (! $response->successful()) {
+            Log::error('TuyaQrAuthService generateQrCode HTTP error', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
             return null;
         }
 
-        $qrCode = data_get($response, 'result.qrcode');
-        $expireTime = (int) data_get($response, 'result.expire_time', 300);
+        $data = $response->json();
+        if (! ($data['success'] ?? false)) {
+            Log::warning('TuyaQrAuthService generateQrCode API error', [
+                'response' => $data,
+            ]);
 
-        if (! $qrCode) {
-            Log::error('TuyaQrAuthService: qrcode ausente na resposta', ['response' => $response]);
-            $code = data_get($response, 'code');
-            $msg = data_get($response, 'msg', '');
-            if ((int) $code === 1004) {
-                throw new \RuntimeException(
-                    'Assinatura rejeitada (sign invalid). Verifique no .env: TUYA_CLIENT_ID e TUYA_CLIENT_SECRET '
-                    .'do seu projeto em iot.tuya.com; região/endpoint compatível; API habilitada no projeto.'
-                );
-            }
-            if ($msg !== '') {
-                throw new \RuntimeException('Tuya API: '.$msg);
-            }
+            return null;
+        }
+
+        $qrCode = data_get($data, 'result.qrcode');
+        $expireTime = (int) data_get($data, 'result.expire_time', 300);
+
+        if (! $qrCode || $qrCode === '') {
+            Log::error('TuyaQrAuthService: qrcode ausente na resposta', ['response' => $data]);
 
             return null;
         }
@@ -73,40 +75,44 @@ class TuyaQrAuthService
 
     /**
      * Etapa 2 — Polling: verifica se o usuário escaneou e confirmou o QR.
+     * GET simples para apigw.iotbing.com, sem assinatura.
      * Retorna null enquanto aguarda. Lança RuntimeException se o QR expirou.
+     *
+     * @param  string  $userCode  obrigatório quando o fluxo é stateless (ex.: nova instância do serviço a cada request)
      *
      * @throws \RuntimeException
      */
-    public function pollLogin(string $qrCode): ?TuyaTokenDTO
+    public function pollLogin(string $qrCode, ?string $userCode = null): ?TuyaTokenDTO
     {
-        $response = $this->get('/v1.0/iot-03/users/login/status', [
-            'schema' => self::SCHEMA,
-            'qrcode' => $qrCode,
-        ]);
+        $usercode = $userCode ?? $this->userCode;
+        $url = self::BASE_URL.'/v1.0/m/life/home-assistant/qrcode/tokens/'.$qrCode
+            .'?clientid='.self::CLIENT_ID
+            .'&usercode='.urlencode($usercode);
 
-        if (! $response) {
+        $response = Http::get($url);
+
+        if (! $response->successful()) {
+            Log::error('TuyaQrAuthService pollLogin HTTP error', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            throw new \RuntimeException('Erro ao verificar o QR code. Tente novamente.');
+        }
+
+        $data = $response->json();
+
+        if (! ($data['success'] ?? false)) {
             return null;
         }
 
-        $code = data_get($response, 'code');
-
-        // 1000 = aguardando scan
-        if ($code === 1000 || $code === '1000') {
-            return null;
-        }
-
-        // QR expirado
-        if (in_array($code, [1001, '1001', 1002, '1002'], true)) {
-            throw new \RuntimeException('QR code expirado. Por favor, inicie o processo novamente.');
-        }
-
-        $accessToken = data_get($response, 'result.access_token');
-        $refreshToken = data_get($response, 'result.refresh_token');
-        $uid = data_get($response, 'result.uid');
-        $expireTime = (int) data_get($response, 'result.expire_time', 7200);
+        $accessToken = data_get($data, 'result.access_token');
+        $refreshToken = data_get($data, 'result.refresh_token');
+        $uid = data_get($data, 'result.uid');
+        $expireTime = (int) data_get($data, 'result.expire_time', 7200);
 
         if (! $accessToken || ! $refreshToken || ! $uid) {
-            Log::error('TuyaQrAuthService: resposta de login incompleta', ['response' => $response]);
+            Log::error('TuyaQrAuthService: resposta de login incompleta', ['response' => $data]);
 
             return null;
         }
@@ -121,12 +127,13 @@ class TuyaQrAuthService
 
     /**
      * Etapa 3 — Busca todos os dispositivos da conta autenticada.
+     * Usa openapi.tuyaus.com com assinatura HMAC (credenciais do projeto cloud).
      *
      * @return TuyaDeviceDTO[]
      */
     public function getDevices(TuyaTokenDTO $token): array
     {
-        $response = $this->get("/v1.0/users/{$token->uid}/devices", [], $token->accessToken);
+        $response = $this->signedGet("/v1.0/users/{$token->uid}/devices", [], $token->accessToken);
 
         if (! $response) {
             return [];
@@ -149,29 +156,23 @@ class TuyaQrAuthService
     }
 
     // -------------------------------------------------------------------------
-    // HTTP helpers com assinatura HMAC-SHA256
+    // HTTP com assinatura HMAC-SHA256 (apenas para getDevices / openapi)
     // -------------------------------------------------------------------------
 
-    private function get(string $path, array $query = [], ?string $accessToken = null): ?array
+    private function signedGet(string $path, array $query = [], ?string $accessToken = null): ?array
     {
         $urlPath = $path.($query ? ('?'.http_build_query($query)) : '');
 
-        return $this->request('GET', $urlPath, null, $accessToken);
+        return $this->signedRequest('GET', $urlPath, null, $accessToken);
     }
 
-    private function post(string $path, array $body, ?string $accessToken = null): ?array
-    {
-        return $this->request('POST', $path, $body, $accessToken);
-    }
-
-    private function request(string $method, string $urlPath, ?array $body, ?string $accessToken): ?array
+    private function signedRequest(string $method, string $urlPath, ?array $body, ?string $accessToken): ?array
     {
         $clientId = config('tuya.client_id');
         $clientSecret = config('tuya.client_secret');
         $timestamp = (string) (now()->timestamp * 1000);
         $nonce = '';
 
-        // POST: usar o mesmo JSON no hash e no body para evitar "sign invalid"
         $jsonBody = ($method === 'POST' && $body !== null) ? json_encode($body) : null;
         $stringToSign = $this->buildStringToSign($method, $urlPath, $body, $jsonBody);
         $sign = $this->sign($clientId, $clientSecret, $accessToken ?? '', $timestamp, $nonce, $stringToSign);
@@ -188,7 +189,7 @@ class TuyaQrAuthService
             $headers['access_token'] = $accessToken;
         }
 
-        $http = Http::withHeaders($headers)->baseUrl($this->endpoint);
+        $http = Http::withHeaders($headers)->baseUrl(self::OPENAPI_BASE_URL);
 
         $response = match ($method) {
             'GET' => $http->get($urlPath),
@@ -199,7 +200,7 @@ class TuyaQrAuthService
         };
 
         if (! $response->successful()) {
-            Log::error('TuyaQrAuthService HTTP error', [
+            Log::error('TuyaQrAuthService signedRequest HTTP error', [
                 'method' => $method,
                 'path' => $urlPath,
                 'status' => $response->status(),
@@ -212,14 +213,13 @@ class TuyaQrAuthService
         $data = $response->json();
 
         if (! ($data['success'] ?? false)) {
-            Log::warning('TuyaQrAuthService API error', [
+            Log::warning('TuyaQrAuthService signedRequest API error', [
                 'method' => $method,
                 'path' => $urlPath,
                 'code' => $data['code'] ?? null,
                 'msg' => $data['msg'] ?? null,
             ]);
 
-            // Retorna para o caller inspecionar code/msg (ex.: 1004 = sign invalid)
             return $data;
         }
 
@@ -231,7 +231,6 @@ class TuyaQrAuthService
         $raw = $jsonBody ?? ($body !== null ? json_encode($body) : '');
         $hashedBody = hash('sha256', $raw);
 
-        // Tuya doc: "line-feed characters (\n)" entre as partes
         return $method."\n".$hashedBody."\n\n".$urlPath;
     }
 
@@ -243,7 +242,6 @@ class TuyaQrAuthService
         string $nonce,
         string $stringToSign,
     ): string {
-        // Token management API: str = client_id + t + nonce + stringToSign (sem access_token)
         $str = $accessToken !== ''
             ? $clientId.$accessToken.$timestamp.$nonce.$stringToSign
             : $clientId.$timestamp.$nonce.$stringToSign;

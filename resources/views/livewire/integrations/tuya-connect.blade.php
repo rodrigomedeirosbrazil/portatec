@@ -38,16 +38,6 @@
                     @enderror
                 </div>
 
-                <div>
-                    <label for="endpoint" class="text-sm font-medium">Região</label>
-                    <select id="endpoint" wire:model="endpoint"
-                            class="mt-1 w-full rounded-lg border border-neutral-300 p-2 text-sm">
-                        @foreach ($this->endpoints() as $label => $url)
-                            <option value="{{ $url }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
                 <button
                     type="submit"
                     wire:loading.attr="disabled"
