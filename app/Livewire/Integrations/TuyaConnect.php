@@ -184,7 +184,9 @@ class TuyaConnect extends Component
                     'brand' => DeviceBrandEnum::Tuya,
                     'external_device_id' => $d['id'],
                 ]
-            );
+            )->deviceUsers()->firstOrCreate([
+                'user_id' => Auth::id(),
+            ]);
         }
 
         $this->step = 'done';

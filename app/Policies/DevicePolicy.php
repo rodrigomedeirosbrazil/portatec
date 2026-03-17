@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\DeviceBrandEnum;
 use App\Models\Device;
+use App\Models\Integration;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -75,6 +77,13 @@ class DevicePolicy
 
         if ($device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id)) {
             return true;
+        }
+
+        if ($device->brand === DeviceBrandEnum::Tuya && $device->places()->count() === 0 && $device->place_id === null) {
+            return Integration::query()
+                ->where('user_id', $user->id)
+                ->whereHas('platform', fn ($query) => $query->where('slug', 'tuya'))
+                ->exists();
         }
 
         return $user->devices()->where('devices.id', $device->id)->exists();
