@@ -9,6 +9,7 @@ use App\Models\Place;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 
 class Index extends Component
@@ -57,6 +58,7 @@ class Index extends Component
     public function render(): View
     {
         $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
+        $hasDeviceUserTable = Schema::hasTable('device_user');
 
         $allowedPlaceIds = $this->allowedPlaceIds();
         $places = Place::query()
@@ -69,14 +71,16 @@ class Index extends Component
         $devices = Device::query()
             ->with(['places', 'place'])
             ->withCount('deviceFunctions')
-            ->where(function ($query) use ($userPlaceIds): void {
+            ->where(function ($query) use ($userPlaceIds, $hasDeviceUserTable): void {
                 if ($userPlaceIds->isNotEmpty()) {
                     $query->where(function ($query) use ($userPlaceIds): void {
                         $query->whereHas('places', fn ($q) => $q->whereIn('places.id', $userPlaceIds))
                             ->orWhereIn('place_id', $userPlaceIds);
                     });
                 }
-                $query->orWhereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()));
+                if ($hasDeviceUserTable) {
+                    $query->orWhereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()));
+                }
                 $query->orWhere(function ($query): void {
                     $query->whereNull('place_id')
                         ->whereDoesntHave('places');
@@ -117,21 +121,23 @@ class Index extends Component
     private function allowedPlaceIds(): Collection
     {
         $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
+        $sharedDevicePlaceIds = collect();
+        if (Schema::hasTable('device_user')) {
+            $sharedDevicePlaceIds = Device::query()
+                ->whereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()))
+                ->with('places:id')
+                ->get()
+                ->flatMap(function (Device $device) {
+                    $placeIds = $device->places->pluck('id');
+                    if ($device->place_id !== null) {
+                        $placeIds->push($device->place_id);
+                    }
 
-        $sharedDevicePlaceIds = Device::query()
-            ->whereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()))
-            ->with('places:id')
-            ->get()
-            ->flatMap(function (Device $device) {
-                $placeIds = $device->places->pluck('id');
-                if ($device->place_id !== null) {
-                    $placeIds->push($device->place_id);
-                }
-
-                return $placeIds;
-            })
-            ->unique()
-            ->values();
+                    return $placeIds;
+                })
+                ->unique()
+                ->values();
+        }
 
         return $userPlaceIds->merge($sharedDevicePlaceIds)->unique()->filter()->values();
     }
