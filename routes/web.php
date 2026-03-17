@@ -92,6 +92,9 @@ Route::middleware('auth')
         Route::get('/places/{place}/edit', EditPlace::class)->name('places.edit');
 
         Route::get('/bookings', IndexBookings::class)->name('bookings.index');
+        Route::get('/bookings/integrations', IndexIntegrations::class)->name('bookings.integrations.index');
+        Route::get('/bookings/integrations/create', CreateIntegration::class)->name('bookings.integrations.create');
+        Route::get('/bookings/integrations/{integration}/edit', EditIntegration::class)->name('bookings.integrations.edit');
         Route::get('/bookings/create', CreateBooking::class)->name('bookings.create');
         Route::get('/bookings/{booking}', ShowBooking::class)->name('bookings.show');
 
@@ -100,16 +103,12 @@ Route::middleware('auth')
         Route::get('/access-codes/{accessCode}/edit', EditAccessCode::class)->name('access-codes.edit');
 
         Route::get('/devices', IndexDevices::class)->name('devices.index');
+        Route::get('/devices/integrations', IndexDeviceIntegrations::class)->name('devices.integrations.index');
+        Route::get('/devices/integrations/tuya-connect', TuyaConnect::class)->name('devices.integrations.tuya-connect');
         Route::get('/devices/create', CreateDevice::class)->name('devices.create');
         Route::get('/devices/{device}/edit', EditDevice::class)->name('devices.edit');
         Route::get('/devices/{device}', ShowDevice::class)->name('devices.show');
         Route::get('/devices/{device}/control', ControlDevice::class)->name('devices.control');
-        Route::get('/devices/integrations', IndexDeviceIntegrations::class)->name('devices.integrations.index');
-        Route::get('/devices/integrations/tuya-connect', TuyaConnect::class)->name('devices.integrations.tuya-connect');
-
-        Route::get('/bookings/integrations', IndexIntegrations::class)->name('bookings.integrations.index');
-        Route::get('/bookings/integrations/create', CreateIntegration::class)->name('bookings.integrations.create');
-        Route::get('/bookings/integrations/{integration}/edit', EditIntegration::class)->name('bookings.integrations.edit');
 
         Route::redirect('/integrations', '/app/bookings/integrations');
         Route::redirect('/integrations/tuya-connect', '/app/devices/integrations/tuya-connect');
