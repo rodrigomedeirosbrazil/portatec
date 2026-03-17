@@ -9,6 +9,7 @@ use App\Services\Tuya\DTOs\TuyaQrCodeDTO;
 use App\Services\Tuya\DTOs\TuyaTokenDTO;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class TuyaQrAuthService
 {
@@ -18,8 +19,7 @@ class TuyaQrAuthService
 
     private const BASE_URL = 'https://apigw.iotbing.com';
 
-    /** Base URL para getDevices (API openapi com assinatura HMAC). */
-    private const OPENAPI_BASE_URL = 'https://openapi.tuyaus.com';
+    private const NONCE_ALPHABET = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
 
     /** Guardado após generateQrCode para uso no pollLogin. */
     private string $userCode = '';
@@ -127,26 +127,61 @@ class TuyaQrAuthService
 
     /**
      * Etapa 3 — Busca todos os dispositivos da conta autenticada.
-     * Usa openapi.tuyaus.com com assinatura HMAC (credenciais do projeto cloud).
+     * Usa CustomerApi em apigw.iotbing.com (homes + devices por home, AES-GCM + X-sign).
      *
      * @return TuyaDeviceDTO[]
      */
     public function getDevices(TuyaTokenDTO $token): array
     {
-        $response = $this->signedGet("/v1.0/users/{$token->uid}/devices", [], $token->accessToken);
+        $homesResponse = $this->customerRequest(
+            'GET',
+            '/v1.0/m/life/users/homes',
+            $token->accessToken,
+            $token->refreshToken
+        );
 
-        if (! $response) {
+        if ($homesResponse === null || ! is_array($homesResponse)) {
             return [];
         }
 
-        return collect(data_get($response, 'result', []))
+        $homes = isset($homesResponse['list']) ? $homesResponse['list'] : $homesResponse;
+        if (! is_array($homes)) {
+            return [];
+        }
+
+        $allDevices = [];
+        foreach ($homes as $home) {
+            $homeId = $home['homeId'] ?? $home['id'] ?? $home['ownerId'] ?? null;
+            if ($homeId === null || $homeId === '') {
+                continue;
+            }
+            $devicesResponse = $this->customerRequest(
+                'GET',
+                '/v1.0/m/life/ha/home/devices',
+                $token->accessToken,
+                $token->refreshToken,
+                ['homeId' => (string) $homeId]
+            );
+            if ($devicesResponse === null || ! is_array($devicesResponse)) {
+                continue;
+            }
+            $devices = isset($devicesResponse['list']) ? $devicesResponse['list'] : $devicesResponse;
+            if (! is_array($devices)) {
+                continue;
+            }
+            foreach ($devices as $d) {
+                $allDevices[] = $d;
+            }
+        }
+
+        return collect($allDevices)
             ->map(fn (array $d) => new TuyaDeviceDTO(
-                id: (string) ($d['id'] ?? ''),
+                id: (string) ($d['id'] ?? $d['deviceId'] ?? ''),
                 name: (string) ($d['name'] ?? 'Dispositivo sem nome'),
                 category: (string) ($d['category'] ?? ''),
                 online: (bool) ($d['online'] ?? false),
-                productId: $d['product_id'] ?? null,
-                productName: $d['product_name'] ?? null,
+                productId: $d['product_id'] ?? $d['productId'] ?? null,
+                productName: $d['product_name'] ?? $d['productName'] ?? null,
                 icon: $d['icon'] ?? null,
                 status: $d['status'] ?? [],
             ))
@@ -156,53 +191,139 @@ class TuyaQrAuthService
     }
 
     // -------------------------------------------------------------------------
-    // HTTP com assinatura HMAC-SHA256 (apenas para getDevices / openapi)
+    // CustomerApi: AES-GCM + X-sign (apigw.iotbing.com)
     // -------------------------------------------------------------------------
 
-    private function signedGet(string $path, array $query = [], ?string $accessToken = null): ?array
+    private function randomNonce(int $length = 12): string
     {
-        $urlPath = $path.($query ? ('?'.http_build_query($query)) : '');
-
-        return $this->signedRequest('GET', $urlPath, null, $accessToken);
-    }
-
-    private function signedRequest(string $method, string $urlPath, ?array $body, ?string $accessToken): ?array
-    {
-        $clientId = config('tuya.client_id');
-        $clientSecret = config('tuya.client_secret');
-        $timestamp = (string) (now()->timestamp * 1000);
-        $nonce = '';
-
-        $jsonBody = ($method === 'POST' && $body !== null) ? json_encode($body) : null;
-        $stringToSign = $this->buildStringToSign($method, $urlPath, $body, $jsonBody);
-        $sign = $this->sign($clientId, $clientSecret, $accessToken ?? '', $timestamp, $nonce, $stringToSign);
-
-        $headers = [
-            'client_id' => $clientId,
-            'sign' => $sign,
-            't' => $timestamp,
-            'sign_method' => 'HMAC-SHA256',
-            'Content-Type' => 'application/json',
-        ];
-
-        if ($accessToken) {
-            $headers['access_token'] = $accessToken;
+        $chars = self::NONCE_ALPHABET;
+        $result = '';
+        for ($i = 0; $i < $length; $i++) {
+            $result .= $chars[random_int(0, strlen($chars) - 1)];
         }
 
-        $http = Http::withHeaders($headers)->baseUrl(self::OPENAPI_BASE_URL);
+        return $result;
+    }
 
-        $response = match ($method) {
-            'GET' => $http->get($urlPath),
-            'POST' => $jsonBody !== null
-                ? $http->withBody($jsonBody, 'application/json')->post($urlPath)
-                : $http->post($urlPath, []),
-            default => $http->send($method, $urlPath),
-        };
+    private function aesGcmEncrypt(string $data, string $secret): string
+    {
+        $nonce = $this->randomNonce(12);
+        $tag = '';
+        $encrypted = openssl_encrypt(
+            $data,
+            'aes-128-gcm',
+            $secret,
+            OPENSSL_RAW_DATA,
+            $nonce,
+            $tag
+        );
+        if ($encrypted === false) {
+            throw new \RuntimeException('AES-GCM encrypt failed');
+        }
+
+        return base64_encode($nonce).base64_encode($encrypted.$tag);
+    }
+
+    private function aesGcmDecrypt(string $cipherData, string $secret): string
+    {
+        $raw = base64_decode($cipherData, true);
+        if ($raw === false || strlen($raw) < 12 + 16) {
+            throw new \RuntimeException('Invalid cipher data for AES-GCM decrypt');
+        }
+        $nonce = substr($raw, 0, 12);
+        $tag = substr($raw, -16);
+        $ciphertext = substr($raw, 12, -16);
+        $decrypted = openssl_decrypt(
+            $ciphertext,
+            'aes-128-gcm',
+            $secret,
+            OPENSSL_RAW_DATA,
+            $nonce,
+            $tag
+        );
+        if ($decrypted === false) {
+            throw new \RuntimeException('AES-GCM decrypt failed');
+        }
+
+        return $decrypted;
+    }
+
+    /**
+     * Requisição autenticada ao CustomerApi (apigw.iotbing.com).
+     * Criptografa params/body com AES-GCM e assina com X-sign.
+     *
+     * @return array<string, mixed>|null decoded result (array) or null on error
+     */
+    private function customerRequest(
+        string $method,
+        string $path,
+        string $accessToken,
+        string $refreshToken,
+        ?array $params = null,
+        ?array $body = null
+    ): ?array {
+        $rid = (string) Str::uuid();
+        $sid = '';
+        $hashKey = md5($rid.$refreshToken);
+        $secret = substr(hash_hmac('sha256', $hashKey, $rid), 0, 16);
+        $timestamp = (string) (int) (microtime(true) * 1000);
+
+        $queryEncdata = null;
+        $bodyEncdata = null;
+
+        if ($params !== null && $params !== []) {
+            $paramsJson = json_encode($params, JSON_THROW_ON_ERROR);
+            $queryEncdata = $this->aesGcmEncrypt($paramsJson, $secret);
+        }
+        if ($body !== null && $body !== []) {
+            $bodyJson = json_encode($body, JSON_THROW_ON_ERROR);
+            $bodyEncdata = $this->aesGcmEncrypt($bodyJson, $secret);
+        }
+
+        $headers = [
+            'Accept' => 'application/json',
+            'X-appKey' => self::CLIENT_ID,
+            'X-requestId' => $rid,
+            'X-sid' => $sid,
+            'X-time' => $timestamp,
+            'X-token' => $accessToken,
+        ];
+
+        // Match Python _restful_sign: only include header in sign_str when value != ""
+        $signParts = [];
+        foreach (['X-appKey' => self::CLIENT_ID, 'X-requestId' => $rid, 'X-sid' => $sid, 'X-time' => $timestamp, 'X-token' => $accessToken] as $key => $val) {
+            if ($val !== '') {
+                $signParts[] = $key.'='.$val;
+            }
+        }
+        $signStr = implode('||', $signParts);
+        if ($queryEncdata !== null) {
+            $signStr .= $queryEncdata;
+        }
+        if ($bodyEncdata !== null) {
+            $signStr .= $bodyEncdata;
+        }
+        $headers['X-sign'] = hash_hmac('sha256', $signStr, $hashKey);
+
+        $url = self::BASE_URL.$path;
+        if ($queryEncdata !== null) {
+            $url .= (str_contains($path, '?') ? '&' : '?').'encdata='.urlencode($queryEncdata);
+        }
+
+        $http = Http::withHeaders($headers)->timeout(15);
+        if ($bodyEncdata !== null) {
+            $response = $http->withBody(
+                json_encode(['encdata' => $bodyEncdata], JSON_THROW_ON_ERROR),
+                'application/json'
+            )->post($url);
+        } else {
+            $response = $http->get($url);
+        }
 
         if (! $response->successful()) {
-            Log::error('TuyaQrAuthService signedRequest HTTP error', [
+            Log::error('TuyaQrAuthService customerRequest HTTP error', [
                 'method' => $method,
-                'path' => $urlPath,
+                'path' => $path,
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
@@ -211,41 +332,37 @@ class TuyaQrAuthService
         }
 
         $data = $response->json();
-
         if (! ($data['success'] ?? false)) {
-            Log::warning('TuyaQrAuthService signedRequest API error', [
-                'method' => $method,
-                'path' => $urlPath,
+            Log::warning('TuyaQrAuthService customerRequest API error', [
+                'path' => $path,
                 'code' => $data['code'] ?? null,
                 'msg' => $data['msg'] ?? null,
             ]);
 
-            return $data;
+            return null;
         }
 
-        return $data;
-    }
+        $encryptedResult = $data['result'] ?? null;
+        if ($encryptedResult === null) {
+            return [];
+        }
+        if (is_array($encryptedResult)) {
+            return $encryptedResult;
+        }
 
-    private function buildStringToSign(string $method, string $urlPath, ?array $body, ?string $jsonBody = null): string
-    {
-        $raw = $jsonBody ?? ($body !== null ? json_encode($body) : '');
-        $hashedBody = hash('sha256', $raw);
+        try {
+            $decrypted = $this->aesGcmDecrypt((string) $encryptedResult, $secret);
+            $decoded = json_decode($decrypted, true, 512, JSON_THROW_ON_ERROR);
 
-        return $method."\n".$hashedBody."\n\n".$urlPath;
-    }
+            return is_array($decoded) ? $decoded : [];
+        } catch (\Throwable $e) {
+            Log::warning('TuyaQrAuthService customerRequest decrypt failed', [
+                'path' => $path,
+                'message' => $e->getMessage(),
+                'result_length' => is_string($encryptedResult) ? strlen($encryptedResult) : null,
+            ]);
 
-    private function sign(
-        string $clientId,
-        string $clientSecret,
-        string $accessToken,
-        string $timestamp,
-        string $nonce,
-        string $stringToSign,
-    ): string {
-        $str = $accessToken !== ''
-            ? $clientId.$accessToken.$timestamp.$nonce.$stringToSign
-            : $clientId.$timestamp.$nonce.$stringToSign;
-
-        return strtoupper(hash_hmac('sha256', $str, $clientSecret, false));
+            return null;
+        }
     }
 }
