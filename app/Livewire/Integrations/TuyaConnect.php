@@ -86,6 +86,7 @@ class TuyaConnect extends Component
                 'refresh_token' => $token->refreshToken,
                 'expire_time' => $token->expireTime,
                 'uid' => $token->uid,
+                'endpoint' => $token->endpoint,
             ], JSON_THROW_ON_ERROR);
 
             $deviceDtos = $service->getDevices($token);
@@ -148,6 +149,7 @@ class TuyaConnect extends Component
             refreshToken: $tokenData['refresh_token'],
             expireTime: $tokenData['expire_time'],
             uid: $tokenData['uid'],
+            endpoint: $tokenData['endpoint'] ?? null,
         );
 
         $platform = Platform::where('slug', 'tuya')->firstOrCreate(
@@ -166,7 +168,7 @@ class TuyaConnect extends Component
                 'tuya_refresh_token' => $token->refreshToken,
                 'tuya_token_expires_at' => now()->addSeconds($token->expireTime),
                 'tuya_uid' => $token->uid,
-                'tuya_endpoint' => config('tuya.base_url', 'https://openapi.tuyaus.com'),
+                'tuya_endpoint' => $token->endpoint,
             ],
         );
 

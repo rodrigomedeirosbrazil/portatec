@@ -11,5 +11,6 @@ class TuyaTokenDTO
         public readonly string $refreshToken,
         public readonly int $expireTime,
         public readonly string $uid,
+        public readonly ?string $endpoint = null,
     ) {}
 }

@@ -109,6 +109,11 @@ class TuyaQrAuthService
         $accessToken = data_get($data, 'result.access_token');
         $refreshToken = data_get($data, 'result.refresh_token');
         $uid = data_get($data, 'result.uid');
+        $endpoint = data_get($data, 'result.endpoint')
+            ?? data_get($data, 'result.end_point')
+            ?? data_get($data, 'result.endPoint')
+            ?? data_get($data, 'result.endpointUrl')
+            ?? data_get($data, 'result.endpoint_url');
         $expireTime = (int) data_get($data, 'result.expire_time', 7200);
 
         if (! $accessToken || ! $refreshToken || ! $uid) {
@@ -122,12 +127,14 @@ class TuyaQrAuthService
             refreshToken: $refreshToken,
             expireTime: $expireTime,
             uid: $uid,
+            endpoint: is_string($endpoint) ? $endpoint : null,
         );
     }
 
     /**
      * Etapa 3 — Busca todos os dispositivos da conta autenticada.
-     * Usa CustomerApi em apigw.iotbing.com (homes + devices por home, AES-GCM + X-sign).
+     * Usa CustomerApi no endpoint retornado pelo login QR (fallback apigw.iotbing.com),
+     * com homes + devices por home, AES-GCM + X-sign.
      *
      * @return TuyaDeviceDTO[]
      */
@@ -137,21 +144,28 @@ class TuyaQrAuthService
             'GET',
             '/v1.0/m/life/users/homes',
             $token->accessToken,
-            $token->refreshToken
+            $token->refreshToken,
+            endpoint: $token->endpoint
         );
 
         if ($homesResponse === null || ! is_array($homesResponse)) {
             return [];
         }
 
-        $homes = isset($homesResponse['list']) ? $homesResponse['list'] : $homesResponse;
+        $homes = $homesResponse['list']
+            ?? $homesResponse['homes']
+            ?? $homesResponse;
         if (! is_array($homes)) {
             return [];
         }
 
         $allDevices = [];
         foreach ($homes as $home) {
-            $homeId = $home['homeId'] ?? $home['id'] ?? $home['ownerId'] ?? null;
+            $homeId = $home['ownerId']
+                ?? $home['homeId']
+                ?? $home['home_id']
+                ?? $home['id']
+                ?? null;
             if ($homeId === null || $homeId === '') {
                 continue;
             }
@@ -160,12 +174,15 @@ class TuyaQrAuthService
                 '/v1.0/m/life/ha/home/devices',
                 $token->accessToken,
                 $token->refreshToken,
-                ['homeId' => (string) $homeId]
+                ['homeId' => (string) $homeId],
+                endpoint: $token->endpoint
             );
             if ($devicesResponse === null || ! is_array($devicesResponse)) {
                 continue;
             }
-            $devices = isset($devicesResponse['list']) ? $devicesResponse['list'] : $devicesResponse;
+            $devices = $devicesResponse['list']
+                ?? $devicesResponse['devices']
+                ?? $devicesResponse;
             if (! is_array($devices)) {
                 continue;
             }
@@ -260,7 +277,8 @@ class TuyaQrAuthService
         string $accessToken,
         string $refreshToken,
         ?array $params = null,
-        ?array $body = null
+        ?array $body = null,
+        ?string $endpoint = null,
     ): ?array {
         $rid = (string) Str::uuid();
         $sid = '';
@@ -305,7 +323,8 @@ class TuyaQrAuthService
         }
         $headers['X-sign'] = hash_hmac('sha256', $signStr, $hashKey);
 
-        $url = self::BASE_URL.$path;
+        $baseUrl = $this->normalizeEndpoint($endpoint);
+        $url = $baseUrl.$path;
         if ($queryEncdata !== null) {
             $url .= (str_contains($path, '?') ? '&' : '?').'encdata='.urlencode($queryEncdata);
         }
@@ -364,5 +383,18 @@ class TuyaQrAuthService
 
             return null;
         }
+    }
+
+    private function normalizeEndpoint(?string $endpoint): string
+    {
+        $endpoint = trim((string) $endpoint);
+        if ($endpoint === '') {
+            return self::BASE_URL;
+        }
+        if (! str_starts_with($endpoint, 'http://') && ! str_starts_with($endpoint, 'https://')) {
+            $endpoint = 'https://'.$endpoint;
+        }
+
+        return rtrim($endpoint, '/');
     }
 }
