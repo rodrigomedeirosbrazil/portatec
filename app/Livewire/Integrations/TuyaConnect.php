@@ -161,13 +161,13 @@ class TuyaConnect extends Component
             [
                 'platform_id' => $platform->id,
                 'user_id' => Auth::id(),
+                'tuya_uid' => $token->uid,
             ],
             [
                 'tuya_user_code' => $this->userCode,
                 'tuya_access_token' => $token->accessToken,
                 'tuya_refresh_token' => $token->refreshToken,
                 'tuya_token_expires_at' => now()->addSeconds($token->expireTime),
-                'tuya_uid' => $token->uid,
                 'tuya_endpoint' => $token->endpoint,
             ],
         );
