@@ -54,8 +54,14 @@ class TuyaConnect extends Component
             'userCode' => 'Código do Usuário',
         ]);
 
-        $service = new TuyaQrAuthService($this->endpoint);
-        $dto = $service->generateQrCode(trim($this->userCode));
+        try {
+            $service = new TuyaQrAuthService($this->endpoint);
+            $dto = $service->generateQrCode(trim($this->userCode));
+        } catch (\RuntimeException $e) {
+            $this->errorMessage = $e->getMessage();
+
+            return;
+        }
 
         if (! $dto) {
             $this->errorMessage = 'Não foi possível gerar o QR code. Verifique o código do usuário e a região.';

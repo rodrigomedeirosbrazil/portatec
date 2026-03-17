@@ -13,11 +13,10 @@ use Illuminate\Support\Facades\Log;
 class TuyaQrAuthService
 {
     /**
-     * Client ID do app Tuya Smart/SmartLife.
-     * Mesmo valor usado pela integração oficial do Home Assistant.
-     * NÃO ALTERAR.
+     * Client ID do app Tuya Smart/SmartLife (usado apenas se não houver client_id no config).
+     * A assinatura deve usar o mesmo client_id e client_secret do projeto no portal Tuya.
      */
-    private const CLIENT_ID = 'HA_3y9q4ak7g4ephrvke';
+    private const DEFAULT_CLIENT_ID = 'HA_3y9q4ak7g4ephrvke';
 
     private const SCHEMA = 'tuyaSmart';
 
@@ -51,6 +50,16 @@ class TuyaQrAuthService
 
         if (! $qrCode) {
             Log::error('TuyaQrAuthService: qrcode ausente na resposta', ['response' => $response]);
+            $code = data_get($response, 'code');
+            $msg = data_get($response, 'msg', '');
+            if ((int) $code === 1004) {
+                throw new \RuntimeException(
+                    'Assinatura rejeitada pela Tuya (sign invalid). Verifique se TUYA_CLIENT_ID e TUYA_CLIENT_SECRET no .env correspondem ao seu projeto no portal Tuya (iot.tuya.com).'
+                );
+            }
+            if ($msg !== '') {
+                throw new \RuntimeException('Tuya API: '.$msg);
+            }
 
             return null;
         }
@@ -157,7 +166,7 @@ class TuyaQrAuthService
 
     private function request(string $method, string $urlPath, ?array $body, ?string $accessToken): ?array
     {
-        $clientId = self::CLIENT_ID;
+        $clientId = config('tuya.client_id') ?: self::DEFAULT_CLIENT_ID;
         $clientSecret = config('tuya.client_secret');
         $timestamp = (string) (now()->timestamp * 1000);
         $nonce = '';
@@ -206,6 +215,7 @@ class TuyaQrAuthService
                 'msg' => $data['msg'] ?? null,
             ]);
 
+            // Retorna para o caller inspecionar code/msg (ex.: 1004 = sign invalid)
             return $data;
         }
 
