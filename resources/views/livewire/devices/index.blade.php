@@ -46,7 +46,7 @@
                     </a>
                 </h2>
                 <p class="m-0 text-neutral-500">
-                    Locais: {{ $device->places->pluck('name')->join(', ') ?: 'Sem local' }}
+                    Locais: {{ $device->places->pluck('name')->join(', ') ?: ($device->place?->name ?? 'Sem local') }}
                 </p>
                 <p class="mt-1 m-0 text-neutral-500">Marca: {{ $device->brand->value ?? $device->brand }}</p>
                 <p class="mt-1 m-0 text-neutral-500">Online: {{ $device->isAvailable() ? 'Sim' : 'Não' }}</p>

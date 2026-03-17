@@ -7,7 +7,7 @@
     </div>
 
     @php
-        $placeId = (int) ($device->places->first()?->id ?? $device->placeDeviceFunctions()->value('place_id') ?? 0);
+        $placeId = (int) ($device->places->first()?->id ?? $device->place_id ?? $device->placeDeviceFunctions()->value('place_id') ?? 0);
         $statusFunction = $device->getStatusFunction();
         $initialFunctionStatus = $statusFunction && $statusFunction->status !== null
             ? [$device->id . '-' . $statusFunction->pin => $statusFunction->status]

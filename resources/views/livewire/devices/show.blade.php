@@ -17,7 +17,7 @@
     <div class="mb-4 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
         <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
             <strong>Locais</strong>
-            <p class="mt-1.5 m-0">{{ $device->places->pluck('name')->join(', ') ?: 'Sem local' }}</p>
+            <p class="mt-1.5 m-0">{{ $device->places->pluck('name')->join(', ') ?: ($device->place?->name ?? 'Sem local') }}</p>
         </div>
         <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
             <strong>Marca</strong>

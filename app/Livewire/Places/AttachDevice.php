@@ -39,7 +39,7 @@ class AttachDevice extends Component
             ->with('deviceFunctions')
             ->findOrFail($validated['deviceId']);
 
-        if ($device->places()->where('places.id', $this->place->id)->exists()) {
+        if ($device->places()->where('places.id', $this->place->id)->exists() || $device->place_id === $this->place->id) {
             session()->flash('status', 'Este dispositivo já está associado a este local.');
 
             return $this->redirectRoute('app.places.show', ['place' => $this->place->id], navigate: true);
@@ -74,10 +74,20 @@ class AttachDevice extends Component
             ->withCount('deviceFunctions')
             ->with('places')
             ->where(function ($query) use ($userPlaceIds): void {
-                $query->whereDoesntHave('places')
-                    ->orWhereHas('places', fn ($q) => $q->whereIn('places.id', $userPlaceIds));
+                $query->where(function ($query) use ($userPlaceIds): void {
+                    $query->whereDoesntHave('places')
+                        ->whereNull('place_id');
+                })
+                ->orWhereHas('places', fn ($q) => $q->whereIn('places.id', $userPlaceIds))
+                ->orWhereIn('place_id', $userPlaceIds);
             })
-            ->whereDoesntHave('places', fn ($query) => $query->where('places.id', $this->place->id))
+            ->where(function ($query): void {
+                $query->whereDoesntHave('places', fn ($query) => $query->where('places.id', $this->place->id))
+                    ->where(function ($query): void {
+                        $query->whereNull('place_id')
+                            ->orWhere('place_id', '!=', $this->place->id);
+                    });
+            })
             ->orderBy('name')
             ->get();
 

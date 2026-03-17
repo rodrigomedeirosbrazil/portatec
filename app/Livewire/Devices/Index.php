@@ -67,17 +67,31 @@ class Index extends Component
         $placeFilter = $this->placeId === '' ? null : $this->placeId;
 
         $devices = Device::query()
-            ->with(['places'])
+            ->with(['places', 'place'])
             ->withCount('deviceFunctions')
             ->where(function ($query) use ($userPlaceIds): void {
                 if ($userPlaceIds->isNotEmpty()) {
-                    $query->whereHas('places', fn ($q) => $q->whereIn('places.id', $userPlaceIds));
+                    $query->where(function ($query) use ($userPlaceIds): void {
+                        $query->whereHas('places', fn ($q) => $q->whereIn('places.id', $userPlaceIds))
+                            ->orWhereIn('place_id', $userPlaceIds);
+                    });
                 }
                 $query->orWhereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()));
-                $query->orWhereDoesntHave('places');
+                $query->orWhere(function ($query): void {
+                    $query->whereNull('place_id')
+                        ->whereDoesntHave('places');
+                });
             })
-            ->when($placeFilter === 'unassigned', fn ($query) => $query->whereDoesntHave('places'))
-            ->when($placeFilter !== null && $placeFilter !== 'unassigned', fn ($query) => $query->whereHas('places', fn ($q) => $q->where('places.id', (int) $placeFilter)))
+            ->when($placeFilter === 'unassigned', fn ($query) => $query->whereNull('place_id')->whereDoesntHave('places'))
+            ->when(
+                $placeFilter !== null && $placeFilter !== 'unassigned',
+                function ($query) use ($placeFilter): void {
+                    $query->where(function ($query) use ($placeFilter): void {
+                        $query->whereHas('places', fn ($q) => $q->where('places.id', (int) $placeFilter))
+                            ->orWhere('place_id', (int) $placeFilter);
+                    });
+                }
+            )
             ->when($this->search !== '', function ($query): void {
                 $term = '%'.str_replace('%', '\\%', $this->search).'%';
                 $query->where(function ($query) use ($term): void {
@@ -108,7 +122,14 @@ class Index extends Component
             ->whereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()))
             ->with('places:id')
             ->get()
-            ->flatMap(fn (Device $device) => $device->places->pluck('id'))
+            ->flatMap(function (Device $device) {
+                $placeIds = $device->places->pluck('id');
+                if ($device->place_id !== null) {
+                    $placeIds->push($device->place_id);
+                }
+
+                return $placeIds;
+            })
             ->unique()
             ->values();
 

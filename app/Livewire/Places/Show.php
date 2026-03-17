@@ -36,7 +36,10 @@ class Show extends Component
 
         $device = Device::query()
             ->where('id', $deviceId)
-            ->whereHas('places', fn ($query) => $query->where('places.id', $this->place->id))
+            ->where(function ($query): void {
+                $query->whereHas('places', fn ($query) => $query->where('places.id', $this->place->id))
+                    ->orWhere('place_id', $this->place->id);
+            })
             ->firstOrFail();
 
         $deviceFunctionIds = $device->deviceFunctions()->pluck('id');

@@ -12,7 +12,7 @@
                     <option value="{{ $device->id }}">
                         {{ $device->name }}
                         ({{ $device->brand->value }})
-                        — {{ $device->places->pluck('name')->join(', ') ?: 'Sem local' }}
+                        — {{ $device->places->pluck('name')->join(', ') ?: ($device->place?->name ?? 'Sem local') }}
                     </option>
                 @endforeach
             </select>

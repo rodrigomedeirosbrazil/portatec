@@ -16,7 +16,7 @@ class Show extends Component
 
     public function mount(Device $device): void
     {
-        $this->device = $device->load(['places', 'deviceFunctions']);
+        $this->device = $device->load(['places', 'place', 'deviceFunctions']);
 
         abort_unless(Auth::user()->can('view', $this->device), 403);
     }
