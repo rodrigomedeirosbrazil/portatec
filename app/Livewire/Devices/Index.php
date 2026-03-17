@@ -13,16 +13,23 @@ use Livewire\Component;
 
 class Index extends Component
 {
-    public ?int $placeId = null;
+    public ?string $placeId = null;
+
+    public string $search = '';
 
     public function mount(): void
     {
         $allowedPlaceIds = $this->allowedPlaceIds();
 
         if (request()->has('place_id')) {
-            $requestedId = (int) request()->input('place_id');
-            if ($allowedPlaceIds->contains($requestedId)) {
-                $this->placeId = $requestedId;
+            $requested = (string) request()->input('place_id');
+            if ($requested === 'unassigned') {
+                $this->placeId = 'unassigned';
+            } else {
+                $requestedId = (int) $requested;
+                if ($allowedPlaceIds->contains($requestedId)) {
+                    $this->placeId = (string) $requestedId;
+                }
             }
         }
 
@@ -31,7 +38,18 @@ class Index extends Component
 
     public function updatedPlaceId()
     {
-        $params = $this->placeId !== null ? ['place_id' => $this->placeId] : [];
+        $placeId = $this->placeId;
+        if ($placeId === '') {
+            $placeId = null;
+        }
+
+        if ($placeId === 'unassigned') {
+            $params = ['place_id' => 'unassigned'];
+        } elseif ($placeId !== null) {
+            $params = ['place_id' => (int) $placeId];
+        } else {
+            $params = [];
+        }
 
         return redirect()->to(route('app.devices.index', $params));
     }
@@ -46,16 +64,28 @@ class Index extends Component
             ->orderBy('name')
             ->get();
 
+        $placeFilter = $this->placeId === '' ? null : $this->placeId;
+
         $devices = Device::query()
-            ->with(['place'])
+            ->with(['places'])
             ->withCount('deviceFunctions')
             ->where(function ($query) use ($userPlaceIds): void {
                 if ($userPlaceIds->isNotEmpty()) {
-                    $query->whereIn('place_id', $userPlaceIds);
+                    $query->whereHas('places', fn ($q) => $q->whereIn('places.id', $userPlaceIds));
                 }
                 $query->orWhereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()));
+                $query->orWhereDoesntHave('places');
             })
-            ->when($this->placeId, fn ($query) => $query->where('place_id', $this->placeId))
+            ->when($placeFilter === 'unassigned', fn ($query) => $query->whereDoesntHave('places'))
+            ->when($placeFilter !== null && $placeFilter !== 'unassigned', fn ($query) => $query->whereHas('places', fn ($q) => $q->where('places.id', (int) $placeFilter)))
+            ->when($this->search !== '', function ($query): void {
+                $term = '%'.str_replace('%', '\\%', $this->search).'%';
+                $query->where(function ($query) use ($term): void {
+                    $query->where('name', 'like', $term)
+                        ->orWhere('external_device_id', 'like', $term)
+                        ->orWhere('brand', 'like', $term);
+                });
+            })
             ->orderBy('name')
             ->get();
 
@@ -76,8 +106,9 @@ class Index extends Component
 
         $sharedDevicePlaceIds = Device::query()
             ->whereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()))
-            ->whereNotNull('place_id')
-            ->pluck('place_id')
+            ->with('places:id')
+            ->get()
+            ->flatMap(fn (Device $device) => $device->places->pluck('id'))
             ->unique()
             ->values();
 

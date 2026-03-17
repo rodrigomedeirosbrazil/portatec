@@ -45,7 +45,9 @@
                         {{ $device->name }}
                     </a>
                 </h2>
-                <p class="m-0 text-neutral-500">Local: {{ $device->place?->name ?? 'Sem local' }}</p>
+                <p class="m-0 text-neutral-500">
+                    Locais: {{ $device->places->pluck('name')->join(', ') ?: 'Sem local' }}
+                </p>
                 <p class="mt-1 m-0 text-neutral-500">Marca: {{ $device->brand->value ?? $device->brand }}</p>
                 <p class="mt-1 m-0 text-neutral-500">Online: {{ $device->isAvailable() ? 'Sim' : 'Não' }}</p>
                 <p class="mt-1 m-0 text-neutral-500">Funções: {{ $device->device_functions_count }}</p>

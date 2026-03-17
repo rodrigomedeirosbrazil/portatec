@@ -23,12 +23,20 @@ class AccessCodeSyncService
      */
     public function syncAccessCodesToDevice(Device $device): void
     {
-        if (! $device->place_id) {
+        $places = $device->places()->get();
+
+        if ($places->isEmpty() && $device->place_id !== null) {
+            $places = Place::query()->whereKey($device->place_id)->get();
+        }
+
+        if ($places->isEmpty()) {
             return;
         }
 
-        $place = $device->place;
-        $validAccessCodes = $this->getValidAccessCodesForPlace($place);
+        $validAccessCodes = $places
+            ->flatMap(fn (Place $place) => $this->getValidAccessCodesForPlace($place))
+            ->unique('id')
+            ->values();
 
         try {
             $this->deviceCommandService->syncAccessCodes($device, $validAccessCodes);
@@ -48,7 +56,10 @@ class AccessCodeSyncService
      */
     public function syncNewAccessCode(AccessCode $accessCode): void
     {
-        $devices = Device::where('place_id', $accessCode->place_id)->get();
+        $devices = Device::query()
+            ->where('place_id', $accessCode->place_id)
+            ->orWhereHas('places', fn ($query) => $query->where('places.id', $accessCode->place_id))
+            ->get();
 
         foreach ($devices as $device) {
             $this->syncAccessCodesToDevice($device);
@@ -60,7 +71,10 @@ class AccessCodeSyncService
      */
     public function syncUpdatedAccessCode(AccessCode $accessCode): void
     {
-        $devices = Device::where('place_id', $accessCode->place_id)->get();
+        $devices = Device::query()
+            ->where('place_id', $accessCode->place_id)
+            ->orWhereHas('places', fn ($query) => $query->where('places.id', $accessCode->place_id))
+            ->get();
 
         foreach ($devices as $device) {
             $this->syncAccessCodesToDevice($device);
@@ -72,7 +86,10 @@ class AccessCodeSyncService
      */
     public function syncDeletedAccessCode(AccessCode $accessCode): void
     {
-        $devices = Device::where('place_id', $accessCode->place_id)->get();
+        $devices = Device::query()
+            ->where('place_id', $accessCode->place_id)
+            ->orWhereHas('places', fn ($query) => $query->where('places.id', $accessCode->place_id))
+            ->get();
 
         foreach ($devices as $device) {
             $this->syncAccessCodesToDevice($device);

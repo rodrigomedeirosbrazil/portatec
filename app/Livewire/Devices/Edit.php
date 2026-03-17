@@ -18,7 +18,8 @@ class Edit extends Component
 {
     public Device $device;
 
-    public ?int $placeId = null;
+    /** @var array<int, int> */
+    public array $placeIds = [];
 
     public string $name = '';
 
@@ -33,15 +34,19 @@ class Edit extends Component
 
     public function mount(Device $device): void
     {
-        $this->device = $device->load('deviceFunctions');
+        $this->device = $device->load(['deviceFunctions', 'places']);
 
-        abort_unless(
-            $this->device->place_id !== null
-            && Auth::user()->placeUsers()->where('place_id', $this->device->place_id)->exists(),
-            403
-        );
+        $devicePlaceIds = $this->device->places->pluck('id')->all();
+        $hasAccess = $devicePlaceIds !== []
+            ? Auth::user()->placeUsers()->whereIn('place_id', $devicePlaceIds)->exists()
+            : Auth::user()->devices()->where('devices.id', $this->device->id)->exists();
 
-        $this->placeId = $this->device->place_id;
+        abort_unless($hasAccess, 403);
+
+        $this->placeIds = $devicePlaceIds;
+        if ($this->placeIds === [] && $this->device->place_id !== null) {
+            $this->placeIds = [$this->device->place_id];
+        }
         $this->name = $this->device->name;
         $this->brand = $this->device->brand->value;
         $this->external_device_id = $this->device->external_device_id;
@@ -75,7 +80,10 @@ class Edit extends Component
         $this->deviceFunctions = array_values($this->deviceFunctions);
     }
 
-    private function syncPlaceDeviceFunctions(int $placeId): void
+    /**
+     * @param array<int, int> $placeIds
+     */
+    private function syncPlaceDeviceFunctions(array $placeIds): void
     {
         $this->device->load('deviceFunctions');
 
@@ -83,23 +91,26 @@ class Edit extends Component
 
         PlaceDeviceFunction::query()
             ->whereIn('device_function_id', $functionIds)
-            ->where('place_id', '!=', $placeId)
+            ->whereNotIn('place_id', $placeIds)
             ->delete();
 
-        foreach ($functionIds as $deviceFunctionId) {
-            PlaceDeviceFunction::firstOrCreate(
-                [
-                    'place_id' => $placeId,
-                    'device_function_id' => $deviceFunctionId,
-                ]
-            );
+        foreach ($placeIds as $placeId) {
+            foreach ($functionIds as $deviceFunctionId) {
+                PlaceDeviceFunction::firstOrCreate(
+                    [
+                        'place_id' => $placeId,
+                        'device_function_id' => $deviceFunctionId,
+                    ]
+                );
+            }
         }
     }
 
     protected function rules(): array
     {
         return [
-            'placeId' => ['required', 'integer', 'exists:places,id'],
+            'placeIds' => ['required', 'array', 'min:1'],
+            'placeIds.*' => ['required', 'integer', 'exists:places,id'],
             'name' => ['required', 'string', 'max:255'],
             'brand' => ['required', 'string', 'in:portatec,tuya'],
             'external_device_id' => ['nullable', 'string', 'max:255'],
@@ -115,15 +126,24 @@ class Edit extends Component
     {
         $validated = $this->validate();
 
-        $hasAccess = Auth::user()
-            ->placeUsers()
-            ->where('place_id', $validated['placeId'])
-            ->exists();
+        $placeIds = collect($validated['placeIds'])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
 
-        abort_unless($hasAccess, 403);
+        $allowedPlaceIds = Auth::user()
+            ->placeUsers()
+            ->whereIn('place_id', $placeIds)
+            ->pluck('place_id')
+            ->all();
+
+        abort_unless(count($allowedPlaceIds) === count($placeIds), 403);
+
+        $primaryPlaceId = $placeIds[0] ?? null;
 
         $this->device->update([
-            'place_id' => $validated['placeId'],
+            'place_id' => $primaryPlaceId,
             'name' => $validated['name'],
             'brand' => DeviceBrandEnum::from($validated['brand']),
             'external_device_id' => $validated['external_device_id'] ?: null,
@@ -158,7 +178,8 @@ class Edit extends Component
             }
         }
 
-        $this->syncPlaceDeviceFunctions((int) $validated['placeId']);
+        $this->device->places()->sync($placeIds);
+        $this->syncPlaceDeviceFunctions($placeIds);
 
         session()->flash('status', 'Dispositivo atualizado com sucesso.');
 

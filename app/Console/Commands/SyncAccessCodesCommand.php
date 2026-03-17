@@ -55,7 +55,10 @@ class SyncAccessCodesCommand extends Command
                 return Command::FAILURE;
             }
 
-            $devices = Device::where('place_id', $placeId)->get();
+            $devices = Device::query()
+                ->where('place_id', $placeId)
+                ->orWhereHas('places', fn ($query) => $query->where('places.id', $placeId))
+                ->get();
 
             if ($devices->isEmpty()) {
                 $this->warn("No devices found for place: {$place->name}");
@@ -88,7 +91,7 @@ class SyncAccessCodesCommand extends Command
         $this->info("Syncing access codes for {$places->count()} place(s)");
 
         foreach ($places as $place) {
-            $devices = Device::where('place_id', $place->id)->get();
+            $devices = $place->devices;
 
             foreach ($devices as $device) {
                 $syncService->syncAccessCodesToDevice($device);

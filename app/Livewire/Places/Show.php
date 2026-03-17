@@ -36,7 +36,7 @@ class Show extends Component
 
         $device = Device::query()
             ->where('id', $deviceId)
-            ->where('place_id', $this->place->id)
+            ->whereHas('places', fn ($query) => $query->where('places.id', $this->place->id))
             ->firstOrFail();
 
         $deviceFunctionIds = $device->deviceFunctions()->pluck('id');
@@ -46,7 +46,10 @@ class Show extends Component
             ->whereIn('device_function_id', $deviceFunctionIds)
             ->delete();
 
-        $device->update(['place_id' => null]);
+        $this->place->devices()->detach($device->id);
+
+        $device->load('places');
+        $device->update(['place_id' => $device->places->first()?->id]);
 
         $this->place->load('devices');
         $this->dispatch('device-removed');

@@ -3,13 +3,23 @@
     <h1 class="my-2 mb-4">Editar Dispositivo</h1>
 
     <form wire:submit="save" class="grid gap-2.5 rounded-[10px] border border-neutral-300 bg-white p-3.5">
-        <x-place-select
-            :places="$places"
-            wire:model="placeId"
-            label="Local"
-            :required="true"
-            error-name="placeId"
-        />
+        <div>
+            <label for="placeIds" class="mb-2 block font-semibold">Locais</label>
+            <select
+                id="placeIds"
+                wire:model="placeIds"
+                multiple
+                class="w-full rounded-lg border border-neutral-300 p-2"
+                required
+            >
+                @foreach ($places as $place)
+                    <option value="{{ $place->id }}">{{ $place->name }}</option>
+                @endforeach
+            </select>
+            <p class="mt-1 text-sm text-neutral-500">Selecione um ou mais locais para este dispositivo.</p>
+            @error('placeIds') <p class="mt-1 text-error-500">{{ $message }}</p> @enderror
+            @error('placeIds.*') <p class="mt-1 text-error-500">{{ $message }}</p> @enderror
+        </div>
 
         <div>
             <label for="name">Nome</label><br>

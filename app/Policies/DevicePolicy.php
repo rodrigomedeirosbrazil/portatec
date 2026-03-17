@@ -69,6 +69,10 @@ class DevicePolicy
 
     private function hasAccess(User $user, Device $device): bool
     {
+        if ($device->places()->whereHas('placeUsers', fn ($query) => $query->where('user_id', $user->id))->exists()) {
+            return true;
+        }
+
         if ($device->place_id !== null && $this->hasPlaceAccess($user, $device->place_id)) {
             return true;
         }
