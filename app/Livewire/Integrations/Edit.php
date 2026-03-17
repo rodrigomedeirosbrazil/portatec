@@ -21,6 +21,7 @@ class Edit extends Component
         abort_unless((int) $integration->user_id === (int) Auth::id(), 403);
 
         $this->integration = $integration->load(['platform', 'places']);
+        abort_if($this->integration->platform?->slug === 'tuya', 404);
         $this->externalIds = $this->integration->places
             ->mapWithKeys(fn (Place $place) => [$place->id => $place->pivot->external_id])
             ->toArray();
@@ -70,7 +71,7 @@ class Edit extends Component
 
         if ($this->integration->places->isEmpty()) {
             $this->integration->delete();
-            $this->redirectRoute('app.integrations.index', navigate: true);
+            $this->redirectRoute('app.bookings.integrations.index', navigate: true);
 
             return;
         }
@@ -84,7 +85,7 @@ class Edit extends Component
         $this->integration->delete();
 
         session()->flash('status', 'Integração removida com sucesso.');
-        $this->redirectRoute('app.integrations.index', navigate: true);
+        $this->redirectRoute('app.bookings.integrations.index', navigate: true);
     }
 
     public function render(): View

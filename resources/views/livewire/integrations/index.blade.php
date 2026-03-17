@@ -1,17 +1,14 @@
 <section>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 class="m-0">Integrações</h1>
+        <div>
+            <a href="{{ route('app.bookings.index') }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar para reservas</a>
+            <h1 class="m-0 mt-2">Integrações de reservas (iCal)</h1>
+        </div>
         <div class="flex gap-2">
-            <a href="{{ route('app.integrations.tuya-connect') }}"
-               wire:navigate
-               class="rounded-lg border border-primary-500 bg-white px-3 py-2
-                      text-primary-600 no-underline hover:bg-primary-50">
-                Conectar via Tuya
-            </a>
-            <a href="{{ route('app.integrations.create') }}"
+            <a href="{{ route('app.bookings.integrations.create') }}"
                class="rounded-lg bg-primary-500 px-3 py-2
                       text-white no-underline hover:bg-primary-700">
-                Nova Integração
+                Nova Integração iCal
             </a>
         </div>
     </div>
@@ -24,7 +21,7 @@
                         {{ $integration->platform?->name ?? 'Plataforma' }}
                     </h2>
                     <div class="flex gap-2">
-                        <a href="{{ route('app.integrations.edit', $integration->id) }}" class="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 no-underline hover:bg-neutral-50">
+                        <a href="{{ route('app.bookings.integrations.edit', $integration->id) }}" class="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 no-underline hover:bg-neutral-50">
                             Editar
                         </a>
                         <button

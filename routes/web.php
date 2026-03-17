@@ -16,6 +16,7 @@ use App\Livewire\Dashboard;
 use App\Livewire\Devices\Control as ControlDevice;
 use App\Livewire\Devices\Create as CreateDevice;
 use App\Livewire\Devices\Edit as EditDevice;
+use App\Livewire\Devices\Integrations\Index as IndexDeviceIntegrations;
 use App\Livewire\Devices\Index as IndexDevices;
 use App\Livewire\Devices\Show as ShowDevice;
 use App\Livewire\Integrations\Create as CreateIntegration;
@@ -103,11 +104,17 @@ Route::middleware('auth')
         Route::get('/devices/{device}/edit', EditDevice::class)->name('devices.edit');
         Route::get('/devices/{device}', ShowDevice::class)->name('devices.show');
         Route::get('/devices/{device}/control', ControlDevice::class)->name('devices.control');
+        Route::get('/devices/integrations', IndexDeviceIntegrations::class)->name('devices.integrations.index');
+        Route::get('/devices/integrations/tuya-connect', TuyaConnect::class)->name('devices.integrations.tuya-connect');
 
-        Route::get('/integrations', IndexIntegrations::class)->name('integrations.index');
-        Route::get('/integrations/tuya-connect', TuyaConnect::class)->name('integrations.tuya-connect');
-        Route::get('/integrations/create', CreateIntegration::class)->name('integrations.create');
-        Route::get('/integrations/{integration}/edit', EditIntegration::class)->name('integrations.edit');
+        Route::get('/bookings/integrations', IndexIntegrations::class)->name('bookings.integrations.index');
+        Route::get('/bookings/integrations/create', CreateIntegration::class)->name('bookings.integrations.create');
+        Route::get('/bookings/integrations/{integration}/edit', EditIntegration::class)->name('bookings.integrations.edit');
+
+        Route::redirect('/integrations', '/app/bookings/integrations');
+        Route::redirect('/integrations/tuya-connect', '/app/devices/integrations/tuya-connect');
+        Route::redirect('/integrations/create', '/app/bookings/integrations/create');
+        Route::redirect('/integrations/{integration}/edit', '/app/bookings/integrations/{integration}/edit');
 
         Route::post('/impersonations/stop', StopImpersonationController::class)->name('impersonations.stop');
     });

@@ -1,5 +1,5 @@
 <section>
-    <a href="{{ route('app.integrations.index') }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar</a>
+    <a href="{{ route('app.bookings.integrations.index') }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar</a>
     <h1 class="my-2 mb-4">Editar Integração iCal</h1>
 
     <div class="mb-4 rounded-[10px] border border-neutral-300 bg-white p-3.5">
