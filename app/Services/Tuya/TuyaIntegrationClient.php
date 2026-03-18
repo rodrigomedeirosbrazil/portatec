@@ -116,7 +116,7 @@ class TuyaIntegrationClient
         $jsonBody = $body === null ? '' : json_encode($body);
         $hashedBody = hash('sha256', $jsonBody);
         $headersString = $headers === null ? '' : collect($headers)
-            ->ksort()
+            ->sortKeys()
             ->map(fn ($value, $key) => "$key:$value")
             ->implode(PHP_EOL);
 
