@@ -284,6 +284,7 @@ class TuyaIntegrationService
             (string) $integration->tuya_refresh_token,
             $params,
             $body,
+            $integration->tuya_endpoint,
         );
 
         return is_array($result) ? $result : [];

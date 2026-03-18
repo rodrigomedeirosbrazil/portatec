@@ -405,6 +405,14 @@ class TuyaQrAuthService
 
     private function normalizeEndpoint(?string $endpoint): string
     {
-        return self::BASE_URL;
+        $endpoint = trim((string) $endpoint);
+        if ($endpoint === '') {
+            return self::BASE_URL;
+        }
+        if (! str_starts_with($endpoint, 'http://') && ! str_starts_with($endpoint, 'https://')) {
+            $endpoint = 'https://'.$endpoint;
+        }
+
+        return rtrim($endpoint, '/');
     }
 }
