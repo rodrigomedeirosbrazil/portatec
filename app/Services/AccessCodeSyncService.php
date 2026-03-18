@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\AccessCodeDeviceSync;
+use App\Enums\DeviceBrandEnum;
 use App\Models\AccessCode;
+use App\Models\AccessCodeDeviceSync;
 use App\Models\Device;
 use App\Models\Place;
+use App\Services\Device\DeviceCommandService;
 use App\Services\Tuya\TuyaIntegrationService;
 use Carbon\CarbonInterface;
-use App\Services\Device\DeviceCommandService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -47,7 +48,12 @@ class AccessCodeSyncService
             ->values();
 
         try {
-            if ($device->brand->value === 'portatec') {
+            if ($device->brand === DeviceBrandEnum::Portatec) {
+                Log::info('[Tuya sync] Enviando access codes via MQTT (dispositivo Portatec)', [
+                    'device_id' => $device->id,
+                    'place_id' => $device->place_id,
+                    'access_codes_count' => $validAccessCodes->count(),
+                ]);
                 $this->deviceCommandService->syncAccessCodes($device, $validAccessCodes);
 
                 return;
@@ -90,7 +96,26 @@ class AccessCodeSyncService
     {
         $devices = $this->devicesForPlaceAccessCode($accessCode);
 
+        Log::info('[Tuya sync] syncNewAccessCode chamado', [
+            'access_code_id' => $accessCode->id,
+            'place_id' => $accessCode->place_id,
+            'pin_length' => strlen($accessCode->pin),
+            'start' => $accessCode->start?->toIso8601String(),
+            'end' => $accessCode->end?->toIso8601String(),
+            'devices_count' => $devices->count(),
+            'device_ids' => $devices->pluck('id')->all(),
+        ]);
+
         foreach ($devices as $device) {
+            Log::debug('[Tuya sync] Dispositivo candidato', [
+                'device_id' => $device->id,
+                'name' => $device->name,
+                'brand' => $device->brand?->value,
+                'place_id' => $device->place_id,
+                'supportsPlaceAccessCodes' => $device->supportsPlaceAccessCodes(),
+                'isTuyaLock' => $device->isTuyaLock(),
+                'tuya_category' => $device->tuya_category ?? null,
+            ]);
             $this->syncSingleAccessCode($accessCode, $device);
         }
     }
@@ -143,32 +168,64 @@ class AccessCodeSyncService
 
     private function devicesForPlaceAccessCode(AccessCode $accessCode): Collection
     {
-        return Device::query()
+        $raw = Device::query()
             ->where('place_id', $accessCode->place_id)
             ->orWhereHas('places', fn ($query) => $query->where('places.id', $accessCode->place_id))
-            ->get()
+            ->get();
+
+        Log::info('[Tuya sync] Dispositivos do place (antes do filtro supportsPlaceAccessCodes)', [
+            'place_id' => $accessCode->place_id,
+            'raw_count' => $raw->count(),
+            'devices' => $raw->map(fn (Device $d): array => [
+                'id' => $d->id,
+                'name' => $d->name,
+                'brand' => $d->brand?->value,
+                'place_id' => $d->place_id,
+                'tuya_category' => $d->tuya_category,
+                'supportsPlaceAccessCodes' => $d->supportsPlaceAccessCodes(),
+                'isTuyaLock' => $d->isTuyaLock(),
+            ])->values()->all(),
+        ]);
+
+        return $raw
             ->filter(fn (Device $device): bool => $device->supportsPlaceAccessCodes())
             ->values();
     }
 
     private function syncSingleAccessCode(AccessCode $accessCode, Device $device): void
     {
-        if ($device->brand->value === 'portatec') {
+        if ($device->brand === DeviceBrandEnum::Portatec) {
+            Log::info('[Tuya sync] Dispositivo Portatec: sincronizando access codes via MQTT', ['device_id' => $device->id]);
             $this->syncAccessCodesToDevice($device);
 
             return;
         }
 
         if (! $device->isTuyaLock()) {
+            Log::debug('[Tuya sync] Dispositivo ignorado (não é fechadura Tuya)', [
+                'device_id' => $device->id,
+                'brand' => $device->brand?->value,
+                'tuya_category' => $device->tuya_category ?? null,
+            ]);
+
             return;
         }
 
-        if (! $accessCode->isValid()) {
+        if ($accessCode->isExpired()) {
+            Log::info('[Tuya sync] Access code expirado, removendo do dispositivo', [
+                'access_code_id' => $accessCode->id,
+                'device_id' => $device->id,
+            ]);
             $this->deleteTuyaAccessCodeFromDevice($accessCode, $device);
 
             return;
         }
 
+        Log::info('[Tuya sync] Enviando PIN para fechadura Tuya', [
+            'access_code_id' => $accessCode->id,
+            'device_id' => $device->id,
+            'external_device_id' => $device->external_device_id,
+        ]);
         $this->syncTuyaAccessCodeToDevice($accessCode, $device);
     }
 
@@ -199,13 +256,21 @@ class AccessCodeSyncService
         }
 
         try {
-            $externalReference = $this->tuyaIntegrationService->createTemporaryPassword(
+            $invalidTime = $accessCode->end !== null
+                ? $accessCode->end->timestamp
+                : now()->addDay()->timestamp;
+            $externalReference = $this->tuyaIntegrationService->createTemporaryPasswordViaDP(
                 device: $device,
-                name: $this->buildRemoteAccessCodeName($accessCode),
                 pin: $accessCode->pin,
                 effectiveTime: $accessCode->start->timestamp,
-                invalidTime: $accessCode->end?->timestamp,
+                invalidTime: $invalidTime,
             );
+
+            Log::info('[Tuya sync] PIN adicionado na fechadura com sucesso', [
+                'access_code_id' => $accessCode->id,
+                'device_id' => $device->id,
+                'external_reference' => $externalReference,
+            ]);
 
             $sync->fill([
                 'provider' => 'tuya',
@@ -228,10 +293,12 @@ class AccessCodeSyncService
                 'error_message' => $exception->getMessage(),
             ])->save();
 
-            Log::error('Falha ao sincronizar access code com fechadura Tuya.', [
+            Log::error('[Tuya sync] Falha ao sincronizar access code com fechadura Tuya', [
                 'access_code_id' => $accessCode->id,
                 'device_id' => $device->id,
+                'external_device_id' => $device->external_device_id,
                 'error' => $exception->getMessage(),
+                'exception' => get_class($exception),
             ]);
         }
     }

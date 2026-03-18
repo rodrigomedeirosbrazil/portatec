@@ -120,9 +120,24 @@ class Device extends Model
         return $this->deviceFunctions()->where('type', DeviceTypeEnum::Sensor)->first();
     }
 
+    /**
+     * Categorias Tuya que representam fechadura (smart lock).
+     * @see https://developer.tuya.com/en/docs/iot/lock
+     */
+    private const TUYA_LOCK_CATEGORIES = ['ms', 'jtmspro'];
+
+    /**
+     * Fechadura Tuya: categoria de smart lock na API Tuya (ex: ms, jtmspro).
+     * Aceita tuya_category null quando o snapshot ainda não rodou.
+     */
     public function isTuyaLock(): bool
     {
-        return $this->brand === DeviceBrandEnum::Tuya && $this->tuya_category === 'ms';
+        if ($this->brand !== DeviceBrandEnum::Tuya) {
+            return false;
+        }
+
+        return $this->tuya_category === null
+            || in_array($this->tuya_category, self::TUYA_LOCK_CATEGORIES, true);
     }
 
     public function supportsPlaceAccessCodes(): bool

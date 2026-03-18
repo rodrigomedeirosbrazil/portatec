@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Models\AccessCodeDeviceSync;
 use App\Models\AccessCode;
+use App\Models\AccessCodeDeviceSync;
 use App\Models\Device;
 use App\Services\AccessCodeSyncService;
 use App\Services\Device\DeviceCommandService;
@@ -133,16 +133,15 @@ class AccessCodeSyncServiceTest extends TestCase
 
         $deviceCommandMock = Mockery::mock(DeviceCommandService::class);
         $tuyaMock = Mockery::mock(TuyaIntegrationService::class);
-        $tuyaMock->shouldReceive('createTemporaryPassword')
+        $tuyaMock->shouldReceive('createTemporaryPasswordViaDP')
             ->once()
             ->with(
                 Mockery::on(fn ($value): bool => $value instanceof Device && $value->id === $device->id),
-                Mockery::type('string'),
                 '333333',
                 $accessCode->start->timestamp,
-                $accessCode->end?->timestamp,
+                $accessCode->end->timestamp,
             )
-            ->andReturn('remote-password-1');
+            ->andReturn('12345:67890');
 
         $this->app->instance(DeviceCommandService::class, $deviceCommandMock);
         $this->app->instance(TuyaIntegrationService::class, $tuyaMock);
@@ -153,7 +152,7 @@ class AccessCodeSyncServiceTest extends TestCase
             'access_code_id' => $accessCode->id,
             'device_id' => $device->id,
             'provider' => 'tuya',
-            'external_reference' => 'remote-password-1',
+            'external_reference' => '12345:67890',
             'synced_pin' => '333333',
             'status' => 'synced',
         ]);
@@ -234,9 +233,9 @@ class AccessCodeSyncServiceTest extends TestCase
                 'remote-password-old',
             )
             ->andReturn(true);
-        $tuyaMock->shouldReceive('createTemporaryPassword')
+        $tuyaMock->shouldReceive('createTemporaryPasswordViaDP')
             ->once()
-            ->andReturn('remote-password-new');
+            ->andReturn('12345:67890');
 
         $this->app->instance(DeviceCommandService::class, $deviceCommandMock);
         $this->app->instance(TuyaIntegrationService::class, $tuyaMock);
@@ -246,7 +245,7 @@ class AccessCodeSyncServiceTest extends TestCase
         $this->assertDatabaseHas('access_code_device_syncs', [
             'access_code_id' => $accessCode->id,
             'device_id' => $device->id,
-            'external_reference' => 'remote-password-new',
+            'external_reference' => '12345:67890',
             'synced_pin' => '555555',
             'status' => 'synced',
         ]);

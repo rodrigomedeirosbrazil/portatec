@@ -71,4 +71,17 @@ class AccessCode extends Model
 
         return $now->gte($this->start) && $now->lte($this->end);
     }
+
+    /**
+     * Verifica se o AccessCode já expirou (end no passado).
+     * Usado para decidir se sincroniza com dispositivos: só não sincroniza quando expirado.
+     */
+    public function isExpired(): bool
+    {
+        if ($this->end === null) {
+            return false;
+        }
+
+        return $this->end->lt(now());
+    }
 }
