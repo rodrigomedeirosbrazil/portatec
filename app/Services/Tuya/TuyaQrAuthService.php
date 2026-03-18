@@ -288,6 +288,7 @@ class TuyaQrAuthService
 
         $queryEncdata = null;
         $bodyEncdata = null;
+        $bodyJson = null;
 
         if ($params !== null && $params !== []) {
             $paramsJson = json_encode($params, JSON_THROW_ON_ERROR);
@@ -329,6 +330,17 @@ class TuyaQrAuthService
             $url .= (str_contains($path, '?') ? '&' : '?').'encdata='.urlencode($queryEncdata);
         }
 
+        // Diagnóstico sign invalid — remover antes de produção
+        Log::debug('[Tuya] customerRequest debug', [
+            'method' => $method,
+            'path' => $path,
+            'body_json' => $bodyJson,
+            'body_encdata_len' => $bodyEncdata !== null ? strlen($bodyEncdata) : null,
+            'body_encdata_prefix' => $bodyEncdata !== null ? substr($bodyEncdata, 0, 40) : null,
+            'sign_str_prefix' => substr($signStr, 0, 100),
+            'url' => $url,
+        ]);
+
         $http = Http::withHeaders($headers)->timeout(15);
         if ($bodyEncdata !== null) {
             $response = $http->withBody(
@@ -338,6 +350,12 @@ class TuyaQrAuthService
         } else {
             $response = $http->get($url);
         }
+
+        // Diagnóstico sign invalid — remover antes de produção
+        Log::debug('[Tuya] customerRequest response raw', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
 
         if (! $response->successful()) {
             Log::error('TuyaQrAuthService customerRequest HTTP error', [
@@ -387,14 +405,6 @@ class TuyaQrAuthService
 
     private function normalizeEndpoint(?string $endpoint): string
     {
-        $endpoint = trim((string) $endpoint);
-        if ($endpoint === '') {
-            return self::BASE_URL;
-        }
-        if (! str_starts_with($endpoint, 'http://') && ! str_starts_with($endpoint, 'https://')) {
-            $endpoint = 'https://'.$endpoint;
-        }
-
-        return rtrim($endpoint, '/');
+        return self::BASE_URL;
     }
 }

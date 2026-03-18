@@ -97,6 +97,56 @@ class TuyaIntegrationService
     }
 
     /**
+     * Teste de envio de comando simples (travar motor). Usar via tinker para diagnosticar sign invalid.
+     * Ex.: (new TuyaIntegrationService)->testSendCommand(Device::find(3));
+     *
+     * @return array<string, mixed>
+     */
+    public function testSendCommand(Device $device): array
+    {
+        $integration = $this->resolveIntegration($device);
+
+        return $this->customerRequest(
+            integration: $integration,
+            method: 'POST',
+            path: "/v1.1/m/thing/{$device->external_device_id}/commands",
+            params: null,
+            body: ['commands' => [['code' => 'lock_motor_state', 'value' => false]]],
+        );
+    }
+
+    /**
+     * Probe temporário: testa vários paths de comando para descobrir o endpoint correto (404 → alternativas).
+     * Tinker: (new TuyaIntegrationService)->probeCommandEndpoint(Device::find(3));
+     */
+    public function probeCommandEndpoint(Device $device): void
+    {
+        $integration = $this->resolveIntegration($device);
+        $id = $device->external_device_id;
+
+        $endpoints = [
+            "/v1.1/m/life/{$id}/commands",
+            "/v1.0/m/life/{$id}/commands",
+            "/v1.0/m/life/ha/devices/{$id}/commands",
+            "/v1.0/m/thing/{$id}/commands",
+            "/v1.1/m/thing/devices/{$id}/commands",
+        ];
+
+        $body = ['commands' => [['code' => 'lock_motor_state', 'value' => false]]];
+
+        foreach ($endpoints as $path) {
+            $result = $this->customerRequest(
+                integration: $integration,
+                method: 'POST',
+                path: $path,
+                params: null,
+                body: $body,
+            );
+            Log::info('[Tuya probe] '.$path, ['result' => $result]);
+        }
+    }
+
+    /**
      * Cria senha temporária na fechadura Tuya via DP temporary_password_creat (apigw.iotbing.com).
      * Retorna a referência "tuyaSeq:serverSeq" para uso em deleteTemporaryPassword.
      *
@@ -234,7 +284,6 @@ class TuyaIntegrationService
             (string) $integration->tuya_refresh_token,
             $params,
             $body,
-            $integration->tuya_endpoint,
         );
 
         return is_array($result) ? $result : [];

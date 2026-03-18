@@ -53,6 +53,10 @@ SCHEMA    = 'tuyaSmart'
 BASE_URL  = 'https://apigw.iotbing.com'
 ```
 
+#### Endpoint regional vs global
+
+O login QR retorna um campo `endpoint` na resposta que indica o servidor regional do usuário (ex: `apigw.tuyaus.com` para América do Sul). Esse endpoint é salvo em `integrations.tuya_endpoint` e **DEVE** ser usado em todas as chamadas do CustomerApi — tanto para listagem quanto para envio de comandos. O `apigw.iotbing.com` (BASE_URL) é apenas o fallback quando nenhum endpoint regional foi retornado.
+
 #### Camada 2 — CustomerApi (chamadas autenticadas pós-login)
 
 Baseado em `tuya_sharing/customerapi.py` — classe `CustomerApi.__request()`.
