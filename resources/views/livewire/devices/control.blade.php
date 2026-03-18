@@ -146,7 +146,11 @@
                 :wire-click="$wireClick"
             />
         @empty
-            <p class="m-0 text-neutral-500">Nenhuma função controlável encontrada para este dispositivo.</p>
+            @if ($device->isTuyaLock())
+                <p class="m-0 text-neutral-500">Esta fechadura Tuya recebe PINs temporários pelos Access Codes do local vinculado. Não há comando manual separado nesta tela.</p>
+            @else
+                <p class="m-0 text-neutral-500">Nenhuma função controlável encontrada para este dispositivo.</p>
+            @endif
         @endforelse
     </div>
 </section>

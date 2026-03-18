@@ -44,21 +44,42 @@
                     @endif
                 </li>
             @empty
-                <li>Nenhuma função cadastrada.</li>
+                @if ($device->isTuyaLock())
+                    <li>Fechadura Tuya: os PINs temporários deste dispositivo são gerenciados pelos Access Codes do local vinculado.</li>
+                @else
+                    <li>Nenhuma função cadastrada.</li>
+                @endif
             @endforelse
         </ul>
     </div>
 
     <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-        <h2 class="mt-0">Últimos comandos</h2>
+        <h2 class="mt-0">{{ $device->isTuyaLock() ? 'Últimos syncs de PIN' : 'Últimos comandos' }}</h2>
         <ul class="m-0 pl-5">
-            @forelse ($recentCommands as $command)
-                <li>
-                    {{ $command->created_at?->format('d/m/Y H:i:s') }} - {{ $command->command_type }}
-                </li>
-            @empty
-                <li>Nenhum comando registrado.</li>
-            @endforelse
+            @if ($device->isTuyaLock())
+                @forelse ($recentTuyaSyncs as $sync)
+                    <li>
+                        {{ $sync->updated_at?->format('d/m/Y H:i:s') }} -
+                        {{ strtoupper($sync->status) }}
+                        @if ($sync->synced_pin)
+                            - PIN {{ $sync->synced_pin }}
+                        @endif
+                        @if ($sync->error_message)
+                            - {{ $sync->error_message }}
+                        @endif
+                    </li>
+                @empty
+                    <li>Nenhum sync de PIN registrado.</li>
+                @endforelse
+            @else
+                @forelse ($recentCommands as $command)
+                    <li>
+                        {{ $command->created_at?->format('d/m/Y H:i:s') }} - {{ $command->command_type }}
+                    </li>
+                @empty
+                    <li>Nenhum comando registrado.</li>
+                @endforelse
+            @endif
         </ul>
     </div>
 </section>

@@ -30,7 +30,7 @@ class TuyaConnect extends Component
 
     public string $tokenJson = '';
 
-    /** @var array<int, array{id: string, name: string, categoryLabel: string, online: bool, selected: bool}> */
+    /** @var array<int, array{id: string, name: string, category: string, categoryLabel: string, online: bool, selected: bool, productId: ?string, productName: ?string, icon: ?string, status: array<int, array{code: string, value: mixed}>}> */
     public array $devices = [];
 
     public string $errorMessage = '';
@@ -94,8 +94,13 @@ class TuyaConnect extends Component
                 fn (TuyaDeviceDTO $d) => [
                     'id' => $d->id,
                     'name' => $d->name,
+                    'category' => $d->category,
                     'categoryLabel' => $d->categoryLabel(),
                     'online' => $d->online,
+                    'productId' => $d->productId,
+                    'productName' => $d->productName,
+                    'icon' => $d->icon,
+                    'status' => $d->status,
                     'selected' => TuyaDeviceDTO::isAccessCategory($d->category),
                 ],
                 $deviceDtos
@@ -157,7 +162,7 @@ class TuyaConnect extends Component
             ['name' => 'Tuya SmartLife'],
         );
 
-        Integration::updateOrCreate(
+        $integration = Integration::updateOrCreate(
             [
                 'platform_id' => $platform->id,
                 'user_id' => Auth::id(),
@@ -181,8 +186,16 @@ class TuyaConnect extends Component
                 ['external_device_id' => $d['id']],
                 [
                     'name' => $d['name'],
+                    'integration_id' => $integration->id,
                     'brand' => DeviceBrandEnum::Tuya,
                     'external_device_id' => $d['id'],
+                    'tuya_category' => $d['category'] ?? null,
+                    'tuya_product_id' => $d['productId'] ?? null,
+                    'tuya_product_name' => $d['productName'] ?? null,
+                    'tuya_icon' => $d['icon'] ?? null,
+                    'tuya_online' => $d['online'] ?? null,
+                    'tuya_status_payload' => $d['status'] ?? [],
+                    'last_sync' => now(),
                 ]
             )->deviceUsers()->firstOrCreate([
                 'user_id' => Auth::id(),
@@ -190,7 +203,7 @@ class TuyaConnect extends Component
         }
 
         $this->step = 'done';
-        session()->flash('status', 'Integração Tuya conectada com sucesso!');
+        session()->flash('status', 'Integração Tuya conectada com sucesso! Vincule os dispositivos importados a um local para sincronizar PINs do place.');
     }
 
     public function render(): View

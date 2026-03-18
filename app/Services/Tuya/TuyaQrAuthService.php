@@ -271,7 +271,7 @@ class TuyaQrAuthService
      *
      * @return array<string, mixed>|null decoded result (array) or null on error
      */
-    private function customerRequest(
+    public function customerRequest(
         string $method,
         string $path,
         string $accessToken,

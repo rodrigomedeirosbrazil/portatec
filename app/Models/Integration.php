@@ -25,6 +25,10 @@ class Integration extends Model
         'tuya_endpoint',
     ];
 
+    protected $casts = [
+        'tuya_token_expires_at' => 'datetime',
+    ];
+
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class);
@@ -45,5 +49,10 @@ class Integration extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(Device::class);
     }
 }
