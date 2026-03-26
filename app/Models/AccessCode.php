@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AccessCode extends Model
 {
@@ -43,6 +44,11 @@ class AccessCode extends Model
         return $this->belongsTo(Booking::class);
     }
 
+    public function deviceSyncs(): HasMany
+    {
+        return $this->hasMany(AccessCodeDeviceSync::class);
+    }
+
     public function getDisplayNameAttribute(): string
     {
         if ($this->booking) {
@@ -64,5 +70,18 @@ class AccessCode extends Model
         }
 
         return $now->gte($this->start) && $now->lte($this->end);
+    }
+
+    /**
+     * Verifica se o AccessCode já expirou (end no passado).
+     * Usado para decidir se sincroniza com dispositivos: só não sincroniza quando expirado.
+     */
+    public function isExpired(): bool
+    {
+        if ($this->end === null) {
+            return false;
+        }
+
+        return $this->end->lt(now());
     }
 }

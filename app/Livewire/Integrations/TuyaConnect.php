@@ -1,0 +1,214 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Livewire\Integrations;
+
+use App\Enums\DeviceBrandEnum;
+use App\Models\Device;
+use App\Models\Integration;
+use App\Models\Platform;
+use App\Services\Tuya\DTOs\TuyaDeviceDTO;
+use App\Services\Tuya\DTOs\TuyaTokenDTO;
+use App\Services\Tuya\TuyaQrAuthService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Component;
+
+class TuyaConnect extends Component
+{
+    public string $step = 'form';
+
+    public string $userCode = '';
+
+    public string $qrUrl = '';
+
+    public ?int $qrExpiresAt = null;
+
+    /** Token do QR usado no polling (interno). */
+    public string $qrCode = '';
+
+    public string $tokenJson = '';
+
+    /** @var array<int, array{id: string, name: string, category: string, categoryLabel: string, online: bool, selected: bool, productId: ?string, productName: ?string, icon: ?string, status: array<int, array{code: string, value: mixed}>}> */
+    public array $devices = [];
+
+    public string $errorMessage = '';
+
+    public function generateQr(): void
+    {
+        $this->resetValidation();
+        $this->errorMessage = '';
+
+        $this->validate([
+            'userCode' => ['required', 'string', 'min:1'],
+        ], [], [
+            'userCode' => 'Código do Usuário',
+        ]);
+
+        try {
+            $service = new TuyaQrAuthService;
+            $dto = $service->generateQrCode(trim($this->userCode));
+        } catch (\RuntimeException $e) {
+            $this->errorMessage = $e->getMessage();
+
+            return;
+        }
+
+        if (! $dto) {
+            $this->errorMessage = 'Não foi possível gerar o QR code. Verifique o código do usuário.';
+
+            return;
+        }
+
+        $this->qrCode = $dto->qrCode;
+        $this->qrUrl = $dto->qrUrl;
+        $this->qrExpiresAt = $dto->expireTime;
+        $this->step = 'qr';
+    }
+
+    public function pollQr(): void
+    {
+        if ($this->step !== 'qr') {
+            return;
+        }
+
+        try {
+            $service = new TuyaQrAuthService;
+            $token = $service->pollLogin($this->qrCode, trim($this->userCode));
+
+            if ($token === null) {
+                return;
+            }
+
+            $this->tokenJson = json_encode([
+                'access_token' => $token->accessToken,
+                'refresh_token' => $token->refreshToken,
+                'expire_time' => $token->expireTime,
+                'uid' => $token->uid,
+                'endpoint' => $token->endpoint,
+            ], JSON_THROW_ON_ERROR);
+
+            $deviceDtos = $service->getDevices($token);
+            $this->devices = array_values(array_map(
+                fn (TuyaDeviceDTO $d) => [
+                    'id' => $d->id,
+                    'name' => $d->name,
+                    'category' => $d->category,
+                    'categoryLabel' => $d->categoryLabel(),
+                    'online' => $d->online,
+                    'productId' => $d->productId,
+                    'productName' => $d->productName,
+                    'icon' => $d->icon,
+                    'status' => $d->status,
+                    'selected' => TuyaDeviceDTO::isAccessCategory($d->category),
+                ],
+                $deviceDtos
+            ));
+
+            $this->step = 'devices';
+        } catch (\RuntimeException $e) {
+            $this->errorMessage = $e->getMessage();
+            $this->step = 'form';
+            $this->qrUrl = '';
+            $this->qrExpiresAt = null;
+            $this->qrCode = '';
+        }
+    }
+
+    public function resetQr(): void
+    {
+        $this->step = 'form';
+        $this->qrUrl = '';
+        $this->qrExpiresAt = null;
+        $this->qrCode = '';
+        $this->tokenJson = '';
+        $this->devices = [];
+        $this->errorMessage = '';
+        $this->resetValidation();
+    }
+
+    public function toggleDevice(string $id): void
+    {
+        foreach ($this->devices as $i => $device) {
+            if (($device['id'] ?? '') === $id) {
+                $this->devices[$i]['selected'] = ! ($this->devices[$i]['selected'] ?? false);
+
+                return;
+            }
+        }
+    }
+
+    public function saveIntegration(): void
+    {
+        if ($this->tokenJson === '') {
+            $this->errorMessage = 'Sessão inválida. Por favor, recomece.';
+            $this->step = 'form';
+
+            return;
+        }
+
+        $tokenData = json_decode($this->tokenJson, true, 512, JSON_THROW_ON_ERROR);
+        $token = new TuyaTokenDTO(
+            accessToken: $tokenData['access_token'],
+            refreshToken: $tokenData['refresh_token'],
+            expireTime: $tokenData['expire_time'],
+            uid: $tokenData['uid'],
+            endpoint: $tokenData['endpoint'] ?? null,
+        );
+
+        $platform = Platform::where('slug', 'tuya')->firstOrCreate(
+            ['slug' => 'tuya'],
+            ['name' => 'Tuya SmartLife'],
+        );
+
+        $integration = Integration::updateOrCreate(
+            [
+                'platform_id' => $platform->id,
+                'user_id' => Auth::id(),
+                'tuya_uid' => $token->uid,
+            ],
+            [
+                'tuya_user_code' => $this->userCode,
+                'tuya_access_token' => $token->accessToken,
+                'tuya_refresh_token' => $token->refreshToken,
+                'tuya_token_expires_at' => now()->addSeconds($token->expireTime),
+                'tuya_endpoint' => $token->endpoint,
+            ],
+        );
+
+        foreach ($this->devices as $d) {
+            if (! ($d['selected'] ?? false)) {
+                continue;
+            }
+
+            Device::updateOrCreate(
+                ['external_device_id' => $d['id']],
+                [
+                    'name' => $d['name'],
+                    'integration_id' => $integration->id,
+                    'brand' => DeviceBrandEnum::Tuya,
+                    'external_device_id' => $d['id'],
+                    'tuya_category' => $d['category'] ?? null,
+                    'tuya_product_id' => $d['productId'] ?? null,
+                    'tuya_product_name' => $d['productName'] ?? null,
+                    'tuya_icon' => $d['icon'] ?? null,
+                    'tuya_online' => $d['online'] ?? null,
+                    'tuya_status_payload' => $d['status'] ?? [],
+                    'last_sync' => now(),
+                ]
+            )->deviceUsers()->firstOrCreate([
+                'user_id' => Auth::id(),
+            ]);
+        }
+
+        $this->step = 'done';
+        session()->flash('status', 'Integração Tuya conectada com sucesso! Vincule os dispositivos importados a um local para sincronizar PINs do place.');
+    }
+
+    public function render(): View
+    {
+        return view('livewire.integrations.tuya-connect')
+            ->layout('layouts.client');
+    }
+}

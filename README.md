@@ -59,6 +59,37 @@ php artisan key:generate
 php artisan migrate
 ```
 
+## External Integrations
+
+### Tuya Smart Devices
+
+PortaTec integrates with Tuya-powered devices (locks, switches, sensors, door contacts) via the **Tuya Device Sharing** mechanism — the same used by Home Assistant since version 2024.2. **No Tuya developer account is required.**
+
+The user authenticates by scanning a QR code with the Tuya Smart or SmartLife app. All communication goes through `apigw.iotbing.com` using a proprietary protocol (AES-128-GCM + custom signing), not the standard Tuya OpenAPI.
+
+- **Service:** `app/Services/Tuya/TuyaQrAuthService.php`
+- **Based on:** [`tuya-device-sharing-sdk`](https://github.com/tuya/tuya-device-sharing-sdk) v0.2.1 (MIT) — PHP port
+- **Env vars required:** none
+- **Endpoint:** `https://apigw.iotbing.com`
+
+### How to inspect the reference SDK
+
+The PHP implementation is a direct port of the Python SDK. If any authentication or protocol behaviour needs to change, read the original source first:
+
+```bash
+pip download tuya-device-sharing-sdk==0.2.1 --no-deps -d /tmp/tuya
+cd /tmp/tuya
+unzip tuya_device_sharing_sdk-0.2.1-py2.py3-none-any.whl -d sdk_source
+
+# Key files:
+# sdk_source/tuya_sharing/user.py        → QR login and polling (no auth required)
+# sdk_source/tuya_sharing/customerapi.py → authenticated request protocol (AES-GCM)
+# sdk_source/tuya_sharing/device.py      → device listing and command sending
+# sdk_source/tuya_sharing/home.py        → home listing
+```
+
+See `AGENTS.md` for the full protocol specification, DP formats for locks, and field references.
+
 ## Documentation
 
 Detailed documentation for setting up and using PortaTec can be found in the [Wiki](link-to-wiki).

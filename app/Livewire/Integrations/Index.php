@@ -28,6 +28,7 @@ class Index extends Component
     {
         $integrations = Integration::query()
             ->where('user_id', Auth::id())
+            ->whereHas('platform', fn ($query) => $query->where('slug', '!=', 'tuya'))
             ->with(['platform', 'places'])
             ->latest('updated_at')
             ->get();

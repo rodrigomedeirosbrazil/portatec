@@ -1,12 +1,20 @@
 <section>
     <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="m-0">Reservas</h1>
-        <a
-            href="{{ route('app.bookings.create') }}"
-            class="min-h-[44px] min-w-[44px] rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700 sm:inline-flex sm:items-center sm:justify-center"
-        >
-            Nova Reserva
-        </a>
+        <div class="flex flex-wrap gap-2">
+            <a
+                href="{{ route('app.bookings.integrations.index') }}"
+                class="min-h-[44px] rounded-lg border border-primary-500 bg-white px-3 py-2 text-primary-600 no-underline hover:bg-primary-50 sm:inline-flex sm:items-center sm:justify-center"
+            >
+                Integrações iCal
+            </a>
+            <a
+                href="{{ route('app.bookings.create') }}"
+                class="min-h-[44px] min-w-[44px] rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700 sm:inline-flex sm:items-center sm:justify-center"
+            >
+                Nova Reserva
+            </a>
+        </div>
     </div>
 
     <div class="mb-4 rounded-[10px] border border-neutral-300 bg-white p-3.5">

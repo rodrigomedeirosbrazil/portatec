@@ -42,7 +42,7 @@
                 <a href="{{ route('app.devices.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Dispositivos</a>
                 <a href="{{ route('app.bookings.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Reservas</a>
                 <a href="{{ route('app.access-codes.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Códigos de acesso</a>
-                <a href="{{ route('app.integrations.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Integrações</a>
+                <a href="{{ route('app.bookings.integrations.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Integrações iCal</a>
                 <a href="/admin" class="text-neutral-700 no-underline hover:text-primary-700">Admin</a>
                 <form method="POST" action="{{ route('logout') }}" class="ml-auto">
                     @csrf
@@ -72,7 +72,7 @@
                 <a href="{{ route('app.devices.index') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Dispositivos</a>
                 <a href="{{ route('app.bookings.index') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Reservas</a>
                 <a href="{{ route('app.access-codes.index') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Códigos de acesso</a>
-                <a href="{{ route('app.integrations.index') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Integrações</a>
+                <a href="{{ route('app.bookings.integrations.index') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Integrações iCal</a>
                 <a href="/admin" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Admin</a>
                 <form method="POST" action="{{ route('logout') }}" class="pt-2">
                     @csrf

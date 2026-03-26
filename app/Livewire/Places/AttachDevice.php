@@ -39,27 +39,18 @@ class AttachDevice extends Component
             ->with('deviceFunctions')
             ->findOrFail($validated['deviceId']);
 
-        $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
-
-        $canAttach = $device->place_id === null
-            || $userPlaceIds->contains($device->place_id);
-
-        abort_unless($canAttach, 403);
-
-        if ($device->place_id === $this->place->id) {
+        if ($device->places()->where('places.id', $this->place->id)->exists() || $device->place_id === $this->place->id) {
             session()->flash('status', 'Este dispositivo já está associado a este local.');
 
             return $this->redirectRoute('app.places.show', ['place' => $this->place->id], navigate: true);
         }
 
-        $device->update(['place_id' => $this->place->id]);
+        $device->places()->syncWithoutDetaching([$this->place->id]);
+        if ($device->place_id === null) {
+            $device->update(['place_id' => $this->place->id]);
+        }
 
         $functionIds = $device->deviceFunctions->pluck('id');
-
-        PlaceDeviceFunction::query()
-            ->whereIn('device_function_id', $functionIds)
-            ->where('place_id', '!=', $this->place->id)
-            ->delete();
 
         foreach ($functionIds as $deviceFunctionId) {
             PlaceDeviceFunction::firstOrCreate(
@@ -81,14 +72,21 @@ class AttachDevice extends Component
 
         $devices = Device::query()
             ->withCount('deviceFunctions')
-            ->with('place')
+            ->with('places')
             ->where(function ($query) use ($userPlaceIds): void {
-                $query->whereNull('place_id')
-                    ->orWhereIn('place_id', $userPlaceIds);
+                $query->where(function ($query) use ($userPlaceIds): void {
+                    $query->whereDoesntHave('places')
+                        ->whereNull('place_id');
+                })
+                ->orWhereHas('places', fn ($q) => $q->whereIn('places.id', $userPlaceIds))
+                ->orWhereIn('place_id', $userPlaceIds);
             })
             ->where(function ($query): void {
-                $query->whereNull('place_id')
-                    ->orWhere('place_id', '!=', $this->place->id);
+                $query->whereDoesntHave('places', fn ($query) => $query->where('places.id', $this->place->id))
+                    ->where(function ($query): void {
+                        $query->whereNull('place_id')
+                            ->orWhere('place_id', '!=', $this->place->id);
+                    });
             })
             ->orderBy('name')
             ->get();
