@@ -83,7 +83,7 @@
 
         @forelse ($bookings as $booking)
             @php
-                $nights = $booking->check_in->diffInDays($booking->check_out);
+                $nights = (int) $booking->check_in->startOfDay()->diffInDays($booking->check_out->startOfDay());
             @endphp
             <article class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
                 <div class="flex items-start justify-between">

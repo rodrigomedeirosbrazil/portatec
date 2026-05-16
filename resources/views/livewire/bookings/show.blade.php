@@ -23,7 +23,7 @@
         <p class="mb-2"><strong>Hóspede:</strong> {{ $booking->guest_name ?: 'Sem nome' }}</p>
         <p class="mb-2"><strong>Check-in:</strong> {{ $booking->check_in->format('d/m/Y H:i') }}</p>
         <p class="mb-2"><strong>Check-out:</strong> {{ $booking->check_out->format('d/m/Y H:i') }}</p>
-        @php $nights = $booking->check_in->diffInDays($booking->check_out); @endphp
+        @php $nights = (int) $booking->check_in->startOfDay()->diffInDays($booking->check_out->startOfDay()); @endphp
         <p class="mb-2"><strong>Duração:</strong> {{ $nights }} {{ $nights === 1 ? 'noite' : 'noites' }}</p>
         <p class="m-0"><strong>PIN:</strong> {{ $booking->accessCode?->pin ?? 'Ainda não gerado' }}</p>
         @if (! $canDelete)
