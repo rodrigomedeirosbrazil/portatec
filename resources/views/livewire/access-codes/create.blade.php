@@ -1,6 +1,6 @@
 <section>
     <a href="{{ route('app.access-codes.index') }}" class="text-primary-500 no-underline hover:text-primary-700">&larr; Voltar</a>
-    <h1 class="my-2 mb-4">Novo Access Code</h1>
+    <h1 class="my-2 mb-4">Novo Código de Acesso</h1>
 
     <form wire:submit="save" class="grid gap-2.5 rounded-[10px] border border-neutral-300 bg-white p-3.5">
         <x-place-select

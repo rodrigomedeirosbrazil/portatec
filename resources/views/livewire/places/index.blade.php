@@ -1,12 +1,17 @@
 <section>
-    <div class="mb-4 flex items-center justify-between">
-        <h1 class="m-0">Locais</h1>
-        <a href="{{ route('app.places.create') }}" class="rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700">
-            Novo Local
-        </a>
+    <x-page-header title="Locais" :action-url="route('app.places.create')" action-label="Novo Local" />
+
+    <div class="mb-4 rounded-[10px] border border-neutral-300 bg-white p-3.5">
+        <x-search-input
+            wire:model.live.debounce.300ms="search"
+            placeholder="Buscar por nome..."
+            id="search"
+        />
     </div>
 
-    <div class="grid gap-3">
+    <div class="relative grid gap-3">
+        <x-loading-overlay />
+
         @forelse ($places as $place)
             <article class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
                 <h2 class="mb-2 text-lg">
@@ -15,11 +20,15 @@
                     </a>
                 </h2>
                 <p class="m-0 text-neutral-500">
-                    Dispositivos: {{ $place->devices_count }} | Reservas: {{ $place->bookings_count }} | PINs: {{ $place->access_codes_count }}
+                    Dispositivos: {{ $place->devices_count }} | Reservas: {{ $place->bookings_count }} | Códigos: {{ $place->access_codes_count }}
                 </p>
             </article>
         @empty
-            <p class="text-neutral-500">Você ainda não possui locais.</p>
+            <x-empty-state
+                message="Você ainda não possui locais."
+                :action-url="route('app.places.create')"
+                action-label="Novo Local"
+            />
         @endforelse
     </div>
 </section>

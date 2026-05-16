@@ -1,13 +1,5 @@
 <section>
-    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 class="m-0">Reservas</h1>
-        <a
-            href="{{ route('app.bookings.create') }}"
-            class="min-h-[44px] min-w-[44px] rounded-lg bg-primary-500 px-3 py-2 text-white no-underline hover:bg-primary-700 sm:inline-flex sm:items-center sm:justify-center"
-        >
-            Nova Reserva
-        </a>
-    </div>
+    <x-page-header title="Reservas" :action-url="route('app.bookings.create')" action-label="Nova Reserva" />
 
     <div class="mb-4 rounded-[10px] border border-neutral-300 bg-white p-3.5">
         <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -57,13 +49,11 @@
             </div>
 
             <div class="min-w-0">
-                <label for="guest" class="mb-2 block font-semibold">Hóspede</label>
-                <input
-                    id="guest"
-                    type="search"
+                <x-search-input
                     wire:model.live.debounce.300ms="guest"
                     placeholder="Buscar por nome"
-                    class="w-full min-w-0 rounded-lg border border-neutral-300 p-2"
+                    label="Hóspede"
+                    id="guest"
                 />
             </div>
 
@@ -88,28 +78,41 @@
         </p>
     @endif
 
-    <div class="grid gap-3 md:grid-cols-2">
+    <div class="relative grid gap-3 md:grid-cols-2">
+        <x-loading-overlay />
+
         @forelse ($bookings as $booking)
+            @php
+                $nights = $booking->check_in->diffInDays($booking->check_out);
+            @endphp
             <article class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-                <h2 class="mb-2 text-lg">
-                    <a
-                        href="{{ route('app.bookings.show', $booking->id) }}"
-                        class="min-h-[44px] inline-flex items-center text-neutral-900 no-underline hover:text-neutral-700"
-                    >
-                        {{ $booking->guest_name ?: 'Sem nome' }}
-                    </a>
-                </h2>
+                <div class="flex items-start justify-between">
+                    <h2 class="mb-2 text-lg">
+                        <a
+                            href="{{ route('app.bookings.show', $booking->id) }}"
+                            class="min-h-[44px] inline-flex items-center text-neutral-900 no-underline hover:text-neutral-700"
+                        >
+                            {{ $booking->guest_name ?: 'Sem nome' }}
+                        </a>
+                    </h2>
+                    @if($booking->source !== 'manual')
+                        <span class="rounded-full border border-neutral-300 bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">iCal</span>
+                    @endif
+                </div>
+                @if(! $placeId)
+                    <p class="mt-0 mb-1 text-sm font-medium text-neutral-700">{{ $booking->place?->name }}</p>
+                @endif
                 <p class="m-0 text-neutral-500">
                     {{ $booking->check_in->format('d/m/Y H:i') }} até {{ $booking->check_out->format('d/m/Y H:i') }}
+                    <span class="text-neutral-400">({{ $nights }} {{ $nights === 1 ? 'noite' : 'noites' }})</span>
                 </p>
-                @if($booking->source !== 'manual')
-                    <p class="mt-1 text-xs text-neutral-400">iCal</p>
-                @else
-                    <p class="mt-1 text-xs text-neutral-400">Manual</p>
-                @endif
             </article>
         @empty
-            <p class="col-span-full text-neutral-500">Nenhuma reserva encontrada.</p>
+            <x-empty-state
+                message="Nenhuma reserva encontrada."
+                :action-url="route('app.bookings.create')"
+                action-label="Nova Reserva"
+            />
         @endforelse
     </div>
 

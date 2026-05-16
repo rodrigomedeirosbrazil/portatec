@@ -10,10 +10,17 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class Index extends Component
 {
+    use WithPagination;
+
     public ?int $placeId = null;
+
+    public string $search = '';
+
+    private const PER_PAGE = 20;
 
     public function mount(): void
     {
@@ -25,8 +32,6 @@ class Index extends Component
                 $this->placeId = $requestedId;
             }
         }
-
-        // Default to "Todos" (null) so the page shows all devices (own + shared)
     }
 
     public function updatedPlaceId()
@@ -34,6 +39,11 @@ class Index extends Component
         $params = $this->placeId !== null ? ['place_id' => $this->placeId] : [];
 
         return redirect()->to(route('app.devices.index', $params));
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
     }
 
     public function render(): View
@@ -56,8 +66,12 @@ class Index extends Component
                 $query->orWhereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()));
             })
             ->when($this->placeId, fn ($query) => $query->where('place_id', $this->placeId))
+            ->when($this->search !== '', function ($query): void {
+                $term = '%'.addcslashes($this->search, '%_').'%';
+                $query->where('name', 'like', $term);
+            })
             ->orderBy('name')
-            ->get();
+            ->paginate(self::PER_PAGE);
 
         return view('livewire.devices.index', [
             'places' => $places,
@@ -66,8 +80,6 @@ class Index extends Component
     }
 
     /**
-     * Place IDs the user may filter by: their places + places of devices shared with them.
-     *
      * @return Collection<int, int>
      */
     private function allowedPlaceIds(): Collection
