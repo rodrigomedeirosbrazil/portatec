@@ -20,6 +20,10 @@ class BookingObserver
 
     public function updated(Booking $booking): void
     {
+        if ($booking->wasChanged('deleted_at')) {
+            return;
+        }
+
         $accessCode = $booking->accessCode;
 
         if ($accessCode) {

@@ -62,7 +62,8 @@ class ICalSyncService
                 $this->createOrUpdateBooking($bookingDTO, $integration, $place, $existingBookings);
             }
 
-            $removedBookings = $existingBookings->whereNotIn('external_id', $currentExternalIds);
+            $removedBookings = $existingBookings->whereNotIn('external_id', $currentExternalIds)
+                ->filter(fn (Booking $booking) => $booking->check_out->isFuture());
             foreach ($removedBookings as $booking) {
                 $booking->deletion_reason = BookingDeletionReasonEnum::Canceled;
                 $booking->delete();
