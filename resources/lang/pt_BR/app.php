@@ -204,4 +204,52 @@ return [
     'tuya_qr_generation_failed' => 'Não foi possível gerar o QR code. Verifique o código do usuário.',
     'tuya_session_expired' => 'Sessão inválida. Por favor, recomece.',
     'tuya_connected_flash' => 'Integração Tuya conectada com sucesso! Vincule os dispositivos importados a um local para sincronizar PINs do place.',
+
+    // Componentes de página (kit compartilhado)
+    'back' => 'Voltar',
+    'status_active' => 'Ativo',
+    'status_future' => 'Futuro',
+    'status_current' => 'Em andamento',
+    'status_past' => 'Concluída',
+
+    // Kit de UI compartilhado (formulários e diálogos)
+    'cancel' => 'Cancelar',
+    'confirm' => 'Confirmar',
+    'device_control_send' => 'Acionar',
+    'device_control_toggle' => 'Alternar',
+    'device_control_sending' => 'Enviando…',
+    'device_control_waiting_ack' => 'Aguardando dispositivo…',
+    'device_control_acked' => 'OK!',
+
+    // Navegação e layout
+    'nav_dashboard' => 'Dashboard',
+    'nav_places' => 'Locais',
+    'nav_devices' => 'Dispositivos',
+    'nav_bookings' => 'Reservas',
+    'nav_access_codes' => 'Códigos de acesso',
+    'nav_bookings_integrations' => 'Integrações iCal',
+    'nav_admin' => 'Admin',
+    'nav_logout' => 'Sair',
+    'nav_open_menu' => 'Abrir menu',
+    'nav_close_menu' => 'Fechar menu',
+    'impersonation_active_message' => 'Você está em sessão assumida.',
+    'impersonation_stop' => 'Finalizar sessão assumida',
+    'guest_default_subtitle' => 'Acesso ao painel do cliente',
+
+    // Kit de componentes de dados (Fase 1: DataTable, Pagination, FilterBar, SearchInput, PlaceSelect)
+    'search_placeholder' => 'Buscar...',
+    'search_label' => 'Buscar',
+    'filter_by_place' => 'Filtrar por local',
+    'all_places' => 'Todos',
+    'unassigned_place' => 'Sem local',
+    'select_place' => 'Selecione um local',
+    'clear_filters' => 'Limpar filtros',
+    'pagination_previous' => 'Anterior',
+    'pagination_next' => 'Próxima',
+    'pagination_showing' => 'Mostrando',
+    'pagination_to' => 'a',
+    'pagination_of' => 'de',
+    'pagination_results' => 'resultados',
+    'pagination_go_to_page' => 'Ir para a página :page',
+    'pagination_navigation' => 'Navegação de paginação',
 ];
