@@ -21,7 +21,7 @@ class Index extends Component
 
     public ?string $dateTo = null;
 
-    public string $status = '';
+    public string $status = 'future';
 
     public string $guest = '';
 
@@ -52,6 +52,8 @@ class Index extends Component
         }
         if (request()->filled('status')) {
             $this->status = request()->string('status')->toString();
+        } elseif (! request()->hasAny(['date_from', 'date_to', 'guest', 'source'])) {
+            $this->status = 'future';
         }
         if (request()->filled('guest')) {
             $this->guest = request()->string('guest')->toString();
@@ -103,6 +105,7 @@ class Index extends Component
         $now = now();
 
         $bookings = Booking::query()
+            ->with('place')
             ->whereIn('place_id', $userPlaceIds)
             ->when($this->placeId, fn ($query) => $query->where('place_id', $this->placeId))
             ->when($this->dateFrom, function ($query): void {

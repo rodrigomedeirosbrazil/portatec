@@ -17,7 +17,7 @@ class Show extends Component
 
     public function mount(Booking $booking): void
     {
-        $this->booking = $booking->load('accessCode');
+        $this->booking = $booking->load(['accessCode', 'place']);
 
         abort_unless(
             Auth::user()->placeUsers()->where('place_id', $this->booking->place_id)->exists(),

@@ -38,12 +38,12 @@
                 <a href="{{ route('app.dashboard') }}" class="no-underline">
                     <img src="{{ asset('images/logo/portatec-logo-branco-horizontal.png') }}" alt="Portatec" class="h-8 w-auto">
                 </a>
-                <a href="{{ route('app.places.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Locais</a>
-                <a href="{{ route('app.devices.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Dispositivos</a>
-                <a href="{{ route('app.bookings.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Reservas</a>
-                <a href="{{ route('app.access-codes.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Códigos de acesso</a>
-                <a href="{{ route('app.bookings.integrations.index') }}" class="text-neutral-700 no-underline hover:text-primary-700">Integrações iCal</a>
-                <a href="/admin" class="text-neutral-700 no-underline hover:text-primary-700">Admin</a>
+                <x-nav-link href="{{ route('app.places.index') }}" route="app.places.*">Locais</x-nav-link>
+                <x-nav-link href="{{ route('app.devices.index') }}" route="app.devices.*">Dispositivos</x-nav-link>
+                <x-nav-link href="{{ route('app.bookings.index') }}" route="app.bookings.*">Reservas</x-nav-link>
+                <x-nav-link href="{{ route('app.access-codes.index') }}" route="app.access-codes.*">Códigos de acesso</x-nav-link>
+                <x-nav-link href="{{ route('app.bookings.integrations.index') }}" route="app.bookings.integrations.*">Integrações iCal</x-nav-link>
+                <x-nav-link href="/admin" route="admin.*">Admin</x-nav-link>
                 <form method="POST" action="{{ route('logout') }}" class="ml-auto">
                     @csrf
                     <button type="submit" class="cursor-pointer rounded-md border-0 bg-primary-500 px-3 py-2 text-white hover:bg-primary-700">
@@ -67,13 +67,13 @@
             class="absolute left-0 right-0 top-full z-50 border-b border-neutral-200 bg-white shadow-lg md:hidden"
         >
             <div class="flex flex-col gap-1 px-5 py-3">
-                <a href="{{ route('app.dashboard') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Dashboard</a>
-                <a href="{{ route('app.places.index') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Locais</a>
-                <a href="{{ route('app.devices.index') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Dispositivos</a>
-                <a href="{{ route('app.bookings.index') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Reservas</a>
-                <a href="{{ route('app.access-codes.index') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Códigos de acesso</a>
-                <a href="{{ route('app.bookings.integrations.index') }}" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Integrações iCal</a>
-                <a href="/admin" class="py-2 text-neutral-700 no-underline hover:text-primary-700">Admin</a>
+                <x-nav-link href="{{ route('app.dashboard') }}" route="app.dashboard" :mobile="true">Dashboard</x-nav-link>
+                <x-nav-link href="{{ route('app.places.index') }}" route="app.places.*" :mobile="true">Locais</x-nav-link>
+                <x-nav-link href="{{ route('app.devices.index') }}" route="app.devices.*" :mobile="true">Dispositivos</x-nav-link>
+                <x-nav-link href="{{ route('app.bookings.index') }}" route="app.bookings.*" :mobile="true">Reservas</x-nav-link>
+                <x-nav-link href="{{ route('app.access-codes.index') }}" route="app.access-codes.*" :mobile="true">Códigos de acesso</x-nav-link>
+                <x-nav-link href="{{ route('app.bookings.integrations.index') }}" route="app.bookings.integrations.*" :mobile="true">Integrações iCal</x-nav-link>
+                <x-nav-link href="/admin" route="admin.*" :mobile="true">Admin</x-nav-link>
                 <form method="POST" action="{{ route('logout') }}" class="pt-2">
                     @csrf
                     <button type="submit" class="w-full cursor-pointer rounded-md border-0 bg-primary-500 px-3 py-2 text-left text-white hover:bg-primary-700">

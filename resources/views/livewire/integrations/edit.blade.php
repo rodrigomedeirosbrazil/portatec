@@ -42,7 +42,7 @@
                 </button>
             </form>
         @empty
-            <p class="text-neutral-500">Nenhum place associado.</p>
+            <p class="text-neutral-500">Nenhum local associado.</p>
         @endforelse
     </div>
 

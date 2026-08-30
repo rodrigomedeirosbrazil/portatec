@@ -122,8 +122,7 @@
                 keys.forEach(k => { this.statusByKey[k] = 'idle'; });
             },
             triggerCommand(deviceId, action, pin) {
-                const k = this.key(deviceId, pin);
-                if (this.statusByKey[k] !== 'idle') return;
+                if (this.status(deviceId, pin) !== 'idle') return;
                 this.setSending(deviceId, pin);
             }
         }"

@@ -5,8 +5,14 @@
 
 # Rebuild frontend assets so VITE_* (e.g. VITE_REVERB_*) from the mounted .env are embedded.
 # The image is built in CI without .env, so the initial build has undefined Reverb URL and WebSocket fails.
+chown -R www-data:www-data /var/www/storage
+chown www-data:www-data /var/www/database/database.sqlite
+
 echo "Building frontend assets with current .env (VITE_* for Reverb/WebSocket)..."
 su www-data -s /bin/sh -c "cd /var/www && npm run build"
+
+echo "Running database migrations..."
+su www-data -s /bin/sh -c "/usr/local/bin/php /var/www/artisan migrate --force"
 
 echo "Running optimize command..."
 /usr/local/bin/php /var/www/artisan optimize

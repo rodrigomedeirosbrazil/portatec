@@ -248,4 +248,85 @@ class ICalSyncServiceTest extends TestCase
         $booking->refresh();
         $this->assertNull($booking->deleted_at);
     }
+
+    public function test_sync_place_integration_preserves_past_bookings_removed_from_feed(): void
+    {
+        $userId = DB::table('users')->insertGetId([
+            'name' => 'Sync User',
+            'email' => 'sync4@example.com',
+            'password' => bcrypt('password'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $platformId = DB::table('platforms')->insertGetId([
+            'name' => 'Airbnb',
+            'slug' => 'airbnb',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $integrationId = DB::table('integrations')->insertGetId([
+            'platform_id' => $platformId,
+            'user_id' => $userId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $placeId = DB::table('places')->insertGetId([
+            'name' => 'iCal Place',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $icalUrl = 'https://example.test/calendar.ics';
+
+        DB::table('place_integration')->insert([
+            'place_id' => $placeId,
+            'integration_id' => $integrationId,
+            'external_id' => $icalUrl,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $pastBooking = Booking::create([
+            'place_id' => $placeId,
+            'integration_id' => $integrationId,
+            'external_id' => 'evt-past',
+            'guest_name' => 'Past Guest',
+            'check_in' => Carbon::now()->subDays(10),
+            'check_out' => Carbon::now()->subDays(7),
+            'source' => 'ical',
+        ]);
+
+        $futureBooking = Booking::create([
+            'place_id' => $placeId,
+            'integration_id' => $integrationId,
+            'external_id' => 'evt-future',
+            'guest_name' => 'Future Guest',
+            'check_in' => Carbon::now()->addDays(10),
+            'check_out' => Carbon::now()->addDays(13),
+            'source' => 'ical',
+        ]);
+
+        Http::fake([
+            $icalUrl => Http::response("BEGIN:VCALENDAR\nEND:VCALENDAR", 200),
+        ]);
+
+        $parser = Mockery::mock(ICalParserInterface::class);
+        $parser->shouldReceive('parse')
+            ->once()
+            ->andReturn(collect([]));
+
+        $this->app->instance(ICalParserInterface::class, $parser);
+
+        $service = app(ICalSyncService::class);
+        $service->syncPlaceIntegration($placeId, $integrationId);
+
+        $pastBooking->refresh();
+        $this->assertNull($pastBooking->deleted_at, 'Past bookings should not be soft-deleted when removed from feed');
+
+        $futureBooking->refresh();
+        $this->assertNotNull($futureBooking->deleted_at, 'Future bookings should be soft-deleted when removed from feed');
+    }
 }

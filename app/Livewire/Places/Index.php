@@ -11,11 +11,17 @@ use Livewire\Component;
 
 class Index extends Component
 {
+    public string $search = '';
+
     public function render(): View
     {
         $places = Place::query()
             ->whereHas('placeUsers', fn ($query) => $query->where('user_id', Auth::id()))
             ->withCount(['devices', 'bookings', 'accessCodes'])
+            ->when($this->search !== '', function ($query): void {
+                $term = '%'.addcslashes($this->search, '%_').'%';
+                $query->where('name', 'like', $term);
+            })
             ->orderBy('name')
             ->get();
 
