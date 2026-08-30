@@ -16,6 +16,8 @@ class PlaceSelect extends Component
         public bool $required = false,
         public bool $includeEmpty = false,
         public string $emptyOptionLabel = 'Todos',
+        public bool $includeUnassigned = false,
+        public string $unassignedOptionLabel = 'Sem local',
         public ?string $errorName = null,
     ) {}
 
