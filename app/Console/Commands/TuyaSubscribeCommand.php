@@ -29,20 +29,17 @@ class TuyaSubscribeCommand extends Command
 
     protected $description = 'Assina o broker MQTT da Tuya e aplica os eventos dos dispositivos.';
 
-    /**
-     * Segundos de espera antes de sair quando ainda não há o que assinar. Sob supervisord
-     * o autorestart transforma isso num poller barato: assim que uma integração Tuya for
-     * conectada, o próximo ciclo já a encontra. Sair com erro marcaria o programa como
-     * FATAL e ele não voltaria sozinho.
-     */
+    /** Intervalo entre tentativas enquanto ainda não existe integração Tuya conectada. */
     private const IDLE_BACKOFF_SECONDS = 60;
 
     public function handle(TuyaMqttService $service): int
     {
-        $integration = $this->resolveIntegration();
+        $this->trapSignals();
+
+        $integration = $this->awaitIntegration();
 
         if (! $integration instanceof Integration) {
-            return $this->idle('Nenhuma integração Tuya conectada — nada a assinar.');
+            return self::SUCCESS;
         }
 
         try {
@@ -78,6 +75,7 @@ class TuyaSubscribeCommand extends Command
             ->setUseTls(($parts['scheme'] ?? '') === 'ssl');
 
         $client->connect($settings, true);
+        $this->trapSignals(fn () => $client->interrupt());
 
         foreach ($topics as $topic) {
             $client->subscribe($topic, function (string $topic, string $message) use ($service): void {
@@ -105,10 +103,6 @@ class TuyaSubscribeCommand extends Command
 
         $this->info('Assinando '.count($topics).' tópico(s) em '.$parts['host'].'. Ctrl+C para sair.');
 
-        pcntl_async_signals(true);
-        pcntl_signal(SIGINT, fn () => $client->interrupt());
-        pcntl_signal(SIGTERM, fn () => $client->interrupt());
-
         $client->loop(! $this->option('once'));
         $client->disconnect();
 
@@ -116,12 +110,44 @@ class TuyaSubscribeCommand extends Command
     }
 
     /**
-     * Nada a fazer agora: registra o motivo, espera e sai com sucesso, para o supervisord
+     * Espera até existir uma integração Tuya conectada.
+     *
+     * A espera acontece dentro do processo, e não saindo para o supervisord reiniciar,
+     * porque um usuário pode conectar a integração pela UI a qualquer momento — e sair a
+     * cada ciclo repetiria a mesma linha de log indefinidamente. Aqui ela sai uma vez só.
+     */
+    private function awaitIntegration(): ?Integration
+    {
+        $announced = false;
+
+        while (true) {
+            $integration = $this->resolveIntegration();
+
+            if ($integration instanceof Integration) {
+                return $integration;
+            }
+
+            if (! $announced) {
+                Log::info('[Tuya MQTT] nenhuma integração Tuya conectada — aguardando.');
+                $this->warn('Nenhuma integração Tuya conectada — aguardando.');
+                $announced = true;
+            }
+
+            if ($this->option('once')) {
+                return null;
+            }
+
+            sleep(self::IDLE_BACKOFF_SECONDS);
+        }
+    }
+
+    /**
+     * Problema possivelmente transitório: registra e sai com sucesso, para o supervisord
      * reiniciar sem marcar o programa como FATAL.
      */
     private function idle(string $reason): int
     {
-        Log::info('[Tuya MQTT] subscriber ocioso', ['reason' => $reason]);
+        Log::warning('[Tuya MQTT] subscriber ocioso', ['reason' => $reason]);
         $this->warn($reason);
 
         if (! $this->option('once')) {
@@ -129,6 +155,15 @@ class TuyaSubscribeCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function trapSignals(?callable $onSignal = null): void
+    {
+        $handler = $onSignal ?? static fn () => exit(0);
+
+        pcntl_async_signals(true);
+        pcntl_signal(SIGINT, $handler);
+        pcntl_signal(SIGTERM, $handler);
     }
 
     private function resolveIntegration(): ?Integration
