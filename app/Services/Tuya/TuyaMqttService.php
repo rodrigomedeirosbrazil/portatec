@@ -45,6 +45,63 @@ class TuyaMqttService
         return $result;
     }
 
+    /**
+     * Tópicos a assinar: o do home (eventos de vínculo, online/offline) e os dos
+     * dispositivos (relatório de DP).
+     *
+     * O placeholder {ownerId} é o `ownerId` do home — não o uid do usuário.
+     *
+     * @param  array<string, mixed>  $config
+     * @return list<string>
+     */
+    public function topicsFor(Integration $integration, array $config): array
+    {
+        $topics = [];
+
+        $homeTemplate = (string) data_get($config, 'topic.ownerId.sub');
+        if ($homeTemplate !== '') {
+            foreach ($this->homeOwnerIds($integration) as $ownerId) {
+                $topics[] = str_replace('{ownerId}', $ownerId, $homeTemplate);
+            }
+        }
+
+        $deviceTemplate = (string) data_get($config, 'topic.devId.sub');
+        if ($deviceTemplate !== '') {
+            $externalIds = $integration->devices()
+                ->whereNotNull('external_device_id')
+                ->pluck('external_device_id');
+
+            foreach ($externalIds as $externalId) {
+                $base = str_replace('{devId}', (string) $externalId, $deviceTemplate);
+
+                // O SDK escolhe /pen ou /sta conforme o supportLocal do dispositivo.
+                // Assinar os dois evita uma chamada HTTP extra por dispositivo, e
+                // assinar um tópico que não recebe nada é inofensivo.
+                $topics[] = $base.'/pen';
+                $topics[] = $base.'/sta';
+            }
+        }
+
+        return array_values(array_unique($topics));
+    }
+
+    /** @return list<string> */
+    private function homeOwnerIds(Integration $integration): array
+    {
+        $homes = $this->client->get($integration, '/v1.0/m/life/users/homes');
+
+        if (! is_array($homes)) {
+            return [];
+        }
+
+        return collect($homes)
+            ->pluck('ownerId')
+            ->filter()
+            ->map(fn ($ownerId): string => (string) $ownerId)
+            ->values()
+            ->all();
+    }
+
     /** @param array<string, mixed> $message */
     public function handleMessage(array $message): void
     {
