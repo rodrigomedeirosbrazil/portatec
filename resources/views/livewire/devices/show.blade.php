@@ -44,10 +44,12 @@
                     @endif
                 </li>
             @empty
-                @if ($device->isTuyaLock())
-                    <li>Fechadura Tuya: os PINs temporários deste dispositivo são gerenciados pelos Access Codes do local vinculado.</li>
+                @if ($device->supportsTuyaTemporaryPassword())
+                    <li>{{ __('app.tuya_lock_pins_from_access_codes') }}</li>
+                @elseif ($device->isTuyaLock())
+                    <li class="text-error-500">{{ __('app.tuya_lock_no_temp_password_dp') }}</li>
                 @else
-                    <li>Nenhuma função cadastrada.</li>
+                    <li>{{ __('app.device_no_functions') }}</li>
                 @endif
             @endforelse
         </ul>
@@ -57,6 +59,9 @@
         <h2 class="mt-0">{{ $device->isTuyaLock() ? 'Últimos syncs de PIN' : 'Últimos comandos' }}</h2>
         <ul class="m-0 pl-5">
             @if ($device->isTuyaLock())
+                @unless ($device->supportsTuyaTemporaryPassword())
+                    <li class="text-error-500">{{ __('app.tuya_lock_no_temp_password_dp') }}</li>
+                @endunless
                 @forelse ($recentTuyaSyncs as $sync)
                     <li>
                         {{ $sync->updated_at?->format('d/m/Y H:i:s') }} -

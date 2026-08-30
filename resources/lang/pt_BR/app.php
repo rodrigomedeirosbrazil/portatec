@@ -164,6 +164,9 @@ return [
     ],
 
     // Integração Tuya
+    'device_no_functions' => 'Nenhuma função cadastrada.',
+    'tuya_lock_pins_from_access_codes' => 'Fechadura Tuya: os PINs temporários deste dispositivo são gerenciados pelos códigos de acesso do local vinculado.',
+    'tuya_lock_no_temp_password_dp' => 'Esta fechadura não expõe o comando de senha temporária da Tuya, então o PortaTec não consegue enviar PINs para ela. Use um dispositivo com suporte a PIN neste local.',
     'tuya_back' => 'Voltar',
     'tuya_back_to_devices' => 'Voltar para dispositivos',
     'tuya_connect_page_title' => 'Conectar via Tuya SmartLife',
