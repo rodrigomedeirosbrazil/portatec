@@ -148,12 +148,37 @@ return [
     'member_removed' => 'Pessoa removida do local.',
     'cannot_remove_last_admin' => 'Não é possível remover o último administrador do local.',
     'label' => 'Rótulo',
+    'member_search_label' => 'Buscar e selecionar usuário (nome ou e-mail)',
+    'member_search_placeholder' => 'Digite ao menos 2 caracteres para buscar...',
+    'member_search_no_results' => 'Nenhum usuário encontrado ou todos já são membros.',
+    'member_selected_change' => 'Alterar',
+    'member_no_members' => 'Nenhum membro além de você.',
+    'member_remove' => 'Remover',
+    'member_remove_confirm_title' => 'Remover membro',
+    'member_remove_confirm_description' => 'Tem certeza que deseja remover este membro?',
+    'member_add_submit' => 'Adicionar',
 
     // Clonar local
     'clone_place' => 'Clonar local',
     'clone_place_new_name' => 'Nome do novo local',
     'clone_place_add_people' => 'Adicionar pessoas ao novo local',
+    'clone_place_suggested_name' => 'Cópia de :name',
+    'clone_place_add_person' => '+ Adicionar pessoa',
+    'clone_place_help' => 'Você será administrador do novo local. Opcionalmente adicione outras pessoas.',
+    'clone_place_select_user' => 'Selecione',
+    'clone_place_label_placeholder' => 'Opcional',
     'place_cloned' => 'Local clonado com sucesso.',
+
+    // Associar dispositivo ao local
+    'attach_device' => 'Adicionar dispositivo ao local',
+    'attach_device_description' => 'Escolha um dispositivo existente ou que esteja em outro local que você acessa para associá-lo a :place.',
+    'attach_device_select' => 'Dispositivo',
+    'attach_device_select_placeholder' => 'Selecione um dispositivo',
+    'attach_device_no_place' => 'Sem local',
+    'attach_device_submit' => 'Associar ao local',
+    'attach_device_empty' => 'Não há dispositivos disponíveis para associar. Crie um novo dispositivo em Dispositivos ou use um que já esteja em outro local que você acessa.',
+    'device_already_in_place' => 'Este dispositivo já está associado a este local.',
+    'device_attached' => 'Dispositivo ":name" associado ao local com sucesso.',
 
     // Status do dispositivo
     'device_statuses' => [
@@ -205,6 +230,17 @@ return [
     'tuya_session_expired' => 'Sessão inválida. Por favor, recomece.',
     'tuya_connected_flash' => 'Integração Tuya conectada com sucesso! Vincule os dispositivos importados a um local para sincronizar PINs do place.',
 
+    // Tela de controle de dispositivos por local (Places/Control)
+    'place_control_title' => 'Controle – :place',
+    'device_not_found_in_place' => 'Dispositivo não encontrado neste local.',
+    'invalid_command_pin' => 'PIN inválido para envio de comando.',
+    'command_sent_to_device' => "Comando ':action' enviado para :device.",
+    'error_sending_device_command' => 'Erro ao enviar comando para o dispositivo.',
+    'device_control_function_label' => ':type (PIN :pin)',
+    'device_control_tuya_lock_message' => 'Esta fechadura Tuya recebe os PINs temporários pelos Access Codes deste local.',
+    'device_control_no_functions' => 'Nenhuma função controlável para este dispositivo.',
+    'device_control_no_devices' => 'Nenhum dispositivo neste local.',
+
     // Componentes de página (kit compartilhado)
     'back' => 'Voltar',
     'status_active' => 'Ativo',
@@ -252,6 +288,28 @@ return [
     'pagination_results' => 'resultados',
     'pagination_go_to_page' => 'Ir para a página :page',
     'pagination_navigation' => 'Navegação de paginação',
+
+    // CRUD de locais (páginas Inertia em resources/js/pages/places)
+    'new_place' => 'Novo Local',
+    'create_place_title' => 'Novo Place',
+    'edit_place_title' => 'Editar Place',
+    'save_place' => 'Salvar',
+    'update_place' => 'Atualizar',
+    'place_search_placeholder' => 'Buscar por nome...',
+    'place_empty_state' => 'Você ainda não possui locais.',
+    'place_index_stats' => 'Dispositivos: :devices | Reservas: :bookings | Códigos: :codes',
+    'place_control_action' => 'Controle',
+    'place_edit_action' => 'Editar',
+    'place_devices_heading' => 'Dispositivos',
+    'place_bookings_recent_heading' => 'Reservas (últimos 10)',
+    'place_active_codes_heading' => 'PINs ativos',
+    'place_no_members_message' => 'Apenas você tem acesso a este local.',
+    'place_add_device_action' => 'Adicionar dispositivo',
+    'place_no_devices_message' => 'Nenhum dispositivo associado.',
+    'place_remove_device_action' => 'Remover do local',
+    'place_remove_device_confirm_title' => 'Remover o dispositivo ":name" deste local? Ele continuará existindo e poderá ser associado a outro local.',
+    'place_created' => 'Place criado com sucesso.',
+    'place_updated' => 'Place atualizado com sucesso.',
 
     // Autenticação
     'email' => 'E-mail',

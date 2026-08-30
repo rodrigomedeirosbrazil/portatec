@@ -1,0 +1,85 @@
+/**
+ * Tipos que espelham os API Resources em app/Http/Resources/. Aditivos ao
+ * index.ts existente — reexportados a partir dele.
+ */
+
+export interface Place {
+    id: number;
+    name: string;
+    devices_count?: number;
+    bookings_count?: number;
+    access_codes_count?: number;
+    devices?: Device[];
+    bookings?: Booking[];
+    access_codes?: AccessCode[];
+    place_users?: PlaceUser[];
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+export type DeviceBrand = 'portatec' | 'tuya';
+
+export interface Device {
+    id: number;
+    name: string;
+    external_device_id: string | null;
+    place_id: number | null;
+    integration_id: number | null;
+    brand: DeviceBrand | null;
+    default_pin: string | null;
+    last_sync: string | null;
+    wifi_strength: number | null;
+    firmware_version: string | null;
+    tuya_category: string | null;
+    tuya_product_id: string | null;
+    tuya_product_name: string | null;
+    tuya_icon: string | null;
+    tuya_online: boolean | null;
+    is_available: boolean;
+    device_functions_count?: number;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+export type PlaceRole = 'admin' | 'host';
+
+export interface PlaceUser {
+    id: number;
+    place_id: number;
+    user_id: number;
+    role: PlaceRole;
+    label: string | null;
+    user?: {
+        id: number;
+        name: string;
+        email: string;
+    };
+}
+
+export interface Booking {
+    id: number;
+    place_id: number;
+    integration_id: number | null;
+    guest_name: string | null;
+    check_in: string | null;
+    check_out: string | null;
+    source: string | null;
+    external_id: string | null;
+    deletion_reason: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+export interface AccessCode {
+    id: number;
+    place_id: number;
+    user_id: number | null;
+    booking_id: number | null;
+    pin: string;
+    start: string | null;
+    end: string | null;
+    display_name: string;
+    is_valid: boolean;
+    created_at: string | null;
+    updated_at: string | null;
+}

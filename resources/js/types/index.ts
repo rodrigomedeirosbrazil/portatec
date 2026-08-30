@@ -4,6 +4,8 @@
  * HandleInertiaRequests (auth, impersonation, flash, translations).
  */
 
+export * from './models';
+
 /** Um item de link do paginator do Laravel (->paginate()->withQueryString()). */
 export interface PaginationLink {
     url: string | null;

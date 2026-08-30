@@ -1,6 +1,14 @@
 <?php
 
 use App\Http\Controllers\Admin\StartImpersonationController;
+use App\Http\Controllers\App\DeviceCommandController;
+use App\Http\Controllers\App\PlaceAttachDeviceController;
+use App\Http\Controllers\App\PlaceCloneController;
+use App\Http\Controllers\App\PlaceControlController;
+use App\Http\Controllers\App\PlaceController;
+use App\Http\Controllers\App\PlaceDeviceController;
+use App\Http\Controllers\App\PlaceMemberController;
+use App\Http\Controllers\App\PlaceMemberSearchController;
 use App\Http\Controllers\App\StopImpersonationController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -23,14 +31,6 @@ use App\Livewire\Integrations\Create as CreateIntegration;
 use App\Livewire\Integrations\Edit as EditIntegration;
 use App\Livewire\Integrations\Index as IndexIntegrations;
 use App\Livewire\Integrations\TuyaConnect;
-use App\Livewire\Places\AttachDevice as AttachDeviceToPlace;
-use App\Livewire\Places\ClonePlace;
-use App\Livewire\Places\Control as ControlPlace;
-use App\Livewire\Places\Create as CreatePlace;
-use App\Livewire\Places\Edit as EditPlace;
-use App\Livewire\Places\Index as IndexPlaces;
-use App\Livewire\Places\Members as MembersPlace;
-use App\Livewire\Places\Show as ShowPlace;
 use App\Models\ImpersonationSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -82,14 +82,23 @@ Route::middleware('auth')
         Route::redirect('/', '/app/dashboard');
         Route::get('/dashboard', Dashboard::class)->name('dashboard');
 
-        Route::get('/places', IndexPlaces::class)->name('places.index');
-        Route::get('/places/create', CreatePlace::class)->name('places.create');
-        Route::get('/places/{place}/devices/attach', AttachDeviceToPlace::class)->name('places.devices.attach');
-        Route::get('/places/{place}/members', MembersPlace::class)->name('places.members');
-        Route::get('/places/{place}/clone', ClonePlace::class)->name('places.clone');
-        Route::get('/places/{place}', ShowPlace::class)->name('places.show');
-        Route::get('/places/{place}/control', ControlPlace::class)->name('places.control');
-        Route::get('/places/{place}/edit', EditPlace::class)->name('places.edit');
+        Route::get('/places', [PlaceController::class, 'index'])->name('places.index');
+        Route::get('/places/create', [PlaceController::class, 'create'])->name('places.create');
+        Route::post('/places', [PlaceController::class, 'store'])->name('places.store');
+        Route::get('/places/{place}/devices/attach', [PlaceAttachDeviceController::class, 'create'])->name('places.devices.attach');
+        Route::post('/places/{place}/devices/attach', [PlaceAttachDeviceController::class, 'store'])->name('places.devices.attach.store');
+        Route::delete('/places/{place}/devices/{device}', [PlaceDeviceController::class, 'destroy'])->name('places.devices.destroy');
+        Route::get('/places/{place}/members', [PlaceMemberController::class, 'index'])->name('places.members');
+        Route::post('/places/{place}/members', [PlaceMemberController::class, 'store'])->name('places.members.store');
+        Route::delete('/places/{place}/members/{placeUser}', [PlaceMemberController::class, 'destroy'])->name('places.members.destroy');
+        Route::get('/places/{place}/members/search', PlaceMemberSearchController::class)->name('places.members.search');
+        Route::get('/places/{place}/clone', [PlaceCloneController::class, 'create'])->name('places.clone');
+        Route::post('/places/{place}/clone', [PlaceCloneController::class, 'store'])->name('places.clone.store');
+        Route::get('/places/{place}', [PlaceController::class, 'show'])->name('places.show');
+        Route::get('/places/{place}/control', [PlaceControlController::class, 'show'])->name('places.control');
+        Route::post('/places/{place}/commands', [DeviceCommandController::class, 'store'])->name('places.commands.store');
+        Route::get('/places/{place}/edit', [PlaceController::class, 'edit'])->name('places.edit');
+        Route::put('/places/{place}', [PlaceController::class, 'update'])->name('places.update');
 
         Route::get('/bookings', IndexBookings::class)->name('bookings.index');
         Route::get('/bookings/integrations', IndexIntegrations::class)->name('bookings.integrations.index');
