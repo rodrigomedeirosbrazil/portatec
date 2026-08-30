@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn (Request $request) => auth()->user()?->hasRole('super_admin') ? '/admin' : '/app/dashboard');
         $middleware->trustProxies(at: [
             '172.21.0.0/16',
+        ]);
+        $middleware->web(append: [
+            HandleInertiaRequests::class,
         ]);
     })
     ->withMiddleware(function (Middleware $middleware) {
