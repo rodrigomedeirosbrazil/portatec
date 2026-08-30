@@ -1,9 +1,9 @@
 <section>
     <a href="{{ route('app.devices.integrations.index') }}"
        class="text-primary-500 no-underline hover:text-primary-700">
-        &larr; Voltar
+        &larr; {{ __('app.tuya_back') }}
     </a>
-    <h1 class="my-2 mb-4">Conectar via Tuya SmartLife</h1>
+    <h1 class="my-2 mb-4">{{ __('app.tuya_connect_page_title') }}</h1>
 
     @if ($errorMessage)
         <div class="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-red-700">
@@ -13,23 +13,21 @@
 
     @if ($step === 'form')
         <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-            <h2 class="mb-1 text-lg font-semibold">Passo 1 — Código do usuário</h2>
+            <h2 class="mb-1 text-lg font-semibold">{{ __('app.tuya_step1_title') }}</h2>
             <p class="mb-4 text-sm text-neutral-600">
-                Abra o app <strong>Tuya Smart</strong> ou <strong>Smart Life</strong>
-                → aba <strong>Eu</strong> → ícone de engrenagem
-                → <strong>Conta e Segurança</strong> → <strong>Código do Usuário</strong>.
+                {!! __('app.tuya_step1_instructions') !!}
             </p>
 
             <form wire:submit="generateQr" class="grid gap-3">
                 <div>
                     <label for="userCode" class="text-sm font-medium">
-                        Código do Usuário (User Code)
+                        {{ __('app.tuya_user_code_label') }}
                     </label>
                     <input
                         id="userCode"
                         type="text"
                         wire:model="userCode"
-                        placeholder="Ex: eu1234567890abcd"
+                        placeholder="{{ __('app.tuya_user_code_placeholder') }}"
                         class="mt-1 w-full rounded-lg border border-neutral-300 p-2 font-mono text-sm"
                         autocomplete="off"
                     >
@@ -44,8 +42,8 @@
                     class="cursor-pointer rounded-lg border-0 bg-primary-500 px-4 py-2
                            text-white hover:bg-primary-700 disabled:opacity-60"
                 >
-                    <span wire:loading.remove wire:target="generateQr">Gerar QR Code</span>
-                    <span wire:loading wire:target="generateQr">Gerando...</span>
+                    <span wire:loading.remove wire:target="generateQr">{{ __('app.tuya_generate_qr') }}</span>
+                    <span wire:loading wire:target="generateQr">{{ __('app.tuya_generating') }}</span>
                 </button>
             </form>
         </div>
@@ -54,15 +52,15 @@
     @if ($step === 'qr')
         <div wire:poll.3000ms="pollQr"
              class="rounded-[10px] border border-neutral-300 bg-white p-3.5 text-center">
-            <h2 class="mb-1 text-lg font-semibold">Passo 2 — Escaneie o QR Code</h2>
+            <h2 class="mb-1 text-lg font-semibold">{{ __('app.tuya_step2_title') }}</h2>
             <p class="mb-4 text-sm text-neutral-600">
-                Abra o app, toque no ícone de QR na tela inicial e aponte para o código abaixo.
+                {{ __('app.tuya_step2_instructions') }}
             </p>
 
             <div class="mx-auto mb-4 flex items-center justify-center">
                 <img
                     src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode($qrUrl) }}"
-                    alt="QR Code Tuya"
+                    alt="{{ __('app.tuya_qr_alt') }}"
                     class="rounded-lg border border-neutral-200"
                     width="220" height="220"
                 >
@@ -76,12 +74,12 @@
                             stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                 </svg>
-                Aguardando confirmação no app...
+                {{ __('app.tuya_waiting_confirmation') }}
             </div>
 
             @if ($qrExpiresAt)
                 <p class="mt-2 text-xs text-neutral-400">
-                    O QR expira às
+                    {{ __('app.tuya_qr_expires_at') }}
                     {{ \Carbon\Carbon::createFromTimestamp($qrExpiresAt)->format('H:i:s') }}
                 </p>
             @endif
@@ -90,17 +88,16 @@
                     type="button"
                     class="mt-4 cursor-pointer rounded-lg border border-neutral-300
                            bg-white px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100">
-                Cancelar
+                {{ __('app.tuya_cancel') }}
             </button>
         </div>
     @endif
 
     @if ($step === 'devices')
         <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-            <h2 class="mb-1 text-lg font-semibold">Passo 3 — Selecione os dispositivos</h2>
+            <h2 class="mb-1 text-lg font-semibold">{{ __('app.tuya_step3_title') }}</h2>
             <p class="mb-4 text-sm text-neutral-600">
-                {{ count($devices) }} dispositivo(s) encontrado(s).
-                Os dispositivos de acesso já estão pré-selecionados.
+                {{ __('app.tuya_devices_found', ['count' => count($devices)]) }}
             </p>
 
             <div class="grid gap-2 mb-4">
@@ -120,9 +117,9 @@
                             <div class="flex items-center gap-2">
                                 <span class="truncate text-sm font-medium">{{ $device['name'] }}</span>
                                 @if ($device['online'] ?? false)
-                                    <span class="text-xs font-medium text-green-600">online</span>
+                                    <span class="text-xs font-medium text-green-600">{{ __('app.online') }}</span>
                                 @else
-                                    <span class="text-xs text-neutral-400">offline</span>
+                                    <span class="text-xs text-neutral-400">{{ __('app.offline') }}</span>
                                 @endif
                             </div>
                             <p class="mt-0.5 text-xs text-neutral-500">{{ $device['categoryLabel'] ?? '' }}</p>
@@ -131,7 +128,7 @@
                     </label>
                 @empty
                     <p class="py-4 text-center text-sm text-neutral-500">
-                        Nenhum dispositivo encontrado na conta.
+                        {{ __('app.tuya_no_devices_found') }}
                     </p>
                 @endforelse
             </div>
@@ -145,14 +142,14 @@
                     class="cursor-pointer rounded-lg border-0 bg-primary-500 px-4 py-2
                            text-white hover:bg-primary-700 disabled:opacity-60"
                 >
-                    <span wire:loading.remove wire:target="saveIntegration">Salvar Integração</span>
-                    <span wire:loading wire:target="saveIntegration">Salvando...</span>
+                    <span wire:loading.remove wire:target="saveIntegration">{{ __('app.tuya_save_integration') }}</span>
+                    <span wire:loading wire:target="saveIntegration">{{ __('app.tuya_saving') }}</span>
                 </button>
                 <button type="button"
                         wire:click="resetQr"
                         class="cursor-pointer rounded-lg border border-neutral-300 bg-white
                                px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100">
-                    Cancelar
+                    {{ __('app.tuya_cancel') }}
                 </button>
             </div>
         </div>
@@ -165,19 +162,19 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
             </div>
-            <h2 class="text-lg font-semibold text-green-800">Integração Tuya conectada com sucesso!</h2>
-            <p class="mt-1 text-sm text-green-700">Os dispositivos selecionados foram importados.</p>
+            <h2 class="text-lg font-semibold text-green-800">{{ __('app.tuya_connected_title') }}</h2>
+            <p class="mt-1 text-sm text-green-700">{{ __('app.tuya_devices_imported') }}</p>
 
             <div class="mt-5 flex justify-center gap-3">
                 <a href="{{ route('app.devices.index') }}" wire:navigate
                    class="rounded-lg border-0 bg-primary-500 px-4 py-2
                           text-white no-underline hover:bg-primary-700">
-                    Ver dispositivos
+                    {{ __('app.tuya_view_devices') }}
                 </a>
                 <a href="{{ route('app.devices.integrations.index') }}" wire:navigate
                    class="rounded-lg border border-neutral-300 bg-white px-4 py-2
                           text-sm text-neutral-600 no-underline hover:bg-neutral-100">
-                    Ver integrações
+                    {{ __('app.tuya_view_integrations') }}
                 </a>
             </div>
         </div>
