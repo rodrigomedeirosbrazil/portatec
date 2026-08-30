@@ -17,6 +17,17 @@ class Integration extends Model
     protected $fillable = [
         'platform_id',
         'user_id',
+        'tuya_user_code',
+        'tuya_access_token',
+        'tuya_refresh_token',
+        'tuya_token_expires_at',
+        'tuya_uid',
+        'tuya_endpoint',
+        'tuya_terminal_id',
+    ];
+
+    protected $casts = [
+        'tuya_token_expires_at' => 'datetime',
     ];
 
     public function platform(): BelongsTo
@@ -39,5 +50,10 @@ class Integration extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(Device::class);
     }
 }

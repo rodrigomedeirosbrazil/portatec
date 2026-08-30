@@ -48,7 +48,8 @@ class DeviceCommandService
         );
         $mqtt->disconnect();
 
-        $placeId = $device->place_id
+        $placeId = $device->places()->value('places.id')
+            ?? $device->place_id
             ?? $device->placeDeviceFunctions()->value('place_id');
 
         if ($placeId === null) {
@@ -143,7 +144,10 @@ class DeviceCommandService
         $this->deviceService->updateStatus($chipId, $payload);
 
         $device->refresh();
-        $placeIds = $device->placeDeviceFunctions()->pluck('place_id')->unique();
+        $placeIds = $device->places()
+            ->pluck('places.id')
+            ->merge($device->placeDeviceFunctions()->pluck('place_id'))
+            ->unique();
 
         $pin = data_get($payload, 'pin') ?? data_get($payload, 'sensor-pin');
         if ($pin !== null) {
@@ -176,7 +180,10 @@ class DeviceCommandService
 
         $device->forceFill(['last_sync' => now()])->save();
 
-        $placeIds = $device->placeDeviceFunctions()->pluck('place_id')->unique();
+        $placeIds = $device->places()
+            ->pluck('places.id')
+            ->merge($device->placeDeviceFunctions()->pluck('place_id'))
+            ->unique();
         foreach ($placeIds as $placeId) {
             PlaceDeviceStatusEvent::dispatch((int) $placeId, $device->id, $device->isAvailable());
         }
@@ -198,7 +205,9 @@ class DeviceCommandService
 
         $pin = (string) data_get($payload, 'pin', data_get($payload, 'default_pin', ''));
         $result = $this->normalizeAccessResult(data_get($payload, 'result', 'invalid'));
-        $placeId = $device->place_id ?? $device->placeDeviceFunctions()->value('place_id');
+        $placeId = $device->places()->value('places.id')
+            ?? $device->place_id
+            ?? $device->placeDeviceFunctions()->value('place_id');
 
         $accessCode = null;
         if ($placeId !== null && $pin !== '') {
@@ -277,6 +286,10 @@ class DeviceCommandService
     private function dispatchAckToPlaces(Device $device, DeviceFunction $deviceFunction, string $command, ?string $commandId = null): void
     {
         $placeIds = $deviceFunction->placeDeviceFunctions->pluck('place_id')->unique();
+
+        if ($placeIds->isEmpty()) {
+            $placeIds = $device->places()->pluck('places.id');
+        }
 
         if ($placeIds->isEmpty() && $device->place_id !== null) {
             $placeIds = collect([$device->place_id]);

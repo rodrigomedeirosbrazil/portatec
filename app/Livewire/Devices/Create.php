@@ -13,7 +13,8 @@ use Livewire\Component;
 
 class Create extends Component
 {
-    public ?int $placeId = null;
+    /** @var array<int, int> */
+    public array $placeIds = [];
 
     public string $name = '';
 
@@ -30,16 +31,20 @@ class Create extends Component
                 $place->placeUsers()->where('user_id', Auth::id())->exists(),
                 403
             );
-            $this->placeId = $place->id;
-        } elseif ($this->placeId === null) {
-            $this->placeId = Auth::user()->placeUsers()->value('place_id');
+            $this->placeIds = [$place->id];
+        } elseif ($this->placeIds === []) {
+            $defaultPlaceId = Auth::user()->placeUsers()->value('place_id');
+            if ($defaultPlaceId !== null) {
+                $this->placeIds = [$defaultPlaceId];
+            }
         }
     }
 
     protected function rules(): array
     {
         return [
-            'placeId' => ['required', 'integer', 'exists:places,id'],
+            'placeIds' => ['required', 'array', 'min:1'],
+            'placeIds.*' => ['required', 'integer', 'exists:places,id'],
             'name' => ['required', 'string', 'max:255'],
             'brand' => ['required', 'string', 'in:portatec,tuya'],
             'external_device_id' => ['nullable', 'string', 'max:255'],
@@ -51,20 +56,31 @@ class Create extends Component
     {
         $validated = $this->validate();
 
-        $hasAccess = Auth::user()
-            ->placeUsers()
-            ->where('place_id', $validated['placeId'])
-            ->exists();
+        $placeIds = collect($validated['placeIds'])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
 
-        abort_unless($hasAccess, 403);
+        $allowedPlaceIds = Auth::user()
+            ->placeUsers()
+            ->whereIn('place_id', $placeIds)
+            ->pluck('place_id')
+            ->all();
+
+        abort_unless(count($allowedPlaceIds) === count($placeIds), 403);
+
+        $primaryPlaceId = $placeIds[0] ?? null;
 
         $device = Device::create([
-            'place_id' => $validated['placeId'],
+            'place_id' => $primaryPlaceId,
             'name' => $validated['name'],
             'brand' => DeviceBrandEnum::from($validated['brand']),
             'external_device_id' => $validated['external_device_id'] ?: null,
             'default_pin' => $validated['default_pin'] ?: null,
         ]);
+
+        $device->places()->sync($placeIds);
 
         session()->flash('status', 'Dispositivo criado com sucesso.');
 

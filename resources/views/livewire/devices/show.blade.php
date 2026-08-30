@@ -16,8 +16,8 @@
 
     <div class="mb-4 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
         <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-            <strong>Local</strong>
-            <p class="mt-1.5 m-0">{{ $device->place?->name ?? 'Sem local' }}</p>
+            <strong>Locais</strong>
+            <p class="mt-1.5 m-0">{{ $device->places->pluck('name')->join(', ') ?: ($device->place?->name ?? 'Sem local') }}</p>
         </div>
         <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
             <strong>Marca</strong>
@@ -44,21 +44,47 @@
                     @endif
                 </li>
             @empty
-                <li>Nenhuma função cadastrada.</li>
+                @if ($device->supportsTuyaTemporaryPassword())
+                    <li>{{ __('app.tuya_lock_pins_from_access_codes') }}</li>
+                @elseif ($device->isTuyaLock())
+                    <li class="text-error-500">{{ __('app.tuya_lock_no_temp_password_dp') }}</li>
+                @else
+                    <li>{{ __('app.device_no_functions') }}</li>
+                @endif
             @endforelse
         </ul>
     </div>
 
     <div class="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-        <h2 class="mt-0">Últimos comandos</h2>
+        <h2 class="mt-0">{{ $device->isTuyaLock() ? 'Últimos syncs de PIN' : 'Últimos comandos' }}</h2>
         <ul class="m-0 pl-5">
-            @forelse ($recentCommands as $command)
-                <li>
-                    {{ $command->created_at?->format('d/m/Y H:i:s') }} - {{ $command->command_type }}
-                </li>
-            @empty
-                <li>Nenhum comando registrado.</li>
-            @endforelse
+            @if ($device->isTuyaLock())
+                @unless ($device->supportsTuyaTemporaryPassword())
+                    <li class="text-error-500">{{ __('app.tuya_lock_no_temp_password_dp') }}</li>
+                @endunless
+                @forelse ($recentTuyaSyncs as $sync)
+                    <li>
+                        {{ $sync->updated_at?->format('d/m/Y H:i:s') }} -
+                        {{ strtoupper($sync->status) }}
+                        @if ($sync->synced_pin)
+                            - PIN {{ $sync->synced_pin }}
+                        @endif
+                        @if ($sync->error_message)
+                            - {{ $sync->error_message }}
+                        @endif
+                    </li>
+                @empty
+                    <li>Nenhum sync de PIN registrado.</li>
+                @endforelse
+            @else
+                @forelse ($recentCommands as $command)
+                    <li>
+                        {{ $command->created_at?->format('d/m/Y H:i:s') }} - {{ $command->command_type }}
+                    </li>
+                @empty
+                    <li>Nenhum comando registrado.</li>
+                @endforelse
+            @endif
         </ul>
     </div>
 </section>

@@ -32,9 +32,9 @@ class Place extends Model
         return $this->hasMany(PlaceDeviceFunction::class);
     }
 
-    public function devices(): HasMany
+    public function devices(): BelongsToMany
     {
-        return $this->hasMany(Device::class);
+        return $this->belongsToMany(Device::class, 'device_place')->withTimestamps();
     }
 
     public function accessCodes(): HasMany

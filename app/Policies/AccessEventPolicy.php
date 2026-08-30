@@ -19,7 +19,13 @@ class AccessEventPolicy
 
     public function view(User $user, AccessEvent $accessEvent): bool
     {
-        $placeId = $accessEvent->device?->place_id;
+        $device = $accessEvent->device;
+
+        if ($device?->places()->whereHas('placeUsers', fn ($query) => $query->where('user_id', $user->id))->exists()) {
+            return true;
+        }
+
+        $placeId = $device?->place_id;
 
         return $placeId !== null && $this->hasPlaceAccess($user, $placeId);
     }

@@ -7,6 +7,7 @@ namespace App\Livewire\Places;
 use App\Models\Device;
 use App\Models\Place;
 use App\Services\Device\DeviceCommandService;
+use App\Services\Tuya\TuyaIntegrationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -17,12 +18,14 @@ class Control extends Component
 
     public function mount(Place $place): void
     {
-        $this->place = $place->load(['devices.deviceFunctions']);
+        $this->place = $place->load(['devices.deviceFunctions', 'devices.integration']);
 
         abort_unless(
             $this->place->placeUsers()->where('user_id', Auth::id())->exists(),
             403
         );
+
+        $this->refreshTuyaSnapshots(app(TuyaIntegrationService::class));
     }
 
     public function sendCommand(DeviceCommandService $service, int $deviceId, string $action, string $pin): void
@@ -67,8 +70,25 @@ class Control extends Component
 
     public function render(): View
     {
+        $this->place->refresh()->load(['devices.deviceFunctions', 'devices.integration']);
+
         return view('livewire.places.control', [
             'place' => $this->place,
         ])->layout('layouts.client');
+    }
+
+    private function refreshTuyaSnapshots(TuyaIntegrationService $service): void
+    {
+        foreach ($this->place->devices as $device) {
+            if ($device->brand->value !== 'tuya') {
+                continue;
+            }
+
+            try {
+                $service->refreshDeviceSnapshot($device);
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        }
     }
 }

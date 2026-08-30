@@ -76,12 +76,15 @@ class Create extends Component
 
         session()->flash('status', 'Integração criada com sucesso.');
 
-        return $this->redirectRoute('app.integrations.index', navigate: true);
+        return $this->redirectRoute('app.bookings.integrations.index', navigate: true);
     }
 
     public function render(): View
     {
-        $platforms = Platform::query()->orderBy('name')->get();
+        $platforms = Platform::query()
+            ->where('slug', '!=', 'tuya')
+            ->orderBy('name')
+            ->get();
         $places = Place::query()
             ->whereHas('placeUsers', fn ($query) => $query->where('user_id', Auth::id()))
             ->orderBy('name')

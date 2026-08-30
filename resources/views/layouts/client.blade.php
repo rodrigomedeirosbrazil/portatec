@@ -42,7 +42,7 @@
                 <x-nav-link href="{{ route('app.devices.index') }}" route="app.devices.*">Dispositivos</x-nav-link>
                 <x-nav-link href="{{ route('app.bookings.index') }}" route="app.bookings.*">Reservas</x-nav-link>
                 <x-nav-link href="{{ route('app.access-codes.index') }}" route="app.access-codes.*">Códigos de acesso</x-nav-link>
-                <x-nav-link href="{{ route('app.integrations.index') }}" route="app.integrations.*">Integrações</x-nav-link>
+                <x-nav-link href="{{ route('app.bookings.integrations.index') }}" route="app.bookings.integrations.*">Integrações iCal</x-nav-link>
                 <x-nav-link href="/admin" route="admin.*">Admin</x-nav-link>
                 <form method="POST" action="{{ route('logout') }}" class="ml-auto">
                     @csrf
@@ -72,7 +72,7 @@
                 <x-nav-link href="{{ route('app.devices.index') }}" route="app.devices.*" :mobile="true">Dispositivos</x-nav-link>
                 <x-nav-link href="{{ route('app.bookings.index') }}" route="app.bookings.*" :mobile="true">Reservas</x-nav-link>
                 <x-nav-link href="{{ route('app.access-codes.index') }}" route="app.access-codes.*" :mobile="true">Códigos de acesso</x-nav-link>
-                <x-nav-link href="{{ route('app.integrations.index') }}" route="app.integrations.*" :mobile="true">Integrações</x-nav-link>
+                <x-nav-link href="{{ route('app.bookings.integrations.index') }}" route="app.bookings.integrations.*" :mobile="true">Integrações iCal</x-nav-link>
                 <x-nav-link href="/admin" route="admin.*" :mobile="true">Admin</x-nav-link>
                 <form method="POST" action="{{ route('logout') }}" class="pt-2">
                     @csrf

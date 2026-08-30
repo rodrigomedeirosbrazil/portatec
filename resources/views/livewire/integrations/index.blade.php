@@ -1,5 +1,9 @@
 <section>
-    <x-page-header title="Integrações" :action-url="route('app.integrations.create')" action-label="Nova Integração" />
+    <x-page-header
+        title="Integrações de reservas (iCal)"
+        :action-url="route('app.bookings.integrations.create')"
+        action-label="Nova Integração iCal"
+    />
 
     <div class="mb-4 rounded-[10px] border border-neutral-300 bg-white p-3.5">
         <x-place-select
@@ -22,7 +26,7 @@
                         {{ $integration->platform?->name ?? 'Plataforma' }}
                     </h2>
                     <div class="flex gap-2">
-                        <a href="{{ route('app.integrations.edit', $integration->id) }}" class="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 no-underline hover:bg-neutral-50">
+                        <a href="{{ route('app.bookings.integrations.edit', $integration->id) }}" class="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 no-underline hover:bg-neutral-50">
                             Editar
                         </a>
                         <button
@@ -45,8 +49,8 @@
         @empty
             <x-empty-state
                 message="Nenhuma integração encontrada."
-                :action-url="route('app.integrations.create')"
-                action-label="Nova Integração"
+                :action-url="route('app.bookings.integrations.create')"
+                action-label="Nova Integração iCal"
             />
         @endforelse
     </div>

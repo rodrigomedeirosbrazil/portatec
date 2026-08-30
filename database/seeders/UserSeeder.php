@@ -74,6 +74,13 @@ class UserSeeder extends Seeder
             'deleted_at' => null,
         ]);
 
+        DB::table('device_place')->insert([
+            'device_id' => $deviceId,
+            'place_id' => $placeId,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
         $buttonFunctionId = DB::table('device_functions')->insertGetId([
             'device_id' => $deviceId,
             'type' => 'button',

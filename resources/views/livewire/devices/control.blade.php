@@ -7,7 +7,7 @@
     </div>
 
     @php
-        $placeId = (int) ($device->place_id ?? $device->placeDeviceFunctions()->value('place_id') ?? 0);
+        $placeId = (int) ($device->places->first()?->id ?? $device->place_id ?? $device->placeDeviceFunctions()->value('place_id') ?? 0);
         $statusFunction = $device->getStatusFunction();
         $initialFunctionStatus = $statusFunction && $statusFunction->status !== null
             ? [$device->id . '-' . $statusFunction->pin => $statusFunction->status]
@@ -145,7 +145,11 @@
                 :wire-click="$wireClick"
             />
         @empty
-            <p class="m-0 text-neutral-500">Nenhuma função controlável encontrada para este dispositivo.</p>
+            @if ($device->isTuyaLock())
+                <p class="m-0 text-neutral-500">Esta fechadura Tuya recebe PINs temporários pelos Access Codes do local vinculado. Não há comando manual separado nesta tela.</p>
+            @else
+                <p class="m-0 text-neutral-500">Nenhuma função controlável encontrada para este dispositivo.</p>
+            @endif
         @endforelse
     </div>
 </section>

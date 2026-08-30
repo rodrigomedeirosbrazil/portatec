@@ -38,6 +38,7 @@ class Index extends Component
 
         $integrations = Integration::query()
             ->where('user_id', Auth::id())
+            ->whereHas('platform', fn ($query) => $query->where('slug', '!=', 'tuya'))
             ->with(['platform', 'places'])
             ->when($this->placeId, function ($query): void {
                 $query->whereHas('places', fn ($q) => $q->where('places.id', $this->placeId));

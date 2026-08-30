@@ -11,6 +11,9 @@
         @if ($includeEmpty)
             <option value="">{{ $emptyOptionLabel }}</option>
         @endif
+        @if ($includeUnassigned)
+            <option value="unassigned">{{ $unassignedOptionLabel }}</option>
+        @endif
         @foreach ($places as $place)
             <option value="{{ $place->id }}">{{ $place->name }}</option>
         @endforeach
