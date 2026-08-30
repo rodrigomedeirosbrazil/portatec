@@ -254,189 +254,209 @@ Nunca declare "pronto" sem rodar os testes e ver a saída.
 
 ### Visão geral
 
-O Portatec integra dispositivos Tuya **sem conta de developer** e **sem credenciais do portal `iot.tuya.com`**. Toda a autenticação e comunicação usa o mesmo mecanismo do Home Assistant — o `tuya-device-sharing-sdk` — via `apigw.iotbing.com`.
+O Portatec integra dispositivos Tuya **sem conta de developer** e **sem credenciais do portal
+`iot.tuya.com`**. A autenticação e a comunicação usam o mesmo mecanismo do Home Assistant — o
+[`tuya-device-sharing-sdk`](https://github.com/tuya/tuya-device-sharing-sdk) — iniciando em
+`apigw.iotbing.com` e seguindo no endpoint regional devolvido pelo login.
 
-O arquivo `app/Services/Tuya/Client.php` e `TuyaService.php` existem no repositório mas **não são usados na integração atual**. São legado de uma abordagem anterior que exigia conta de developer. Não referenciar nem instanciar essas classes.
+**O que este canal faz:** listar e importar dispositivos, ler capabilities e status, enviar
+comandos de DP e receber eventos por MQTT.
+
+**O que ele NÃO faz:** criar senha temporária em fechadura. Ver §11.6 — é uma fronteira
+comercial da Tuya, não uma limitação do nosso código. Não gaste tempo procurando contorno.
 
 ---
 
-### `TuyaQrAuthService.php` — serviço principal
+### 11.1 Arquitetura em três camadas
 
-**Toda a comunicação Tuya passa por este serviço.** Ele implementa três camadas:
+| Camada | Classe | Responsabilidade |
+|---|---|---|
+| 1 — Login QR | `TuyaQrAuthService` | gera o QR e faz polling; sem assinatura |
+| 2 — CustomerApi | `TuyaCustomerApiClient` | AES-128-GCM, `X-sign`, refresh de token |
+| 3 — Domínio | `TuyaIntegrationService` | homes, devices, specifications, comandos DP |
+| Push | `TuyaMqttService` + `tuya:subscribe` | eventos de status e online/offline |
 
-#### Camada 1 — QR login (sem autenticação)
+**Toda chamada autenticada passa pelo `TuyaCustomerApiClient`.** Ele lança
+`App\Exceptions\TuyaApiException` em falha e devolve o `result` já decifrado — inclusive quando
+é escalar (`true`), que é sucesso e não pode ser confundido com erro.
 
-Baseado em `tuya_sharing/user.py` — classe `LoginControl` do SDK Python.
+---
+
+### 11.2 Login QR
 
 ```
-POST https://apigw.iotbing.com/v1.0/m/life/home-assistant/qrcode/tokens
-     ?clientid=HA_3y9q4ak7g4ephrvke&usercode={user_code}&schema=tuyaSmart
-# Sem headers, sem body, sem assinatura.
+POST {BASE_URL}/v1.0/m/life/home-assistant/qrcode/tokens
+     ?clientid=HA_3y9q4ak7g4ephrvke&usercode={user_code}&schema=haauthorize
 
-GET  https://apigw.iotbing.com/v1.0/m/life/home-assistant/qrcode/tokens/{token}
+GET  {BASE_URL}/v1.0/m/life/home-assistant/qrcode/tokens/{token}
      ?clientid=HA_3y9q4ak7g4ephrvke&usercode={user_code}
-# Polling até success=true. Retorna access_token, refresh_token, uid.
 ```
 
-Constantes fixas — **não alterar**:
+Constantes — **não alterar**:
+
 ```php
 CLIENT_ID = 'HA_3y9q4ak7g4ephrvke'
-SCHEMA    = 'tuyaSmart'
+SCHEMA    = 'haauthorize'   // parâmetro da requisição
+QR_SCHEMA = 'tuyaSmart'     // prefixo do CONTEÚDO do QR: tuyaSmart--qrLogin?token=...
 BASE_URL  = 'https://apigw.iotbing.com'
 ```
 
-#### Endpoint regional vs global
+`SCHEMA` e `QR_SCHEMA` são coisas diferentes e já foram confundidas uma vez. O primeiro vai na
+query string; o segundo compõe o texto que o app SmartLife escaneia.
 
-O login QR retorna um campo `endpoint` na resposta que indica o servidor regional do usuário (ex: `apigw.tuyaus.com` para América do Sul). Esse endpoint é salvo em `integrations.tuya_endpoint` e **DEVE** ser usado em todas as chamadas do CustomerApi — tanto para listagem quanto para envio de comandos. O `apigw.iotbing.com` (BASE_URL) é apenas o fallback quando nenhum endpoint regional foi retornado.
+A resposta traz `endpoint` (servidor regional, ex.: `https://apigw.tuyaus.com`), `terminal_id`
+e `t` (relógio do servidor, em ms). **O `endpoint` regional deve ser usado em todas as chamadas
+autenticadas**; o `apigw.iotbing.com` é só fallback.
 
-#### Camada 2 — CustomerApi (chamadas autenticadas pós-login)
+---
 
-Baseado em `tuya_sharing/customerapi.py` — classe `CustomerApi.__request()`.
+### 11.3 CustomerApi — protocolo
 
-Protocolo proprietário — **não é HMAC-SHA256**. Por requisição:
+Port de `tuya_sharing/customerapi.py`. Não é HMAC simples. Por requisição:
 
-1. Gerar `rid` = UUID v4
+1. `rid` = UUID v4
 2. `hash_key = MD5(rid + refresh_token)`
-3. `secret = HMAC-SHA256(msg=hash_key, key=rid).hex()[:16]`  (primeiros 16 chars)
-4. Params e body cifrados com **AES-128-GCM** usando `secret`; `nonce` de 12 chars aleatórios do alfabeto `ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678`
-5. Formato de envio: `{"encdata": base64(nonce) + base64(ciphertext+tag)}`
-6. Headers: `X-appKey`, `X-requestId`, `X-sid=""`, `X-time`, `X-token`, `X-sign`
-7. `X-sign = HMAC-SHA256(key=hash_key, msg="X-appKey=v||X-requestId=v||X-time=v||X-token=v" + encdata).hexdigest()`
-8. `result` da resposta vem cifrado — descriptografar com AES-128-GCM: `base64decode(result)` → nonce=primeiros 12 bytes, tag=últimos 16 bytes, ciphertext=meio
+3. `secret = HMAC-SHA256(key=rid, msg=hash_key).hex()[:16]`
+4. Params e body cifrados em **AES-128-GCM**; nonce de 12 chars do alfabeto
+   `ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678`
+5. Envio: `base64(nonce) + base64(ciphertext+tag)`
+6. Headers `X-appKey`, `X-requestId`, `X-sid` (vazio), `X-time`, `X-token`
+7. `X-sign = HMAC-SHA256(key=hash_key, msg="k=v||k=v..." + encdata)`, pulando headers vazios
+8. O `result` volta cifrado — decifrar com o mesmo `secret`
 
-Implementado em PHP no método `customerRequest()`.
+#### Refresh de token — a causa do `sign invalid`
 
-#### Camada 3 — Comandos para dispositivos (DPs)
+O `hash_key` deriva do **refresh token**. Um refresh token velho produz `sign invalid`, não
+"token expirado" — o que torna o sintoma enganoso.
 
-Baseado em `tuya_sharing/device.py` — `DeviceRepository.send_commands()`.
-
-```
-POST https://apigw.iotbing.com/v1.1/m/thing/{device_id}/commands
-body: {"commands": [{"code": "dp_code", "value": "..."}]}
-```
-
-Enviado via `customerRequest()` com body criptografado em AES-GCM.
-
-#### Endpoints usados
+O client renova sozinho quando falta menos de 1 minuto para expirar:
 
 ```
-# Listar homes (autenticado)
-GET  /v1.0/m/life/users/homes
+GET {endpoint}/v1.0/m/token/{refresh_token}
+→ { accessToken, refreshToken, uid, expireTime }
+```
 
-# Listar dispositivos de um home (autenticado, params cifrados)
-GET  /v1.0/m/life/ha/home/devices?encdata={homeId_cifrado}
+**Os dois tokens rotacionam** e são persistidos em `integrations`. Sem isso a integração
+funciona por ~2h após o QR e depois quebra.
 
-# Enviar comando DP para dispositivo (autenticado, body cifrado)
-POST /v1.1/m/thing/{device_id}/commands
+---
+
+### 11.4 Endpoints usados
+
+```
+GET  /v1.0/m/life/users/homes                    lista homes (campo ownerId)
+GET  /v1.0/m/life/ha/home/devices?encdata=...     devices do home (params cifrados)
+GET  /v1.0/m/life/ha/devices/detail?encdata=...   detalhe + status atual
+GET  /v1.1/m/life/{devId}/specifications          functions (graváveis) e status
+GET  /v1.0/m/life/devices/{devId}/status          mapa dpId → statusCode
+POST /v1.1/m/thing/{devId}/commands               envia DP (body cifrado)
+POST /v1.0/m/life/ha/access/config                credenciais do broker MQTT
+GET  /v1.0/m/token/{refreshToken}                 refresh
 ```
 
 ---
 
-### Fechaduras Tuya — DPs de senha temporária
+### 11.5 MQTT — canal de push
 
-Documentação oficial dos DPs de fechadura:
-https://developer.tuya.com/en/docs/iot/zigbee-doorlock-dp?id=K9fembhbeab0p
+`POST /v1.0/m/life/ha/access/config` com `{"linkId": "..."}` devolve `url`, `clientId`,
+`username`, `password`, `expireTime` (~7200s) e os templates de tópico.
 
-A fechadura `jtmspro` (e similares) usa DP Raw para criar senhas temporárias.
-**Não usa** o endpoint `/v1.0/devices/{id}/door-lock/password-ticket` da OpenAPI.
-
-#### DP `temporary_password_creat` — criar senha
-
-Payload binário de **21 bytes**, codificado em Base64:
-
-| Bytes | Tamanho | Conteúdo |
-|-------|---------|----------|
-| [0..1]  | 2 | Tuya serial number — uint16 aleatório, big-endian |
-| [2..3]  | 2 | Server serial number — uint16 aleatório, big-endian |
-| [4..5]  | 2 | Lock manufacturer ID — fixo `0x0000` |
-| [6..9]  | 4 | Start time — Unix timestamp, big-endian |
-| [10..13]| 4 | End time — Unix timestamp, big-endian |
-| [14]    | 1 | One-time flag — `0x00` (não é one-time) |
-| [15..20]| 6 | PIN — 6 bytes ASCII do dígito (ex: `"123456"`) |
-
-```php
-$bytes = pack('n', $tuyaSeq)       // [0..1]
-       . pack('n', $serverSeq)      // [2..3]
-       . pack('n', 0)               // [4..5] lock_id fixo
-       . pack('N', $effectiveTime)  // [6..9] unix timestamp
-       . pack('N', $invalidTime)    // [10..13] unix timestamp
-       . chr(0x00)                  // [14] não one-time
-       . $pin;                      // [15..20] 6 chars ASCII
-$value = base64_encode($bytes);
+```
+url                 ssl://m1.tuyaus.com:8883
+topic.ownerId.sub   cloud/group/{ownerId}/in
+topic.devId.sub     cloud/device/{devId}/in/{hash}     (+ sufixo /pen ou /sta)
 ```
 
-Enviar via `customerRequest()`:
-```php
-['commands' => [['code' => 'temporary_password_creat', 'value' => $value]]]
-```
+**`{ownerId}` é o `ownerId` do home, não o `uid` do usuário.** Trocar um pelo outro gera um
+tópico válido que nunca recebe mensagem.
 
-#### DP `temporary_password_delete` — deletar senha
+As mensagens chegam em **JSON puro, sem criptografia**. `protocol: 4` traz `data.devId` +
+`data.status`; `protocol: 20` traz `data.bizCode` (`online`, `offline`, `nameUpdate`, …) com
+`data.bizData.devId`.
 
-Payload binário de **6 bytes**, codificado em Base64:
-
-| Bytes | Tamanho | Conteúdo |
-|-------|---------|----------|
-| [0..1] | 2 | Tuya serial number (mesmo da criação) |
-| [2..3] | 2 | Server serial number (mesmo da criação) |
-| [4..5] | 2 | Lock manufacturer ID — `0x0000` |
-
-Guardar `tuyaSeq` e `serverSeq` no momento da criação para poder deletar depois.
+As credenciais expiram em ~2h: o comando encerra e o supervisord reinicia com credenciais novas.
 
 ---
 
-### Campos Tuya na tabela `integrations`
+### 11.6 Senha temporária em fechadura — por que NÃO é possível
 
-| Coluna | Descrição |
-|---|---|
-| `tuya_user_code` | User code obtido no app SmartLife |
-| `tuya_access_token` | Access token pós-QR login |
-| `tuya_refresh_token` | Refresh token — usado na derivação de chave do CustomerApi |
-| `tuya_token_expires_at` | Expiração do access token |
-| `tuya_uid` | UID do usuário Tuya |
-| `tuya_endpoint` | Endpoint retornado pelo login — passado para `customerRequest()` |
+Esta seção existe para evitar que a investigação seja refeita. Conclusão apurada contra o
+hardware real (Intelbras IFR 1001 e MFR 1001, ambas Zigbee).
 
----
+**A Tuya vende credencial de fechadura como produto à parte.** Ela não trafega pelo canal de
+controle de dispositivo: existe um *Smart Lock SDK* no app (licenciado a parceiros OEM) e um
+*Smart Lock Open Service* na nuvem (assinatura à parte). Nenhum dos dois está incluído no canal
+de device-sharing que usamos — nem no que o Home Assistant usa.
 
-### Campos que NÃO existem no model `Device`
+Evidência direta: ao cadastrar uma senha temporária pelo app da Tuya, **nenhum DP muda**, nem
+durante o estado "Creating" nem depois do "effective". A senha vai por um caminho paralelo.
 
-`external_id`, `user_id`, `type`, `status`, `category`, `online`.
-O campo correto de identificação externa é `external_device_id`.
+Corroborações:
 
-### Enums existentes
+- `home-assistant/core` **não tem `lock.py`** no componente Tuya — a integração oficial, que usa
+  este mesmo SDK, não expõe fechadura alguma.
+- 15 rotas plausíveis de `door-lock/*` foram testadas neste canal: todas devolvem
+  `[1108] uri path invalid`. A requisição autentica e assina corretamente; a rota não existe.
+- A Trial Edition da Tuya proíbe uso comercial e limita a 10 dispositivos controláveis; o plano
+  pago não publica preço.
 
-- `DeviceBrandEnum`: `portatec`, `tuya`
-- `DeviceTypeEnum`: `switch`, `sensor`, `button` — **não existe `Lock`**
-- `DeviceStatusEnum`: `open`, `closed`, `on`, `off` — **não existe `Active`**
+**DPs reais das fechaduras testadas:**
 
----
-
-### SDK de referência
-
-**`tuya-device-sharing-sdk`** — Python, MIT, open source.
-- Repositório: https://github.com/tuya/tuya-device-sharing-sdk
-- PyPI: https://pypi.org/project/tuya-device-sharing-sdk/
-- Versão inspecionada: **0.2.1**
-
-Para inspecionar o código fonte:
-```bash
-pip download tuya-device-sharing-sdk==0.2.1 --no-deps -d /tmp/tuya
-cd /tmp/tuya
-unzip tuya_device_sharing_sdk-0.2.1-py2.py3-none-any.whl -d sdk_source
-# Arquivos relevantes:
-# sdk_source/tuya_sharing/user.py        → QR login (LoginControl)
-# sdk_source/tuya_sharing/customerapi.py → protocolo autenticado (CustomerApi)
-# sdk_source/tuya_sharing/device.py      → comandos e listagem de dispositivos
-# sdk_source/tuya_sharing/home.py        → listagem de homes
-# sdk_source/tuya_sharing/manager.py     → orquestração geral
-```
-
-Mapeamento arquivo SDK → método PHP:
-
-| Arquivo no SDK | Classe/método | Método PHP em `TuyaQrAuthService` |
+| Fechadura | Categoria | DPs graváveis |
 |---|---|---|
-| `user.py` | `LoginControl.qr_code()` | `generateQrCode()` |
-| `user.py` | `LoginControl.login_result()` | `pollLogin()` |
-| `customerapi.py` | `CustomerApi.__request()` | `customerRequest()` |
-| `device.py` | `DeviceRepository.query_devices_by_home()` | `getDevices()` |
-| `device.py` | `DeviceRepository.send_commands()` | base para envio de DPs |
-| `home.py` | `HomeRepository.query_homes()` | parte de `getDevices()` |
+| Intelbras IFR 1001 | `jtmspro` | 54 `unlock_method_create`, 55 `unlock_method_delete`, 48 `remote_no_pd_setkey`, 49 `remote_no_dp_key`, 57 `lock_motor_state`, 19 `key_tone` |
+| Intelbras MFR 1001 | `ms` | **nenhum** — o produto não expõe modelo de DP neste canal |
+
+O DP 54 é o de *cadastro de método de desbloqueio*: 9 bytes com tipo, estágio, flag de admin,
+member ID e hardware ID — **não carrega senha nem validade**. O DP 24
+(`temporary_password_creat`, payload de 21 bytes) é do conjunto de fechadura Zigbee residencial
+antiga e **não existe** nestes modelos.
+
+**Decisão:** fechadura sai do escopo da Tuya. Para PIN temporário a plataforma escolhida é o
+**TTLock**, cuja API é aberta, gratuita e permite senha própria de 4–9 dígitos com janela e
+revogação remota. A integração Tuya segue válida para sensores, interruptores, portões e hubs.
+
+O código de senha temporária via DP 24 permanece no `TuyaIntegrationService` porque **funciona
+em fechaduras que expõem esse DP** — existem modelos Tuya que expõem. O envio é protegido por
+`Device::supportsTuyaTemporaryPassword()`, que exige o DP declarado em `/specifications`: em
+fechadura sem o DP o sistema **recusa**, em vez de fingir sucesso e deixar um PIN fantasma.
+
+---
+
+### 11.7 Colunas no banco
+
+`integrations`: `tuya_user_code`, `tuya_access_token`, `tuya_refresh_token`,
+`tuya_token_expires_at`, `tuya_uid`, `tuya_endpoint`, `tuya_terminal_id`.
+
+`devices`: `integration_id`, `tuya_category`, `tuya_product_id`, `tuya_product_name`,
+`tuya_icon`, `tuya_online`, `tuya_status_payload`, `tuya_functions`.
+
+`access_code_device_syncs`: rastreia o que cada dispositivo realmente recebeu
+(`external_reference`, `synced_pin`, `status`).
+
+O campo de identificação externa do device é **`external_device_id`**. Não existem
+`external_id`, `type`, `status`, `category` nem `online` no model `Device`.
+
+Enums: `DeviceBrandEnum` (`portatec`, `tuya`); `DeviceTypeEnum` (`switch`, `sensor`, `button` —
+não há `Lock`); `DeviceStatusEnum` (`open`, `closed`, `on`, `off`).
+
+---
+
+### 11.8 SDK de referência
+
+Quando houver dúvida de protocolo, a resposta está no fonte, não na documentação:
+
+```bash
+curl -sL -o /tmp/tuya-sdk.tar.gz \
+  https://github.com/tuya/tuya-device-sharing-sdk/archive/refs/heads/main.tar.gz
+tar xzf /tmp/tuya-sdk.tar.gz -C /tmp
+# /tmp/tuya-device-sharing-sdk-main/tuya_sharing/{user,customerapi,device,home,mq,manager}.py
+```
+
+| Arquivo no SDK | Equivalente em PHP |
+|---|---|
+| `user.py` `LoginControl` | `TuyaQrAuthService` |
+| `customerapi.py` `CustomerApi.__request` | `TuyaCustomerApiClient::request` |
+| `device.py` `DeviceRepository` | `TuyaIntegrationService` |
+| `home.py` `HomeRepository` | `TuyaIntegrationService::listDevices` |
+| `mq.py` + `manager.py:on_message` | `TuyaMqttService` |
