@@ -252,4 +252,23 @@ return [
     'pagination_results' => 'resultados',
     'pagination_go_to_page' => 'Ir para a página :page',
     'pagination_navigation' => 'Navegação de paginação',
+
+    // Autenticação
+    'email' => 'E-mail',
+    'password' => 'Senha',
+    'password_confirmation' => 'Confirmar senha',
+    'new_password' => 'Nova senha',
+    'forgot_password_subtitle' => 'Informe seu e-mail para receber o link de redefinição',
+    'forgot_password_send_link' => 'Enviar link',
+    'forgot_password_back_to_login' => 'Voltar ao login',
+    'reset_password_subtitle' => 'Defina uma nova senha para sua conta',
+    'reset_password_submit' => 'Redefinir senha',
+    'remember_me' => 'Lembrar de mim',
+    'login_subtitle' => 'Faça login para acessar o painel do cliente',
+    'login_submit' => 'Entrar',
+    'create_account_link' => 'Criar conta',
+    'register_subtitle' => 'Crie sua conta para acessar o painel do cliente',
+    'register_submit' => 'Criar conta',
+    'already_have_account_link' => 'Já tenho conta',
+    'forgot_password_link' => 'Esqueci minha senha',
 ];

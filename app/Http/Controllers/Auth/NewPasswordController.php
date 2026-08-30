@@ -9,13 +9,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class NewPasswordController extends Controller
 {
-    public function create(Request $request): View
+    public function create(Request $request, string $token): Response
     {
-        return view('auth.reset-password', ['request' => $request]);
+        return Inertia::render('auth/reset-password', [
+            'token' => $token,
+            'email' => $request->query('email'),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
