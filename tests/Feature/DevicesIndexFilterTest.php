@@ -35,12 +35,14 @@ class DevicesIndexFilterTest extends TestCase
         ]);
         $attached->places()->attach($place->id);
 
-        Device::create([
+        // Sem local ainda: quem enxerga é o dono, pelo vínculo em device_user.
+        $orphan = Device::create([
             'name' => 'Aparelho orfao',
             'brand' => DeviceBrandEnum::Portatec,
             'external_device_id' => 'chip-2',
             'place_id' => null,
         ]);
+        $orphan->deviceUsers()->create(['user_id' => $this->user->id]);
 
         $this->actingAs($this->user);
     }

@@ -86,13 +86,12 @@ class Index extends Component
                             ->orWhereIn('place_id', $userPlaceIds);
                     });
                 }
+                // Dispositivo recém importado ainda não tem local: quem o vê é o dono,
+                // pelo vínculo em device_user. Não pode haver ramo sem escopo aqui —
+                // ele expõe os dispositivos sem local de todas as contas.
                 if ($hasDeviceUserTable) {
                     $query->orWhereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()));
                 }
-                $query->orWhere(function ($query): void {
-                    $query->whereNull('place_id')
-                        ->whereDoesntHave('places');
-                });
             })
             ->when($placeFilter === 'unassigned', fn ($query) => $query->whereNull('place_id')->whereDoesntHave('places'))
             ->when(
