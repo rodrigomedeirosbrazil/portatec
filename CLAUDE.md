@@ -1,4 +1,4 @@
-# GEMINI.md
+# CLAUDE.md
 
 As instruções deste repositório estão centralizadas em [AGENTS.md](./AGENTS.md).
 

@@ -1,76 +1,113 @@
 <p align="center">
     <h1 align="center">PortaTec</h1>
-    <p align="center">Smart Property Access & Monitoring System</p>
+    <p align="center">Controle de acesso e automação para imóveis de temporada</p>
 </p>
 
-## About PortaTec
+## Sobre
 
-PortaTec is a comprehensive property management system designed for short-term rental properties. It provides an intelligent solution for property owners and managers to control, monitor, and automate their properties. Built with Laravel, PortaTec offers powerful features including:
+O PortaTec conecta as reservas de um imóvel aos dispositivos instalados nele: importa as
+reservas das plataformas de aluguel, gera um PIN temporário para cada hóspede, envia esse PIN
+para as fechaduras e permite controlar e acompanhar os dispositivos em tempo real.
 
-- **Smart Access Management**
-  - Generate and manage temporary access codes
-  - Schedule access periods for guests and service providers
-  - Real-time access monitoring and logging
+### Funcionalidades
 
-- **Property Monitoring**
-  - Automated surveillance system integration
-  - Environmental monitoring (temperature, humidity, noise levels)
-  - Security alerts and notifications
+- **PINs de acesso** — geração de códigos de 6 dígitos com janela de validade, únicos por
+  imóvel, sincronizados automaticamente com os dispositivos.
+- **Reservas** — cadastro manual ou importação automática via feed iCal (Airbnb e outras
+  plataformas), com criação e revogação de PIN acompanhando a reserva.
+- **Dispositivos** — controle e monitoramento de dispositivos com firmware próprio (via MQTT)
+  e de dispositivos Tuya (via API), com status e confirmação de comando em tempo real.
+- **Imóveis e equipe** — múltiplos imóveis por conta, membros com papéis (`admin`, `host`),
+  clonagem de configuração entre imóveis.
+- **Auditoria** — registro de eventos de acesso e de todos os comandos enviados aos
+  dispositivos.
+- **Painel administrativo** — área interna em Filament, com sessão de impersonação registrada
+  para suporte.
 
-- **Automation Features**
-  - Smart device control (lights, thermostats, locks)
-  - Automated check-in and check-out processes
-  - Scheduled maintenance notifications
+## Stack
 
-- **User Management**
-  - Multi-level user access control
-  - Guest profile management
-  - Service provider coordination
+Laravel 11 · PHP 8.4 · Livewire 3 · Filament 4 · Tailwind CSS 4 (Vite) · Redis + Horizon ·
+Laravel Reverb (WebSocket) · MQTT
 
-## Getting Started
+## Ambiente de desenvolvimento
 
-### Prerequisites
-- PHP >= 8.1
-- Composer
-- MySQL or PostgreSQL
-- Node.js & NPM
+O ambiente roda em Docker via **Laravel Sail**. Todos os comandos de PHP, Composer, Artisan e
+NPM devem ser executados através do Sail — nunca diretamente no host.
 
-### Installation
+### Pré-requisitos
 
-1. Clone the repository
+- Docker e Docker Compose
+
+O banco não é provisionado pelo `docker-compose.yml`: em desenvolvimento o padrão é SQLite no
+arquivo `database/database.sqlite`. Para usar outro banco, ajuste as variáveis `DB_*` do `.env`.
+
+### Instalação
+
 ```bash
-git clone https://github.com/yourusername/portatec.git
-```
-
-2. Install dependencies
-```bash
-composer install
-npm install
-```
-
-3. Configure your environment
-```bash
+git clone <url-do-repositorio> portatec
+cd portatec
 cp .env.example .env
-php artisan key:generate
+touch database/database.sqlite
 ```
 
-4. Set up your database and run migrations
+Ajuste as variáveis do `.env` (banco, MQTT, Reverb, credenciais Tuya) e então:
+
 ```bash
-php artisan migrate
+docker run --rm -v "$(pwd)":/var/www/html -w /var/www/html laravelsail/php84-composer:latest composer install
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate
+./vendor/bin/sail npm install
+./vendor/bin/sail npm run dev
 ```
 
-## Documentation
+A aplicação fica disponível na porta definida por `APP_PORT` (por exemplo,
+`http://localhost:8088`): `/app` para o app do cliente e `/admin` para o painel administrativo.
 
-Detailed documentation for setting up and using PortaTec can be found in the [Wiki](link-to-wiki).
+### Serviços do compose
 
-## Security
+| Serviço | Função |
+|---|---|
+| `laravel.test` | aplicação, Vite e Reverb |
+| `redis` | cache e filas |
+| `mosquitto` | broker MQTT local |
 
-If you discover any security vulnerabilities within PortaTec, please email us at [security@portatec.com](mailto:security@portatec.com). All security vulnerabilities will be promptly addressed.
+### Processos auxiliares
 
-## License
+```bash
+./vendor/bin/sail artisan horizon        # filas
+./vendor/bin/sail artisan reverb:start   # websocket
+./vendor/bin/sail artisan mqtt:subscribe # ponte MQTT
+./vendor/bin/sail artisan schedule:work  # agendador
+```
 
-PortaTec is proprietary software. All rights reserved.
+## Comandos do dia a dia
 
-## Support
+```bash
+./vendor/bin/sail test                   # suíte de testes
+./vendor/bin/sail pint                   # formatação de código
+./vendor/bin/sail artisan bookings:sync      # importa reservas dos feeds iCal
+./vendor/bin/sail artisan access-codes:sync  # ressincroniza PINs nos dispositivos
+```
 
-For support, please email [support@portatec.com](mailto:support@portatec.com) or visit our [support portal](link-to-support).
+## Deploy
+
+O deploy é automatizado pelo GitHub Actions: uma tag no formato `20*-*-*.*` (ou execução manual
+do workflow) constrói a imagem de `docker/prod/Dockerfile`, envia para o servidor e sobe os
+containers. O entrypoint executa build de assets, `migrate --force` e `optimize`; o supervisord
+mantém nginx, php-fpm, scheduler, Horizon, Reverb e o subscriber MQTT.
+
+## Contribuindo
+
+As convenções do projeto — arquitetura, domínio, padrões de código, testes, i18n e CI/deploy —
+estão em [AGENTS.md](./AGENTS.md). Leia antes de abrir um PR. Commits seguem
+[Conventional Commits](https://www.conventionalcommits.org/pt-br/v1.0.0/).
+
+## Segurança
+
+Encontrou uma vulnerabilidade? Envie um e-mail para
+[security@portatec.com](mailto:security@portatec.com) em vez de abrir uma issue pública.
+
+## Licença
+
+Software proprietário. Todos os direitos reservados.
