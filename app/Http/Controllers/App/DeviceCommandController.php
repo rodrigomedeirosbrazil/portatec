@@ -6,6 +6,7 @@ namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SendDeviceCommandRequest;
+use App\Http\Requests\SendDeviceFunctionCommandRequest;
 use App\Models\Device;
 use App\Models\Place;
 use App\Services\Device\DeviceCommandService;
@@ -38,6 +39,45 @@ class DeviceCommandController extends Controller
                 'message' => __('app.device_not_found_in_place'),
             ], 404);
         }
+
+        if (! is_numeric($pin)) {
+            return response()->json([
+                'message' => __('app.invalid_command_pin'),
+            ], 422);
+        }
+
+        try {
+            $commandId = $service->sendCommand(
+                device: $device,
+                action: $action,
+                pin: (int) $pin,
+                userId: Auth::id(),
+            );
+
+            return response()->json([
+                'commandId' => $commandId,
+                'message' => __('app.command_sent_to_device', ['action' => $action, 'device' => $device->name]),
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'message' => __('app.error_sending_device_command'),
+            ], 500);
+        }
+    }
+
+    /**
+     * Category C endpoint (migration spec §5.1): replaces
+     * `App\Livewire\Devices\Control::sendCommand()`. Same JSON contract as
+     * `store()`, scoped by device instead of by place.
+     */
+    public function storeForDevice(SendDeviceFunctionCommandRequest $request, Device $device, DeviceCommandService $service): JsonResponse
+    {
+        abort_unless(Auth::user()?->can('view', $device), 403);
+
+        $action = $request->string('action')->toString();
+        $pin = $request->string('pin')->toString();
 
         if (! is_numeric($pin)) {
             return response()->json([

@@ -103,10 +103,17 @@ return [
     'device_function' => 'Função do Dispositivo',
     'device_status_description' => 'Visualize o status atual e última sincronização do dispositivo.',
     'device_places_description' => 'Associe o dispositivo aos locais onde ele está instalado.',
+    'device_function_remove' => 'Remover',
+    'device_functions_min_error' => 'É necessário manter ao menos uma função.',
+    'optional' => 'Opcional',
+    'default_pin_helper' => '6 dígitos.',
+    'save_device' => 'Salvar Dispositivo',
+    'update_device' => 'Atualizar Dispositivo',
 
     // Status e estados
     'current_status' => 'Status Atual',
     'new_device' => 'Novo Dispositivo',
+    'edit_device' => 'Editar Dispositivo',
     'last_sync' => 'Última Sincronização',
     'never_synced' => 'Nunca Sincronizado',
 
@@ -232,6 +239,8 @@ return [
 
     // Tela de controle de dispositivos por local (Places/Control)
     'place_control_title' => 'Controle – :place',
+    'device_control_title' => 'Controlar :device',
+    'device_control_actions' => 'Ações disponíveis',
     'device_not_found_in_place' => 'Dispositivo não encontrado neste local.',
     'invalid_command_pin' => 'PIN inválido para envio de comando.',
     'command_sent_to_device' => "Comando ':action' enviado para :device.",
@@ -298,6 +307,21 @@ return [
     'place_search_placeholder' => 'Buscar por nome...',
     'place_empty_state' => 'Você ainda não possui locais.',
     'place_index_stats' => 'Dispositivos: :devices | Reservas: :bookings | Códigos: :codes',
+
+    // Listagem e detalhe de dispositivos (resources/js/pages/devices)
+    'integrations' => 'Integrações',
+    'edit' => 'Editar',
+    'details' => 'Detalhes',
+    'control' => 'Controlar',
+    'device_search_placeholder' => 'Nome, marca ou ID externo',
+    'device_empty_state' => 'Nenhum dispositivo encontrado.',
+    'device_index_locations' => 'Locais: :names',
+    'device_index_functions' => 'Funções: :count',
+    'device_function_line' => ':type | PIN :pin',
+    'device_recent_commands_title' => 'Últimos comandos',
+    'device_recent_syncs_title' => 'Últimos syncs de PIN',
+    'device_no_commands' => 'Nenhum comando registrado.',
+    'device_no_syncs' => 'Nenhum sync de PIN registrado.',
     'place_control_action' => 'Controle',
     'place_edit_action' => 'Editar',
     'place_devices_heading' => 'Dispositivos',
@@ -310,6 +334,8 @@ return [
     'place_remove_device_confirm_title' => 'Remover o dispositivo ":name" deste local? Ele continuará existindo e poderá ser associado a outro local.',
     'place_created' => 'Place criado com sucesso.',
     'place_updated' => 'Place atualizado com sucesso.',
+    'device_created' => 'Dispositivo criado com sucesso.',
+    'device_updated' => 'Dispositivo atualizado com sucesso.',
 
     // Autenticação
     'email' => 'E-mail',

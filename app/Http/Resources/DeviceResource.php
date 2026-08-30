@@ -34,7 +34,13 @@ class DeviceResource extends JsonResource
             'tuya_icon' => $this->tuya_icon,
             'tuya_online' => $this->tuya_online,
             'is_available' => $this->isAvailable(),
+            'is_tuya_lock' => $this->isTuyaLock(),
+            'supports_tuya_temporary_password' => $this->supportsTuyaTemporaryPassword(),
             'device_functions_count' => $this->whenCounted('deviceFunctions'),
+            'device_functions' => DeviceFunctionResource::collection($this->whenLoaded('deviceFunctions')),
+            'places' => PlaceResource::collection($this->whenLoaded('places')),
+            'place' => new PlaceResource($this->whenLoaded('place')),
+            'integration' => new IntegrationResource($this->whenLoaded('integration')),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
