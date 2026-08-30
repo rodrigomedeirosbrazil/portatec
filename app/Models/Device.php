@@ -37,6 +37,7 @@ class Device extends Model
         'tuya_icon',
         'tuya_online',
         'tuya_status_payload',
+        'tuya_functions',
     ];
 
     protected $casts = [
@@ -44,6 +45,7 @@ class Device extends Model
         'last_sync' => 'datetime',
         'tuya_online' => 'boolean',
         'tuya_status_payload' => 'array',
+        'tuya_functions' => 'array',
     ];
 
     protected static function booted(): void
@@ -125,24 +127,30 @@ class Device extends Model
      *
      * @see https://developer.tuya.com/en/docs/iot/lock
      */
-    private const TUYA_LOCK_CATEGORIES = ['ms', 'jtmspro'];
+    private const TUYA_LOCK_CATEGORIES = ['ms', 'jtmspro', 'jtmsbh', 'mk'];
 
-    /**
-     * Fechadura Tuya: categoria de smart lock na API Tuya (ex: ms, jtmspro).
-     * Aceita tuya_category null quando o snapshot ainda não rodou.
-     */
+    private const TUYA_TEMPORARY_PASSWORD_DP = 'temporary_password_creat';
+
+    /** Fechadura Tuya: exige categoria conhecida — categoria nula significa "ainda não sincronizado". */
     public function isTuyaLock(): bool
     {
-        if ($this->brand !== DeviceBrandEnum::Tuya) {
-            return false;
-        }
+        return $this->brand === DeviceBrandEnum::Tuya
+            && in_array($this->tuya_category, self::TUYA_LOCK_CATEGORIES, true);
+    }
 
-        return $this->tuya_category === null
-            || in_array($this->tuya_category, self::TUYA_LOCK_CATEGORIES, true);
+    /**
+     * Só manda PIN para fechadura que declarou o DP na resposta de /specifications.
+     * Fechadura Wi-Fi (jtmspro) costuma expor unlock_method_create em vez deste DP.
+     */
+    public function supportsTuyaTemporaryPassword(): bool
+    {
+        return $this->isTuyaLock()
+            && in_array(self::TUYA_TEMPORARY_PASSWORD_DP, $this->tuya_functions ?? [], true);
     }
 
     public function supportsPlaceAccessCodes(): bool
     {
-        return $this->brand === DeviceBrandEnum::Portatec || $this->isTuyaLock();
+        return $this->brand === DeviceBrandEnum::Portatec
+            || $this->supportsTuyaTemporaryPassword();
     }
 }

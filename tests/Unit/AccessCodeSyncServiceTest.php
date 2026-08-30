@@ -122,6 +122,7 @@ class AccessCodeSyncServiceTest extends TestCase
             'brand' => 'tuya',
             'external_device_id' => 'tuya-lock-1',
             'tuya_category' => 'ms',
+            'tuya_functions' => ['temporary_password_creat', 'temporary_password_delete'],
         ]);
 
         $accessCode = AccessCode::withoutEvents(fn (): AccessCode => AccessCode::create([
@@ -133,7 +134,7 @@ class AccessCodeSyncServiceTest extends TestCase
 
         $deviceCommandMock = Mockery::mock(DeviceCommandService::class);
         $tuyaMock = Mockery::mock(TuyaIntegrationService::class);
-        $tuyaMock->shouldReceive('createTemporaryPasswordViaDP')
+        $tuyaMock->shouldReceive('createTemporaryPassword')
             ->once()
             ->with(
                 Mockery::on(fn ($value): bool => $value instanceof Device && $value->id === $device->id),
@@ -199,6 +200,7 @@ class AccessCodeSyncServiceTest extends TestCase
             'brand' => 'tuya',
             'external_device_id' => 'tuya-lock-2',
             'tuya_category' => 'ms',
+            'tuya_functions' => ['temporary_password_creat', 'temporary_password_delete'],
         ]);
 
         $accessCode = AccessCode::withoutEvents(fn (): AccessCode => AccessCode::create([
@@ -233,7 +235,7 @@ class AccessCodeSyncServiceTest extends TestCase
                 'remote-password-old',
             )
             ->andReturn(true);
-        $tuyaMock->shouldReceive('createTemporaryPasswordViaDP')
+        $tuyaMock->shouldReceive('createTemporaryPassword')
             ->once()
             ->andReturn('12345:67890');
 
@@ -292,6 +294,7 @@ class AccessCodeSyncServiceTest extends TestCase
             'brand' => 'tuya',
             'external_device_id' => 'tuya-lock-3',
             'tuya_category' => 'ms',
+            'tuya_functions' => ['temporary_password_creat', 'temporary_password_delete'],
         ]);
 
         $accessCode = AccessCode::withoutEvents(fn (): AccessCode => AccessCode::create([
@@ -339,6 +342,7 @@ class AccessCodeSyncServiceTest extends TestCase
             'brand' => 'tuya',
             'external_device_id' => 'tuya-lock-4',
             'tuya_category' => 'ms',
+            'tuya_functions' => ['temporary_password_creat', 'temporary_password_delete'],
             'tuya_online' => true,
             'last_sync' => now()->subDays(3),
         ]);
@@ -348,5 +352,31 @@ class AccessCodeSyncServiceTest extends TestCase
         $device->update(['tuya_online' => false]);
 
         $this->assertFalse($device->fresh()->isAvailable());
+    }
+
+    public function test_it_does_not_send_pin_to_a_tuya_device_without_the_temporary_password_dp(): void
+    {
+        $placeId = DB::table('places')->insertGetId([
+            'name' => 'Sem DP',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $device = Device::create([
+            'name' => 'Fechadura Wi-Fi',
+            'brand' => 'tuya',
+            'external_device_id' => 'dev-jtmspro',
+            'tuya_category' => 'jtmspro',
+            'tuya_functions' => ['unlock_method_create'],
+        ]);
+        $device->places()->attach($placeId);
+
+        $tuyaMock = Mockery::mock(TuyaIntegrationService::class);
+        $tuyaMock->shouldNotReceive('createTemporaryPassword');
+
+        $this->app->instance(DeviceCommandService::class, Mockery::mock(DeviceCommandService::class));
+        $this->app->instance(TuyaIntegrationService::class, $tuyaMock);
+
+        app(AccessCodeSyncService::class)->syncAccessCodesToDevice($device);
     }
 }

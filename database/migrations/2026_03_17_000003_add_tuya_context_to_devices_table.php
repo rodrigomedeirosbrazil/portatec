@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('tuya_icon')->nullable()->after('tuya_product_name');
             $table->boolean('tuya_online')->nullable()->after('tuya_icon');
             $table->json('tuya_status_payload')->nullable()->after('tuya_online');
+            $table->json('tuya_functions')->nullable()->after('tuya_status_payload');
 
             $table->index(['integration_id']);
         });
@@ -35,6 +36,7 @@ return new class extends Migration
                 'tuya_icon',
                 'tuya_online',
                 'tuya_status_payload',
+                'tuya_functions',
             ]);
         });
     }

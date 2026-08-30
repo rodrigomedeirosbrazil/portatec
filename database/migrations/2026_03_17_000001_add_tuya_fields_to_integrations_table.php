@@ -17,6 +17,7 @@ return new class extends Migration
             $table->dateTime('tuya_token_expires_at')->nullable()->after('tuya_refresh_token');
             $table->string('tuya_uid')->nullable()->after('tuya_token_expires_at');
             $table->string('tuya_endpoint')->nullable()->after('tuya_uid');
+            $table->string('tuya_terminal_id')->nullable()->after('tuya_endpoint');
         });
     }
 
@@ -30,6 +31,7 @@ return new class extends Migration
                 'tuya_token_expires_at',
                 'tuya_uid',
                 'tuya_endpoint',
+                'tuya_terminal_id',
             ]);
         });
     }

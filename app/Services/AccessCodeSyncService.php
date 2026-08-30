@@ -59,7 +59,7 @@ class AccessCodeSyncService
                 return;
             }
 
-            if (! $device->isTuyaLock()) {
+            if (! $device->supportsTuyaTemporaryPassword()) {
                 return;
             }
 
@@ -96,26 +96,7 @@ class AccessCodeSyncService
     {
         $devices = $this->devicesForPlaceAccessCode($accessCode);
 
-        Log::info('[Tuya sync] syncNewAccessCode chamado', [
-            'access_code_id' => $accessCode->id,
-            'place_id' => $accessCode->place_id,
-            'pin_length' => strlen($accessCode->pin),
-            'start' => $accessCode->start?->toIso8601String(),
-            'end' => $accessCode->end?->toIso8601String(),
-            'devices_count' => $devices->count(),
-            'device_ids' => $devices->pluck('id')->all(),
-        ]);
-
         foreach ($devices as $device) {
-            Log::debug('[Tuya sync] Dispositivo candidato', [
-                'device_id' => $device->id,
-                'name' => $device->name,
-                'brand' => $device->brand?->value,
-                'place_id' => $device->place_id,
-                'supportsPlaceAccessCodes' => $device->supportsPlaceAccessCodes(),
-                'isTuyaLock' => $device->isTuyaLock(),
-                'tuya_category' => $device->tuya_category ?? null,
-            ]);
             $this->syncSingleAccessCode($accessCode, $device);
         }
     }
@@ -146,7 +127,7 @@ class AccessCodeSyncService
                 continue;
             }
 
-            if ($device->isTuyaLock()) {
+            if ($device->supportsTuyaTemporaryPassword()) {
                 $this->deleteTuyaAccessCodeFromDevice($accessCode, $device);
             }
         }
@@ -173,20 +154,6 @@ class AccessCodeSyncService
             ->orWhereHas('places', fn ($query) => $query->where('places.id', $accessCode->place_id))
             ->get();
 
-        Log::info('[Tuya sync] Dispositivos do place (antes do filtro supportsPlaceAccessCodes)', [
-            'place_id' => $accessCode->place_id,
-            'raw_count' => $raw->count(),
-            'devices' => $raw->map(fn (Device $d): array => [
-                'id' => $d->id,
-                'name' => $d->name,
-                'brand' => $d->brand?->value,
-                'place_id' => $d->place_id,
-                'tuya_category' => $d->tuya_category,
-                'supportsPlaceAccessCodes' => $d->supportsPlaceAccessCodes(),
-                'isTuyaLock' => $d->isTuyaLock(),
-            ])->values()->all(),
-        ]);
-
         return $raw
             ->filter(fn (Device $device): bool => $device->supportsPlaceAccessCodes())
             ->values();
@@ -201,7 +168,7 @@ class AccessCodeSyncService
             return;
         }
 
-        if (! $device->isTuyaLock()) {
+        if (! $device->supportsTuyaTemporaryPassword()) {
             Log::debug('[Tuya sync] Dispositivo ignorado (não é fechadura Tuya)', [
                 'device_id' => $device->id,
                 'brand' => $device->brand?->value,
@@ -259,7 +226,7 @@ class AccessCodeSyncService
             $invalidTime = $accessCode->end !== null
                 ? $accessCode->end->timestamp
                 : now()->addDay()->timestamp;
-            $externalReference = $this->tuyaIntegrationService->createTemporaryPasswordViaDP(
+            $externalReference = $this->tuyaIntegrationService->createTemporaryPassword(
                 device: $device,
                 pin: $accessCode->pin,
                 effectiveTime: $accessCode->start->timestamp,
@@ -338,14 +305,6 @@ class AccessCodeSyncService
             'error_message' => null,
             'external_reference' => null,
         ])->save();
-    }
-
-    private function buildRemoteAccessCodeName(AccessCode $accessCode): string
-    {
-        return str($accessCode->display_name)
-            ->limit(50, '')
-            ->append(" #{$accessCode->id}")
-            ->toString();
     }
 
     private function sameTimestamp(?CarbonInterface $first, ?CarbonInterface $second): bool

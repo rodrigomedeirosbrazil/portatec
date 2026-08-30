@@ -4,58 +4,49 @@ declare(strict_types=1);
 
 namespace App\Services\Tuya;
 
+use App\Exceptions\TuyaApiException;
 use App\Models\Device;
 use App\Models\Integration;
 use App\Services\Tuya\DTOs\TuyaDeviceDTO;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 class TuyaIntegrationService
 {
+    public function __construct(
+        private readonly TuyaCustomerApiClient $client = new TuyaCustomerApiClient,
+    ) {}
+
     public function listDevices(Integration $integration): Collection
     {
-        $response = $this->customerRequest(
-            integration: $integration,
-            method: 'GET',
-            path: '/v1.0/m/life/users/homes',
-        );
+        $homes = $this->client->get($integration, '/v1.0/m/life/users/homes');
 
-        $homes = $response['list'] ?? $response['homes'] ?? $response ?? [];
         if (! is_array($homes)) {
             return collect();
         }
 
         $devices = collect();
+
         foreach ($homes as $home) {
-            $homeId = $home['ownerId']
-                ?? $home['homeId']
-                ?? $home['home_id']
-                ?? $home['id']
-                ?? null;
+            $homeId = $home['ownerId'] ?? null;
 
             if ($homeId === null || $homeId === '') {
                 continue;
             }
 
-            $devicesResponse = $this->customerRequest(
-                integration: $integration,
-                method: 'GET',
-                path: '/v1.0/m/life/ha/home/devices',
-                params: ['homeId' => (string) $homeId],
+            $homeDevices = $this->client->get(
+                $integration,
+                '/v1.0/m/life/ha/home/devices',
+                ['homeId' => (string) $homeId],
             );
 
-            $homeDevices = $devicesResponse['list'] ?? $devicesResponse['devices'] ?? $devicesResponse ?? [];
-            if (! is_array($homeDevices)) {
-                continue;
+            if (is_array($homeDevices)) {
+                $devices = $devices->merge($homeDevices);
             }
-
-            $devices = $devices->merge($homeDevices);
         }
 
         return $devices
             ->map(fn (array $device): TuyaDeviceDTO => new TuyaDeviceDTO(
-                id: (string) ($device['id'] ?? $device['deviceId'] ?? ''),
+                id: (string) ($device['id'] ?? ''),
                 name: (string) ($device['name'] ?? 'Dispositivo sem nome'),
                 category: (string) ($device['category'] ?? ''),
                 online: (bool) ($device['online'] ?? false),
@@ -93,200 +84,150 @@ class TuyaIntegrationService
             'last_sync' => now(),
         ])->save();
 
+        $this->syncDeviceSpecifications($device);
+
         return $snapshot;
     }
 
+    private const DP_CREATE = 'temporary_password_creat';
+
+    private const DP_DELETE = 'temporary_password_delete';
+
     /**
-     * Teste de envio de comando simples (travar motor). Usar via tinker para diagnosticar sign invalid.
-     * Ex.: (new TuyaIntegrationService)->testSendCommand(Device::find(3));
+     * DP 24 — cria senha temporária. Payload raw de 21 bytes em Base64.
+     * https://developer.tuya.com/en/docs/iot/zigbee-doorlock-dp?id=K9fembhbeab0p
      *
-     * @return array<string, mixed>
-     */
-    public function testSendCommand(Device $device): array
-    {
-        $integration = $this->resolveIntegration($device);
-
-        return $this->customerRequest(
-            integration: $integration,
-            method: 'POST',
-            path: "/v1.1/m/thing/{$device->external_device_id}/commands",
-            params: null,
-            body: ['commands' => [['code' => 'lock_motor_state', 'value' => false]]],
-        );
-    }
-
-    /**
-     * Probe temporário: testa vários paths de comando para descobrir o endpoint correto (404 → alternativas).
-     * Tinker: (new TuyaIntegrationService)->probeCommandEndpoint(Device::find(3));
-     */
-    public function probeCommandEndpoint(Device $device): void
-    {
-        $integration = $this->resolveIntegration($device);
-        $id = $device->external_device_id;
-
-        $endpoints = [
-            "/v1.1/m/life/{$id}/commands",
-            "/v1.0/m/life/{$id}/commands",
-            "/v1.0/m/life/ha/devices/{$id}/commands",
-            "/v1.0/m/thing/{$id}/commands",
-            "/v1.1/m/thing/devices/{$id}/commands",
-        ];
-
-        $body = ['commands' => [['code' => 'lock_motor_state', 'value' => false]]];
-
-        foreach ($endpoints as $path) {
-            $result = $this->customerRequest(
-                integration: $integration,
-                method: 'POST',
-                path: $path,
-                params: null,
-                body: $body,
-            );
-            Log::info('[Tuya probe] '.$path, ['result' => $result]);
-        }
-    }
-
-    /**
-     * Cria senha temporária na fechadura Tuya via DP temporary_password_creat (apigw.iotbing.com).
-     * Retorna a referência "tuyaSeq:serverSeq" para uso em deleteTemporaryPassword.
+     * Retorna "tuyaSeq:serverSeq", que identifica a senha para remoção posterior.
      *
-     * @throws RuntimeException
+     * @throws TuyaApiException
      */
-    public function createTemporaryPasswordViaDP(
+    public function createTemporaryPassword(
         Device $device,
         string $pin,
         int $effectiveTime,
-        int $invalidTime
+        int $invalidTime,
     ): string {
         if (strlen($pin) !== 6 || ! ctype_digit($pin)) {
-            throw new RuntimeException('PIN deve ter exatamente 6 digitos.');
+            throw new TuyaApiException('PIN deve ter exatamente 6 dígitos.');
+        }
+
+        if (! $device->supportsTuyaTemporaryPassword()) {
+            throw new TuyaApiException(
+                "Dispositivo {$device->id} não declara o DP ".self::DP_CREATE.'.'
+            );
         }
 
         $integration = $this->resolveIntegration($device);
         $tuyaSeq = random_int(0, 65535);
         $serverSeq = random_int(0, 65535);
-        $lockId = 0x0000;
 
-        $bytes = pack('n', $tuyaSeq)
-            .pack('n', $serverSeq)
-            .pack('n', $lockId)
-            .pack('N', $effectiveTime)
-            .pack('N', $invalidTime)
-            .chr(0x00)
-            .$pin;
-
-        $value = base64_encode($bytes);
-
-        $path = "/v1.1/m/thing/{$device->external_device_id}/commands";
-        $body = [
-            'commands' => [
-                [
-                    'code' => 'temporary_password_creat',
-                    'value' => $value,
-                ],
-            ],
-        ];
-
-        $result = $this->customerRequest(
-            integration: $integration,
-            method: 'POST',
-            path: $path,
-            params: null,
-            body: $body,
+        $this->client->post(
+            $integration,
+            "/v1.1/m/thing/{$device->external_device_id}/commands",
+            body: ['commands' => [[
+                'code' => self::DP_CREATE,
+                'value' => $this->buildCreatePayload($tuyaSeq, $serverSeq, $pin, $effectiveTime, $invalidTime),
+            ]]],
         );
-
-        if ($result === []) {
-            Log::error('[Tuya] createTemporaryPasswordViaDP: customerRequest retornou vazio', [
-                'device_id' => $device->id,
-                'external_device_id' => $device->external_device_id,
-            ]);
-            throw new RuntimeException('Tuya recusou a criacao do PIN temporario.');
-        }
-
-        Log::info('[Tuya] PIN temporario criado na fechadura via DP', [
-            'device_id' => $device->id,
-            'external_device_id' => $device->external_device_id,
-        ]);
 
         return "{$tuyaSeq}:{$serverSeq}";
     }
 
     /**
-     * Remove senha temporária na fechadura Tuya via DP temporary_password_delete.
-     * $externalReference deve ser "tuyaSeq:serverSeq" retornado por createTemporaryPasswordViaDP; caso contrario usa zeros.
+     * DP 25 — remove senha temporária. Payload raw de 6 bytes em Base64.
+     *
+     * @throws TuyaApiException
      */
-    public function deleteTemporaryPassword(Device $device, string $externalReference): bool
+    public function deleteTemporaryPassword(Device $device, string $externalReference): void
     {
-        $tuyaSeq = 0;
-        $serverSeq = 0;
+        [$tuyaSeq, $serverSeq] = $this->parseReference($externalReference);
+
+        $this->client->post(
+            $this->resolveIntegration($device),
+            "/v1.1/m/thing/{$device->external_device_id}/commands",
+            body: ['commands' => [[
+                'code' => self::DP_DELETE,
+                'value' => $this->buildDeletePayload($tuyaSeq, $serverSeq),
+            ]]],
+        );
+    }
+
+    private function buildCreatePayload(
+        int $tuyaSeq,
+        int $serverSeq,
+        string $pin,
+        int $effectiveTime,
+        int $invalidTime,
+    ): string {
+        return base64_encode(
+            pack('n', $tuyaSeq)          // [0..1]  Tuya serial number
+            .pack('n', $serverSeq)       // [2..3]  server serial number
+            .pack('n', 0x0000)           // [4..5]  lock manufacturer id
+            .pack('N', $effectiveTime)   // [6..9]  início, unix big-endian
+            .pack('N', $invalidTime)     // [10..13] fim, unix big-endian
+            .chr(0x00)                   // [14]    não é one-time
+            .$pin                        // [15..20] 6 dígitos ASCII
+        );
+    }
+
+    private function buildDeletePayload(int $tuyaSeq, int $serverSeq): string
+    {
+        return base64_encode(
+            pack('n', $tuyaSeq)
+            .pack('n', $serverSeq)
+            .pack('n', 0x0000)
+        );
+    }
+
+    /** @return array{0: int, 1: int} */
+    private function parseReference(string $externalReference): array
+    {
         $parts = explode(':', $externalReference, 2);
-        if (count($parts) === 2 && ctype_digit($parts[0]) && ctype_digit($parts[1])) {
-            $tuyaSeq = (int) $parts[0];
-            $serverSeq = (int) $parts[1];
+
+        if (count($parts) !== 2 || ! ctype_digit($parts[0]) || ! ctype_digit($parts[1])) {
+            throw new TuyaApiException("Referência de senha temporária inválida: {$externalReference}");
         }
 
-        $lockId = 0x0000;
-        $bytes = pack('n', $tuyaSeq).pack('n', $serverSeq).pack('n', $lockId);
-        $value = base64_encode($bytes);
+        return [(int) $parts[0], (int) $parts[1]];
+    }
 
+    /**
+     * Busca os function codes suportados pelo dispositivo.
+     * Port de device.py DeviceRepository.update_device_specification.
+     *
+     * @return list<string>
+     */
+    public function syncDeviceSpecifications(Device $device): array
+    {
         $integration = $this->resolveIntegration($device);
-        $path = "/v1.1/m/thing/{$device->external_device_id}/commands";
-        $body = [
-            'commands' => [
-                [
-                    'code' => 'temporary_password_delete',
-                    'value' => $value,
-                ],
-            ],
-        ];
 
-        $result = $this->customerRequest(
-            integration: $integration,
-            method: 'POST',
-            path: $path,
-            params: null,
-            body: $body,
+        $result = $this->client->get(
+            $integration,
+            "/v1.1/m/life/{$device->external_device_id}/specifications",
         );
 
-        if ($result !== []) {
-            return true;
+        if (! is_array($result) || ! is_array($result['functions'] ?? null)) {
+            return [];
         }
 
-        Log::warning('[Tuya] Falha ao deletar senha temporaria via DP', [
-            'device_id' => $device->id,
-            'external_device_id' => $device->external_device_id,
-            'external_reference' => $externalReference,
-        ]);
+        $codes = collect($result['functions'])
+            ->pluck('code')
+            ->filter(fn ($code): bool => is_string($code) && $code !== '')
+            ->values()
+            ->all();
 
-        return false;
+        $device->forceFill(['tuya_functions' => $codes])->save();
+
+        return $codes;
     }
 
     private function resolveIntegration(Device $device): Integration
     {
         $integration = $device->integration;
         if (! $integration instanceof Integration) {
-            throw new RuntimeException('Dispositivo Tuya sem integracao associada.');
+            throw new TuyaApiException('Dispositivo Tuya sem integracao associada.');
         }
 
         return $integration;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function customerRequest(Integration $integration, string $method, string $path, ?array $params = null, ?array $body = null): array
-    {
-        $qrService = new TuyaQrAuthService;
-        $result = $qrService->customerRequest(
-            $method,
-            $path,
-            (string) $integration->tuya_access_token,
-            (string) $integration->tuya_refresh_token,
-            $params,
-            $body,
-            $integration->tuya_endpoint,
-        );
-
-        return is_array($result) ? $result : [];
     }
 }

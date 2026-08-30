@@ -10,6 +10,7 @@ use App\Models\Integration;
 use App\Models\Platform;
 use App\Services\Tuya\DTOs\TuyaDeviceDTO;
 use App\Services\Tuya\DTOs\TuyaTokenDTO;
+use App\Services\Tuya\TuyaIntegrationService;
 use App\Services\Tuya\TuyaQrAuthService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -43,7 +44,7 @@ class TuyaConnect extends Component
         $this->validate([
             'userCode' => ['required', 'string', 'min:1'],
         ], [], [
-            'userCode' => 'Código do Usuário',
+            'userCode' => __('app.tuya_user_code_attribute'),
         ]);
 
         try {
@@ -56,7 +57,7 @@ class TuyaConnect extends Component
         }
 
         if (! $dto) {
-            $this->errorMessage = 'Não foi possível gerar o QR code. Verifique o código do usuário.';
+            $this->errorMessage = __('app.tuya_qr_generation_failed');
 
             return;
         }
@@ -87,9 +88,18 @@ class TuyaConnect extends Component
                 'expire_time' => $token->expireTime,
                 'uid' => $token->uid,
                 'endpoint' => $token->endpoint,
+                'terminal_id' => $token->terminalId,
+                'server_time' => $token->serverTime,
             ], JSON_THROW_ON_ERROR);
 
-            $deviceDtos = $service->getDevices($token);
+            $probe = new Integration([
+                'tuya_access_token' => $token->accessToken,
+                'tuya_refresh_token' => $token->refreshToken,
+                'tuya_endpoint' => $token->endpoint,
+            ]);
+            $probe->tuya_token_expires_at = now()->addSeconds($token->expireTime);
+
+            $deviceDtos = app(TuyaIntegrationService::class)->listDevices($probe)->all();
             $this->devices = array_values(array_map(
                 fn (TuyaDeviceDTO $d) => [
                     'id' => $d->id,
@@ -142,7 +152,7 @@ class TuyaConnect extends Component
     public function saveIntegration(): void
     {
         if ($this->tokenJson === '') {
-            $this->errorMessage = 'Sessão inválida. Por favor, recomece.';
+            $this->errorMessage = __('app.tuya_session_expired');
             $this->step = 'form';
 
             return;
@@ -152,10 +162,16 @@ class TuyaConnect extends Component
         $token = new TuyaTokenDTO(
             accessToken: $tokenData['access_token'],
             refreshToken: $tokenData['refresh_token'],
-            expireTime: $tokenData['expire_time'],
+            expireTime: (int) $tokenData['expire_time'],
             uid: $tokenData['uid'],
             endpoint: $tokenData['endpoint'] ?? null,
+            terminalId: $tokenData['terminal_id'] ?? null,
+            serverTime: isset($tokenData['server_time']) ? (int) $tokenData['server_time'] : null,
         );
+
+        $expiresAt = $token->serverTime !== null
+            ? now()->setTimestamp(intdiv($token->serverTime, 1000))->addSeconds($token->expireTime)
+            : now()->addSeconds($token->expireTime);
 
         $platform = Platform::where('slug', 'tuya')->firstOrCreate(
             ['slug' => 'tuya'],
@@ -172,8 +188,9 @@ class TuyaConnect extends Component
                 'tuya_user_code' => $this->userCode,
                 'tuya_access_token' => $token->accessToken,
                 'tuya_refresh_token' => $token->refreshToken,
-                'tuya_token_expires_at' => now()->addSeconds($token->expireTime),
+                'tuya_token_expires_at' => $expiresAt,
                 'tuya_endpoint' => $token->endpoint,
+                'tuya_terminal_id' => $token->terminalId,
             ],
         );
 
@@ -182,7 +199,7 @@ class TuyaConnect extends Component
                 continue;
             }
 
-            Device::updateOrCreate(
+            $device = Device::updateOrCreate(
                 ['external_device_id' => $d['id']],
                 [
                     'name' => $d['name'],
@@ -197,13 +214,18 @@ class TuyaConnect extends Component
                     'tuya_status_payload' => $d['status'] ?? [],
                     'last_sync' => now(),
                 ]
-            )->deviceUsers()->firstOrCreate([
-                'user_id' => Auth::id(),
-            ]);
+            );
+            $device->deviceUsers()->firstOrCreate(['user_id' => Auth::id()]);
+
+            try {
+                app(TuyaIntegrationService::class)->syncDeviceSpecifications($device);
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
         }
 
         $this->step = 'done';
-        session()->flash('status', 'Integração Tuya conectada com sucesso! Vincule os dispositivos importados a um local para sincronizar PINs do place.');
+        session()->flash('status', __('app.tuya_connected_flash'));
     }
 
     public function render(): View

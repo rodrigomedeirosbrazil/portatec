@@ -12,5 +12,8 @@ class TuyaTokenDTO
         public readonly int $expireTime,
         public readonly string $uid,
         public readonly ?string $endpoint = null,
+        public readonly ?string $terminalId = null,
+        /** Timestamp do servidor Tuya em milissegundos (campo `t` da resposta). */
+        public readonly ?int $serverTime = null,
     ) {}
 }

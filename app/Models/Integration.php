@@ -23,6 +23,7 @@ class Integration extends Model
         'tuya_token_expires_at',
         'tuya_uid',
         'tuya_endpoint',
+        'tuya_terminal_id',
     ];
 
     protected $casts = [
