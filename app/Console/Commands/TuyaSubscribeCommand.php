@@ -29,40 +29,41 @@ class TuyaSubscribeCommand extends Command
 
     protected $description = 'Assina o broker MQTT da Tuya e aplica os eventos dos dispositivos.';
 
+    /**
+     * Segundos de espera antes de sair quando ainda não há o que assinar. Sob supervisord
+     * o autorestart transforma isso num poller barato: assim que uma integração Tuya for
+     * conectada, o próximo ciclo já a encontra. Sair com erro marcaria o programa como
+     * FATAL e ele não voltaria sozinho.
+     */
+    private const IDLE_BACKOFF_SECONDS = 60;
+
     public function handle(TuyaMqttService $service): int
     {
         $integration = $this->resolveIntegration();
 
         if (! $integration instanceof Integration) {
-            $this->error('Nenhuma integração Tuya conectada encontrada.');
-
-            return self::FAILURE;
+            return $this->idle('Nenhuma integração Tuya conectada — nada a assinar.');
         }
 
         try {
             $config = $service->config($integration);
         } catch (Throwable $exception) {
-            $this->error('Falha ao obter a configuração MQTT da Tuya: '.$exception->getMessage());
             report($exception);
 
-            return self::FAILURE;
+            return $this->idle('Falha ao obter a configuração MQTT da Tuya: '.$exception->getMessage());
         }
 
         $url = (string) ($config['url'] ?? '');
         $parts = parse_url($url);
 
         if ($url === '' || ! is_array($parts) || ! isset($parts['host'])) {
-            $this->error('A Tuya não devolveu uma URL de MQTT utilizável.');
-
-            return self::FAILURE;
+            return $this->idle('A Tuya não devolveu uma URL de MQTT utilizável.');
         }
 
         $topics = $service->topicsFor($integration, $config);
 
         if ($topics === []) {
-            $this->error('Nenhum tópico para assinar — a integração tem dispositivos importados?');
-
-            return self::FAILURE;
+            return $this->idle('Nenhum tópico para assinar — a integração não tem dispositivos importados.');
         }
 
         $client = new MqttClient(
@@ -110,6 +111,22 @@ class TuyaSubscribeCommand extends Command
 
         $client->loop(! $this->option('once'));
         $client->disconnect();
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Nada a fazer agora: registra o motivo, espera e sai com sucesso, para o supervisord
+     * reiniciar sem marcar o programa como FATAL.
+     */
+    private function idle(string $reason): int
+    {
+        Log::info('[Tuya MQTT] subscriber ocioso', ['reason' => $reason]);
+        $this->warn($reason);
+
+        if (! $this->option('once')) {
+            sleep(self::IDLE_BACKOFF_SECONDS);
+        }
 
         return self::SUCCESS;
     }
