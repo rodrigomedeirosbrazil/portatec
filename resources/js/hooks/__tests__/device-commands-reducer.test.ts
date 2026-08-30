@@ -1,21 +1,4 @@
-/**
- * NOTE: no JS test runner is installed in this repo yet (package.json is
- * shared across the parallel Fase 1 agents, so one was not added here as
- * instructed). This file is written in the standard describe/it/expect
- * shape so it can run unmodified (after deleting the ambient declarations
- * below) once Vitest/Jest is added as a dev dependency.
- *
- * The declarations below stand in for the test runner's own globals purely
- * so this file type-checks under `tsc --noEmit` in the meantime.
- */
-declare const describe: (name: string, fn: () => void) => void;
-declare const it: (name: string, fn: () => void) => void;
-interface TestExpectation<T> {
-    toBe(expected: T): void;
-    toEqual(expected: T): void;
-    toBeNull(): void;
-}
-declare const expect: <T>(actual: T) => TestExpectation<T>;
+import { describe, expect, it } from 'vitest';
 
 import {
     ACK_TIMEOUT_MS,
