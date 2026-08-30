@@ -81,7 +81,7 @@ class Edit extends Component
     }
 
     /**
-     * @param array<int, int> $placeIds
+     * @param  array<int, int>  $placeIds
      */
     private function syncPlaceDeviceFunctions(array $placeIds): void
     {

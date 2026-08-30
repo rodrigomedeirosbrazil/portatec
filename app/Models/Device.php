@@ -122,6 +122,7 @@ class Device extends Model
 
     /**
      * Categorias Tuya que representam fechadura (smart lock).
+     *
      * @see https://developer.tuya.com/en/docs/iot/lock
      */
     private const TUYA_LOCK_CATEGORIES = ['ms', 'jtmspro'];

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Livewire\Devices;
 
+use App\Models\AccessCodeDeviceSync;
 use App\Models\CommandLog;
 use App\Models\Device;
-use App\Models\AccessCodeDeviceSync;
 use App\Services\Tuya\TuyaIntegrationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;

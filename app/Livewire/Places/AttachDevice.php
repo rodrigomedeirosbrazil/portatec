@@ -74,12 +74,12 @@ class AttachDevice extends Component
             ->withCount('deviceFunctions')
             ->with('places')
             ->where(function ($query) use ($userPlaceIds): void {
-                $query->where(function ($query) use ($userPlaceIds): void {
+                $query->where(function ($query): void {
                     $query->whereDoesntHave('places')
                         ->whereNull('place_id');
                 })
-                ->orWhereHas('places', fn ($q) => $q->whereIn('places.id', $userPlaceIds))
-                ->orWhereIn('place_id', $userPlaceIds);
+                    ->orWhereHas('places', fn ($q) => $q->whereIn('places.id', $userPlaceIds))
+                    ->orWhereIn('place_id', $userPlaceIds);
             })
             ->where(function ($query): void {
                 $query->whereDoesntHave('places', fn ($query) => $query->where('places.id', $this->place->id))
