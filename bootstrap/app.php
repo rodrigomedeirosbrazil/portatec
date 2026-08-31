@@ -28,9 +28,23 @@ return Application::configure(basePath: dirname(__DIR__))
             Request::HEADER_X_FORWARDED_AWS_ELB
         );
 
-        // Este e o unico bloco withMiddleware que produz efeito: cada chamada cria uma
-        // instancia nova de Middleware e faz setMiddlewareGroups(), substituindo a
-        // anterior em vez de somar. O bloco acima, portanto, e inerte -- ver AGENTS.md.
+        // Precisa ficar NESTE bloco, o ultimo withMiddleware.
+        //
+        // Ha duas chamadas a withMiddleware() aqui, e elas se comportam de forma
+        // diferente conforme o que se configura:
+        //
+        // - redirectUsersTo() e trustProxies() gravam em estado ESTATICO das classes
+        //   de middleware (RedirectIfAuthenticated::redirectUsing, TrustProxies::at).
+        //   Ambos os callbacks rodam, entao os dois blocos surtem efeito e as
+        //   configuracoes acima estao ativas.
+        //
+        // - web()/use()/prepend()/priority() acumulam no OBJETO Middleware, e cada
+        //   chamada a withMiddleware() cria um objeto novo e faz
+        //   $kernel->setMiddlewareGroups(), substituindo o anterior em vez de somar.
+        //   Só o ultimo bloco sobrevive.
+        //
+        // Registrar o middleware do Inertia no primeiro bloco, portanto, o descartava
+        // silenciosamente: nenhuma tela recebia as props compartilhadas.
         $middleware->web(append: [
             HandleInertiaRequests::class,
         ]);
