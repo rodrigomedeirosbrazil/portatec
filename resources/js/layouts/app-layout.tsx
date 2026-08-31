@@ -103,7 +103,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <NavLink href={bookingsIntegrationsUrl} pattern="/app/bookings/integrations*">
                             {t('nav_bookings_integrations')}
                         </NavLink>
-                        <NavLink href={adminUrl} pattern="/admin*">
+                        <NavLink href={adminUrl} pattern="/admin*" external>
                             {t('nav_admin')}
                         </NavLink>
                         <Link
@@ -144,7 +144,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <NavLink href={bookingsIntegrationsUrl} pattern="/app/bookings/integrations*" mobile>
                             {t('nav_bookings_integrations')}
                         </NavLink>
-                        <NavLink href={adminUrl} pattern="/admin*" mobile>
+                        <NavLink href={adminUrl} pattern="/admin*" mobile external>
                             {t('nav_admin')}
                         </NavLink>
                         <Link
