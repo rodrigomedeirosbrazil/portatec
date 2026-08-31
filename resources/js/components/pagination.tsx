@@ -20,15 +20,18 @@ function visit(url: string) {
         {},
         {
             preserveState: true,
-            preserveScroll: true,
+            // Sem `preserveScroll`: os controles ficam no fim da lista, então
+            // preservar a posição deixa o leitor parado no rodapé olhando o fim
+            // da página nova. O padrão do Inertia volta ao topo, que é o começo
+            // do conteúdo que ele acabou de pedir.
         },
     );
 }
 
 /**
  * Porte de `resources/views/vendor/pagination/tailwind.blade.php`, navegando
- * com visitas parciais do Inertia (`preserveState` + `preserveScroll`) em vez
- * de recarregar a página inteira.
+ * com visitas parciais do Inertia (`preserveState`) em vez de recarregar a
+ * página inteira.
  */
 export function Pagination({ paginator, showSummary = true, className }: PaginationProps) {
     const { t } = useTranslations();

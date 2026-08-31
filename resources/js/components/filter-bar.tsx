@@ -44,9 +44,54 @@ export interface FilterBarProps {
     className?: string;
     /** Classes do grid interno (colunas responsivas). Padrão: 1 coluna, 2 em `sm`. */
     gridClassName?: string;
+    /**
+     * Controla se chaves de filtro com valor vazio são enviadas explicitamente na
+     * query string. Padrão: false (comportamento retrocompatível: apenas chaves
+     * com valor não vazio são enviadas).
+     *
+     * Quando `true`, o backend passa a distinguir três estados por chave:
+     * - chave ausente da query string: aplica o valor padrão do backend;
+     * - chave presente e vazia (`''`): sem filtro nesse campo;
+     * - chave presente com valor: filtra por esse valor.
+     */
+    sendEmptyValues?: boolean;
 }
 
 const SELECT_EMPTY_SENTINEL = '__all__';
+
+/**
+ * Monta o objeto de parâmetros de query a partir dos campos declarados e dos
+ * valores atuais. Itera sobre `fields` (não sobre `Object.entries(values)`)
+ * para que o conjunto de chaves enviadas seja exatamente o conjunto declarado.
+ *
+ * - `sendEmptyValues === false` (padrão): apenas chaves com valor não vazio
+ *   entram no objeto — comportamento idêntico ao histórico, exigido para
+ *   retrocompatibilidade com access-codes, devices, places e integrations.
+ * - `sendEmptyValues === true`: todas as chaves declaradas entram, as vazias
+ *   como string vazia (`''`).
+ */
+export function buildFilterParams(
+    fields: FilterFieldConfig[],
+    values: Record<string, string>,
+    sendEmptyValues: boolean,
+): Record<string, string> {
+    const params: Record<string, string> = {};
+
+    for (const field of fields) {
+        const value = values[field.key] ?? '';
+
+        if (value !== '') {
+            params[field.key] = value;
+            continue;
+        }
+
+        if (sendEmptyValues) {
+            params[field.key] = '';
+        }
+    }
+
+    return params;
+}
 
 /**
  * Busca com debounce e selects sincronizados com a query string via visita
@@ -56,7 +101,16 @@ const SELECT_EMPTY_SENTINEL = '__all__';
  * componentes Livewire de índice, que faziam redirect de página inteira a
  * cada troca de filtro.
  */
-export function FilterBar({ url, fields, values, debounceMs = 300, showClear = true, className, gridClassName }: FilterBarProps) {
+export function FilterBar({
+    url,
+    fields,
+    values,
+    debounceMs = 300,
+    showClear = true,
+    className,
+    gridClassName,
+    sendEmptyValues = false,
+}: FilterBarProps) {
     const { t } = useTranslations();
     const [localValues, setLocalValues] = React.useState<Record<string, string>>(values);
     const debounceTimers = React.useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -68,12 +122,7 @@ export function FilterBar({ url, fields, values, debounceMs = 300, showClear = t
     }, [values]);
 
     function visit(nextValues: Record<string, string>) {
-        const params: Record<string, string> = {};
-        for (const [key, value] of Object.entries(nextValues)) {
-            if (value !== '' && value !== undefined && value !== null) {
-                params[key] = value;
-            }
-        }
+        const params = buildFilterParams(fields, nextValues, sendEmptyValues);
 
         router.get(url, params, {
             preserveState: true,

@@ -10,21 +10,42 @@ use App\Http\Resources\BookingResource;
 use App\Http\Resources\PlaceResource;
 use App\Models\Booking;
 use App\Models\Place;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class BookingController extends Controller
 {
     private const PER_PAGE = 20;
 
+    private const STATUS_OPTIONS = ['all', 'current', 'future', 'past'];
+
+    /** Chaves de filtro da tela; usadas para detectar a visita sem filtro nenhum. */
+    private const FILTER_KEYS = ['place_id', 'date_from', 'date_to', 'status', 'guest', 'source'];
+
     /**
-     * Esqueleto, mas com a query de escopo e filtros já portada 1:1 de
-     * `App\Livewire\Bookings\Index::mount()` / `render()` — a UI de filtro
-     * (§7 do spec, `<FilterBar>`) fica a cargo da fase de implementação
-     * paralela, que só precisa consumir estes mesmos parâmetros de query.
+     * Cada filtro distingue três estados, porque a `FilterBar` desta tela
+     * envia as seis chaves sempre (`sendEmptyValues`): chave ausente aplica
+     * o padrão, chave presente e vazia significa "Todos" (sem filtro), e
+     * chave com valor filtra.
+     *
+     * - `place_id` é puramente opcional. O escopo de segurança é o
+     *   `whereIn('place_id', $userPlaceIds)`, não este filtro, e por isso não
+     *   há fallback para o primeiro place do usuário: era ele que impedia
+     *   "Todos os locais" de funcionar. Id de outro usuário é ignorado em
+     *   silêncio, para o filtro não virar oráculo de places alheios.
+     * - `status` usa os scopes do model, com whitelist; qualquer coisa fora
+     *   dela virou `all`.
+     * - As datas têm semântica de sobreposição (`date_from` -> `check_out >=`,
+     *   `date_to` -> `check_in <=`), e não de intervalo contido: senão a
+     *   janela padrão esconderia a estadia em curso iniciada antes dela.
+     *   `date_from` assume `hoje - 7 dias` só na visita sem filtro nenhum
+     *   (ver `resolveDateFrom()`). Data inválida é descartada.
      */
     public function index(Request $request): Response
     {
@@ -37,21 +58,15 @@ class BookingController extends Controller
                 $placeId = $requestedId;
             }
         }
-        if ($placeId === null && ! $request->has('place_id')) {
-            $placeId = Auth::user()->placeUsers()->value('place_id');
-        }
 
-        $dateFrom = $request->filled('date_from') ? $request->string('date_from')->toString() : null;
-        $dateTo = $request->filled('date_to') ? $request->string('date_to')->toString() : null;
+        $dateFrom = $this->resolveDateFrom($request);
+        $dateTo = $request->filled('date_to') ? $this->parseDate($request->string('date_to')->toString()) : null;
         $guest = $request->filled('guest') ? $request->string('guest')->toString() : '';
         $source = $request->filled('source') ? $request->string('source')->toString() : '';
 
-        if ($request->filled('status')) {
-            $status = $request->string('status')->toString();
-        } elseif (! $request->hasAny(['date_from', 'date_to', 'guest', 'source'])) {
-            $status = 'future';
-        } else {
-            $status = '';
+        $status = $request->filled('status') ? $request->string('status')->toString() : 'all';
+        if (! in_array($status, self::STATUS_OPTIONS, true)) {
+            $status = 'all';
         }
 
         $places = Place::query()
@@ -65,17 +80,17 @@ class BookingController extends Controller
             ->with('place')
             ->whereIn('place_id', $userPlaceIds)
             ->when($placeId, fn ($query) => $query->where('place_id', $placeId))
-            ->when($dateFrom, fn ($query) => $query->whereDate('check_in', '>=', $dateFrom))
-            ->when($dateTo, fn ($query) => $query->whereDate('check_out', '<=', $dateTo))
-            ->when($status === 'past', fn ($query) => $query->where('check_out', '<', $now))
-            ->when($status === 'current', fn ($query) => $query->where('check_in', '<=', $now)->where('check_out', '>=', $now))
-            ->when($status === 'future', fn ($query) => $query->where('check_in', '>', $now))
+            ->when($dateFrom, fn ($query) => $query->where('check_out', '>=', $dateFrom->copy()->startOfDay()))
+            ->when($dateTo, fn ($query) => $query->where('check_in', '<=', $dateTo->copy()->endOfDay()))
+            ->when($status === 'current', fn ($query) => $query->current($now))
+            ->when($status === 'future', fn ($query) => $query->future($now))
+            ->when($status === 'past', fn ($query) => $query->past($now))
             ->when($guest !== '', function ($query) use ($guest): void {
                 $term = '%'.addcslashes($guest, '%_').'%';
                 $query->where('guest_name', 'like', $term);
             })
             ->when($source !== '', fn ($query) => $query->where('source', $source))
-            ->orderBy('check_in')
+            ->orderByTimeline($now)
             ->paginate(self::PER_PAGE)
             ->withQueryString();
 
@@ -84,13 +99,46 @@ class BookingController extends Controller
             'bookings' => BookingResource::collection($bookings),
             'filters' => [
                 'place_id' => $placeId,
-                'date_from' => $dateFrom,
-                'date_to' => $dateTo,
+                'date_from' => $dateFrom?->toDateString(),
+                'date_to' => $dateTo?->toDateString(),
                 'status' => $status,
                 'guest' => $guest,
                 'source' => $source,
             ],
         ]);
+    }
+
+    /**
+     * A janela de `hoje - 7 dias` é o estado inicial da tela, não um recorte
+     * implícito sobre uma busca: ela só vale quando a requisição não traz
+     * filtro nenhum. Assim `?guest=Zezinho` continua varrendo todo o
+     * histórico, como antes. Isto não recria o bug do `hasAny` que motivou
+     * este trabalho, porque a `FilterBar` passou a enviar sempre as seis
+     * chaves — nenhum estado deixa de ser expressável pela UI, e o desvio
+     * aqui só alcança URL montada à mão ou bookmark antigo.
+     */
+    private function resolveDateFrom(Request $request): ?CarbonInterface
+    {
+        if ($request->has('date_from')) {
+            return $request->filled('date_from')
+                ? $this->parseDate($request->string('date_from')->toString())
+                : null;
+        }
+
+        if ($request->hasAny(self::FILTER_KEYS)) {
+            return null;
+        }
+
+        return now()->subWeek();
+    }
+
+    private function parseDate(string $value): ?CarbonInterface
+    {
+        try {
+            return Carbon::parse($value);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /**
