@@ -25,7 +25,8 @@ services:
         networks:
             - medeirostec-network
         depends_on:
-            - redis
+            redis:
+                condition: service_healthy
         restart: always
 
 
@@ -40,8 +41,9 @@ services:
                 - CMD
                 - redis-cli
                 - ping
-            retries: 3
+            interval: 2s
             timeout: 5s
+            retries: 3
         restart: always
 
     mosquitto:
