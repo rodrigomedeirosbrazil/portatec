@@ -206,6 +206,59 @@ class DevicesTest extends TestCase
             ->assertForbidden();
     }
 
+    /**
+     * Regressão de isolamento entre contas: um dispositivo recém-importado por outro
+     * usuário, ainda sem local vinculado (place_id null, sem places()), não pode aparecer
+     * na listagem de terceiros. Cobre o comentário no DeviceController sobre não poder
+     * existir ramo de query sem escopo (ver AGENTS.md §4 e §15.1).
+     */
+    public function test_it_does_not_leak_unassigned_devices_from_another_account(): void
+    {
+        $owner = User::factory()->create();
+        $this->makePlaceWithAdmin($owner, 'Casa do dono');
+
+        $orphan = Device::create(['name' => 'Fechadura recem importada', 'brand' => DeviceBrandEnum::Tuya]);
+        $orphan->deviceUsers()->create(['user_id' => $owner->id]);
+
+        $stranger = User::factory()->create();
+        $this->makePlaceWithAdmin($stranger, 'Casa do estranho');
+
+        $this->actingAs($stranger)
+            ->get('/app/devices')
+            ->assertOk()
+            ->assertDontSee('Fechadura recem importada');
+    }
+
+    /**
+     * Contraparte do DevicePolicy::hasAccess(): quando o dispositivo já pertence ao local
+     * de outra conta mas está compartilhado via device_user, o vínculo por device_user
+     * concede acesso de visualização e controle mesmo sem vínculo de place.
+     */
+    public function test_user_with_a_device_user_link_sees_and_can_open_a_device_shared_from_another_account(): void
+    {
+        $owner = User::factory()->create();
+        $ownerPlace = $this->makePlaceWithAdmin($owner, 'Casa do dono');
+
+        $shared = Device::create(['name' => 'Portao compartilhado', 'brand' => DeviceBrandEnum::Portatec]);
+        $shared->places()->attach($ownerPlace->id);
+
+        $collaborator = User::factory()->create();
+        $shared->deviceUsers()->create(['user_id' => $collaborator->id]);
+
+        $this->actingAs($collaborator)
+            ->get('/app/devices')
+            ->assertOk()
+            ->assertSee('Portao compartilhado');
+
+        $this->actingAs($collaborator)
+            ->get("/app/devices/{$shared->id}")
+            ->assertOk();
+
+        $this->actingAs($collaborator)
+            ->get("/app/devices/{$shared->id}/control")
+            ->assertOk();
+    }
+
     // ------------------------------------------------------------------
     // Filters: place_id, unassigned, search
     // ------------------------------------------------------------------
@@ -245,6 +298,28 @@ class DevicesTest extends TestCase
             ->assertOk()
             ->assertSee('Sem local')
             ->assertDontSee('Com local');
+    }
+
+    /**
+     * Sem filtro, a listagem não exclui dispositivos sem local: mostra tanto os
+     * vinculados a um place quanto os órfãos acessíveis via device_user.
+     */
+    public function test_without_a_filter_both_assigned_and_unassigned_devices_are_listed(): void
+    {
+        $user = User::factory()->create();
+        $place = $this->makePlaceWithAdmin($user);
+
+        $orphan = Device::create(['name' => 'Aparelho orfao', 'brand' => DeviceBrandEnum::Portatec]);
+        $orphan->deviceUsers()->create(['user_id' => $user->id]);
+
+        $attached = Device::create(['name' => 'Aparelho com local', 'brand' => DeviceBrandEnum::Portatec]);
+        $attached->places()->attach($place->id);
+
+        $this->actingAs($user)
+            ->get('/app/devices')
+            ->assertOk()
+            ->assertSee('Aparelho orfao')
+            ->assertSee('Aparelho com local');
     }
 
     public function test_search_filters_devices_by_name(): void
