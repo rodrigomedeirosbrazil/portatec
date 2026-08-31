@@ -29,14 +29,23 @@ class BookingController extends Controller
     private const FILTER_KEYS = ['place_id', 'date_from', 'date_to', 'status', 'guest', 'source'];
 
     /**
-     * Filtros e ordenação seguem a tabela da §3.2 do spec de filtros da
-     * página de reservas: `place_id` é puramente opcional (o escopo de
-     * segurança é o `whereIn('place_id', $userPlaceIds)`, sem fallback
-     * para o primeiro place do usuário); `status` usa os scopes do model
-     * com whitelist para `all`; as datas usam semântica de sobreposição
-     * (`date_from` -> `check_out >=`, `date_to` -> `check_in <=`), com
-     * `date_from` assumindo `hoje - 7 dias` apenas na visita sem filtro
-     * nenhum (ver `resolveDateFrom()`).
+     * Cada filtro distingue três estados, porque a `FilterBar` desta tela
+     * envia as seis chaves sempre (`sendEmptyValues`): chave ausente aplica
+     * o padrão, chave presente e vazia significa "Todos" (sem filtro), e
+     * chave com valor filtra.
+     *
+     * - `place_id` é puramente opcional. O escopo de segurança é o
+     *   `whereIn('place_id', $userPlaceIds)`, não este filtro, e por isso não
+     *   há fallback para o primeiro place do usuário: era ele que impedia
+     *   "Todos os locais" de funcionar. Id de outro usuário é ignorado em
+     *   silêncio, para o filtro não virar oráculo de places alheios.
+     * - `status` usa os scopes do model, com whitelist; qualquer coisa fora
+     *   dela virou `all`.
+     * - As datas têm semântica de sobreposição (`date_from` -> `check_out >=`,
+     *   `date_to` -> `check_in <=`), e não de intervalo contido: senão a
+     *   janela padrão esconderia a estadia em curso iniciada antes dela.
+     *   `date_from` assume `hoje - 7 dias` só na visita sem filtro nenhum
+     *   (ver `resolveDateFrom()`). Data inválida é descartada.
      */
     public function index(Request $request): Response
     {

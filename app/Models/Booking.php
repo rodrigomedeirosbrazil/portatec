@@ -64,11 +64,15 @@ class Booking extends Model
     }
 
     /**
-     * Ordena em três grupos: em andamento, futuras e concluídas (nesta
-     * ordem), cada um com seu próprio critério de desempate — ver §3.3 do
-     * spec. Usa `orderByRaw` porque essa ordenação condicional em três
-     * níveis não é expressável no query builder; a sintaxe (`CASE WHEN`
-     * com parâmetros bindados) é portável entre MySQL e SQLite.
+     * Ordena em três grupos, nesta ordem e cada um com seu próprio
+     * critério: em andamento por `check_out` asc (quem desocupa primeiro no
+     * topo), futuras por `check_in` asc, concluídas por `check_out` desc (a
+     * mais recente antes das antigas). `id` fecha como desempate, sem o qual
+     * a paginação fica instável em empates de data.
+     *
+     * Usa `orderByRaw` porque essa ordenação condicional em três níveis não
+     * é expressável no query builder; a sintaxe (`CASE WHEN` com parâmetros
+     * bindados) é portável entre MySQL e SQLite.
      */
     public function scopeOrderByTimeline(Builder $query, CarbonInterface $now): Builder
     {
