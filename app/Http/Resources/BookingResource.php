@@ -27,6 +27,8 @@ class BookingResource extends JsonResource
             'source' => $this->source,
             'external_id' => $this->external_id,
             'deletion_reason' => $this->deletion_reason?->value,
+            'place' => new PlaceResource($this->whenLoaded('place')),
+            'access_code' => new AccessCodeResource($this->whenLoaded('accessCode')),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

@@ -74,6 +74,18 @@ export interface CommandLog {
     updated_at: string | null;
 }
 
+export interface Platform {
+    id: number;
+    name: string;
+    slug: string;
+}
+
+export interface IntegrationPlace {
+    id: number;
+    name: string;
+    external_id: string;
+}
+
 export interface Integration {
     id: number;
     platform?: {
@@ -83,6 +95,7 @@ export interface Integration {
     };
     tuya_uid: string | null;
     tuya_token_expires_at: string | null;
+    places?: IntegrationPlace[];
     created_at: string | null;
     updated_at: string | null;
 }
@@ -128,6 +141,8 @@ export interface Booking {
     source: string | null;
     external_id: string | null;
     deletion_reason: string | null;
+    place?: Place;
+    access_code?: AccessCode;
     created_at: string | null;
     updated_at: string | null;
 }

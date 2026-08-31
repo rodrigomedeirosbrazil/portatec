@@ -30,6 +30,11 @@ class IntegrationResource extends JsonResource
             ]),
             'tuya_uid' => $this->maskUid($this->tuya_uid),
             'tuya_token_expires_at' => $this->tuya_token_expires_at?->toIso8601String(),
+            'places' => $this->whenLoaded('places', fn () => $this->places->map(fn ($place) => [
+                'id' => $place->id,
+                'name' => $place->name,
+                'external_id' => $place->pivot->external_id,
+            ])),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

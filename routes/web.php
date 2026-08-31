@@ -1,10 +1,14 @@
 <?php
 
 use App\Http\Controllers\Admin\StartImpersonationController;
+use App\Http\Controllers\App\BookingController;
+use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\DeviceCommandController;
 use App\Http\Controllers\App\DeviceControlController;
 use App\Http\Controllers\App\DeviceController;
 use App\Http\Controllers\App\DeviceIntegrationController;
+use App\Http\Controllers\App\IntegrationController;
+use App\Http\Controllers\App\IntegrationPlaceController;
 use App\Http\Controllers\App\PlaceAttachDeviceController;
 use App\Http\Controllers\App\PlaceCloneController;
 use App\Http\Controllers\App\PlaceControlController;
@@ -22,13 +26,6 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Livewire\AccessCodes\Create as CreateAccessCode;
 use App\Livewire\AccessCodes\Edit as EditAccessCode;
 use App\Livewire\AccessCodes\Index as IndexAccessCodes;
-use App\Livewire\Bookings\Create as CreateBooking;
-use App\Livewire\Bookings\Index as IndexBookings;
-use App\Livewire\Bookings\Show as ShowBooking;
-use App\Livewire\Dashboard;
-use App\Livewire\Integrations\Create as CreateIntegration;
-use App\Livewire\Integrations\Edit as EditIntegration;
-use App\Livewire\Integrations\Index as IndexIntegrations;
 use App\Models\ImpersonationSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -78,7 +75,7 @@ Route::middleware('auth')
     ->name('app.')
     ->group(function () {
         Route::redirect('/', '/app/dashboard');
-        Route::get('/dashboard', Dashboard::class)->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/places', [PlaceController::class, 'index'])->name('places.index');
         Route::get('/places/create', [PlaceController::class, 'create'])->name('places.create');
@@ -98,12 +95,21 @@ Route::middleware('auth')
         Route::get('/places/{place}/edit', [PlaceController::class, 'edit'])->name('places.edit');
         Route::put('/places/{place}', [PlaceController::class, 'update'])->name('places.update');
 
-        Route::get('/bookings', IndexBookings::class)->name('bookings.index');
-        Route::get('/bookings/integrations', IndexIntegrations::class)->name('bookings.integrations.index');
-        Route::get('/bookings/integrations/create', CreateIntegration::class)->name('bookings.integrations.create');
-        Route::get('/bookings/integrations/{integration}/edit', EditIntegration::class)->name('bookings.integrations.edit');
-        Route::get('/bookings/create', CreateBooking::class)->name('bookings.create');
-        Route::get('/bookings/{booking}', ShowBooking::class)->name('bookings.show');
+        // /bookings/create e as rotas /bookings/integrations/* precisam vir
+        // antes de /bookings/{booking}, senão "create" e "integrations" são
+        // capturados pelo parâmetro {booking}.
+        Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
+        Route::get('/bookings/integrations', [IntegrationController::class, 'index'])->name('bookings.integrations.index');
+        Route::get('/bookings/integrations/create', [IntegrationController::class, 'create'])->name('bookings.integrations.create');
+        Route::post('/bookings/integrations', [IntegrationController::class, 'store'])->name('bookings.integrations.store');
+        Route::get('/bookings/integrations/{integration}/edit', [IntegrationController::class, 'edit'])->name('bookings.integrations.edit');
+        Route::delete('/bookings/integrations/{integration}', [IntegrationController::class, 'destroy'])->name('bookings.integrations.destroy');
+        Route::put('/bookings/integrations/{integration}/places/{place}', [IntegrationPlaceController::class, 'update'])->name('bookings.integrations.places.update');
+        Route::delete('/bookings/integrations/{integration}/places/{place}', [IntegrationPlaceController::class, 'destroy'])->name('bookings.integrations.places.destroy');
+        Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+        Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+        Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+        Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
 
         Route::get('/access-codes', IndexAccessCodes::class)->name('access-codes.index');
         Route::get('/access-codes/create', CreateAccessCode::class)->name('access-codes.create');
