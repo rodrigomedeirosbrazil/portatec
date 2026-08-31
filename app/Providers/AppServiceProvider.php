@@ -9,6 +9,7 @@ use App\Observers\AccessCodeObserver;
 use App\Observers\BookingObserver;
 use App\Services\ICalParser;
 use Filament\Notifications\Livewire\Notifications;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -29,6 +30,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::defaultView('vendor.pagination.tailwind');
+
+        // As paginas React recebem colecao como array (`places: Place[]`, com .map()
+        // direto) e paginador como Paginated<T> (data/links/meta). Sem isto, o
+        // JsonResource envelopa colecao simples em {"data": [...]}: o .map() estoura no
+        // navegador e, com a colecao vazia, o componente cai no estado vazio e esconde o
+        // defeito. Paginadores mantem data/links/meta mesmo sem o envelope.
+        JsonResource::withoutWrapping();
 
         AccessCode::observe(AccessCodeObserver::class);
         Booking::observe(BookingObserver::class);

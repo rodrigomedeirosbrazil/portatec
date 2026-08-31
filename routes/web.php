@@ -1,36 +1,29 @@
 <?php
 
 use App\Http\Controllers\Admin\StartImpersonationController;
+use App\Http\Controllers\App\AccessCodeController;
+use App\Http\Controllers\App\BookingController;
+use App\Http\Controllers\App\DashboardController;
+use App\Http\Controllers\App\DeviceCommandController;
+use App\Http\Controllers\App\DeviceControlController;
+use App\Http\Controllers\App\DeviceController;
+use App\Http\Controllers\App\DeviceIntegrationController;
+use App\Http\Controllers\App\IntegrationController;
+use App\Http\Controllers\App\IntegrationPlaceController;
+use App\Http\Controllers\App\PlaceAttachDeviceController;
+use App\Http\Controllers\App\PlaceCloneController;
+use App\Http\Controllers\App\PlaceControlController;
+use App\Http\Controllers\App\PlaceController;
+use App\Http\Controllers\App\PlaceDeviceController;
+use App\Http\Controllers\App\PlaceMemberController;
+use App\Http\Controllers\App\PlaceMemberSearchController;
 use App\Http\Controllers\App\StopImpersonationController;
+use App\Http\Controllers\App\TuyaConnectController;
+use App\Http\Controllers\App\TuyaQrController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Livewire\AccessCodes\Create as CreateAccessCode;
-use App\Livewire\AccessCodes\Edit as EditAccessCode;
-use App\Livewire\AccessCodes\Index as IndexAccessCodes;
-use App\Livewire\Bookings\Create as CreateBooking;
-use App\Livewire\Bookings\Index as IndexBookings;
-use App\Livewire\Bookings\Show as ShowBooking;
-use App\Livewire\Dashboard;
-use App\Livewire\Devices\Control as ControlDevice;
-use App\Livewire\Devices\Create as CreateDevice;
-use App\Livewire\Devices\Edit as EditDevice;
-use App\Livewire\Devices\Index as IndexDevices;
-use App\Livewire\Devices\Integrations\Index as IndexDeviceIntegrations;
-use App\Livewire\Devices\Show as ShowDevice;
-use App\Livewire\Integrations\Create as CreateIntegration;
-use App\Livewire\Integrations\Edit as EditIntegration;
-use App\Livewire\Integrations\Index as IndexIntegrations;
-use App\Livewire\Integrations\TuyaConnect;
-use App\Livewire\Places\AttachDevice as AttachDeviceToPlace;
-use App\Livewire\Places\ClonePlace;
-use App\Livewire\Places\Control as ControlPlace;
-use App\Livewire\Places\Create as CreatePlace;
-use App\Livewire\Places\Edit as EditPlace;
-use App\Livewire\Places\Index as IndexPlaces;
-use App\Livewire\Places\Members as MembersPlace;
-use App\Livewire\Places\Show as ShowPlace;
 use App\Models\ImpersonationSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -80,35 +73,64 @@ Route::middleware('auth')
     ->name('app.')
     ->group(function () {
         Route::redirect('/', '/app/dashboard');
-        Route::get('/dashboard', Dashboard::class)->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        Route::get('/places', IndexPlaces::class)->name('places.index');
-        Route::get('/places/create', CreatePlace::class)->name('places.create');
-        Route::get('/places/{place}/devices/attach', AttachDeviceToPlace::class)->name('places.devices.attach');
-        Route::get('/places/{place}/members', MembersPlace::class)->name('places.members');
-        Route::get('/places/{place}/clone', ClonePlace::class)->name('places.clone');
-        Route::get('/places/{place}', ShowPlace::class)->name('places.show');
-        Route::get('/places/{place}/control', ControlPlace::class)->name('places.control');
-        Route::get('/places/{place}/edit', EditPlace::class)->name('places.edit');
+        Route::get('/places', [PlaceController::class, 'index'])->name('places.index');
+        Route::get('/places/create', [PlaceController::class, 'create'])->name('places.create');
+        Route::post('/places', [PlaceController::class, 'store'])->name('places.store');
+        Route::get('/places/{place}/devices/attach', [PlaceAttachDeviceController::class, 'create'])->name('places.devices.attach');
+        Route::post('/places/{place}/devices/attach', [PlaceAttachDeviceController::class, 'store'])->name('places.devices.attach.store');
+        Route::delete('/places/{place}/devices/{device}', [PlaceDeviceController::class, 'destroy'])->name('places.devices.destroy');
+        Route::get('/places/{place}/members', [PlaceMemberController::class, 'index'])->name('places.members');
+        Route::post('/places/{place}/members', [PlaceMemberController::class, 'store'])->name('places.members.store');
+        Route::delete('/places/{place}/members/{placeUser}', [PlaceMemberController::class, 'destroy'])->name('places.members.destroy');
+        Route::get('/places/{place}/members/search', PlaceMemberSearchController::class)->name('places.members.search');
+        Route::get('/places/{place}/clone', [PlaceCloneController::class, 'create'])->name('places.clone');
+        Route::post('/places/{place}/clone', [PlaceCloneController::class, 'store'])->name('places.clone.store');
+        Route::get('/places/{place}', [PlaceController::class, 'show'])->name('places.show');
+        Route::get('/places/{place}/control', [PlaceControlController::class, 'show'])->name('places.control');
+        Route::post('/places/{place}/commands', [DeviceCommandController::class, 'store'])->name('places.commands.store');
+        Route::get('/places/{place}/edit', [PlaceController::class, 'edit'])->name('places.edit');
+        Route::put('/places/{place}', [PlaceController::class, 'update'])->name('places.update');
 
-        Route::get('/bookings', IndexBookings::class)->name('bookings.index');
-        Route::get('/bookings/integrations', IndexIntegrations::class)->name('bookings.integrations.index');
-        Route::get('/bookings/integrations/create', CreateIntegration::class)->name('bookings.integrations.create');
-        Route::get('/bookings/integrations/{integration}/edit', EditIntegration::class)->name('bookings.integrations.edit');
-        Route::get('/bookings/create', CreateBooking::class)->name('bookings.create');
-        Route::get('/bookings/{booking}', ShowBooking::class)->name('bookings.show');
+        // /bookings/create e as rotas /bookings/integrations/* precisam vir
+        // antes de /bookings/{booking}, senão "create" e "integrations" são
+        // capturados pelo parâmetro {booking}.
+        Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
+        Route::get('/bookings/integrations', [IntegrationController::class, 'index'])->name('bookings.integrations.index');
+        Route::get('/bookings/integrations/create', [IntegrationController::class, 'create'])->name('bookings.integrations.create');
+        Route::post('/bookings/integrations', [IntegrationController::class, 'store'])->name('bookings.integrations.store');
+        Route::get('/bookings/integrations/{integration}/edit', [IntegrationController::class, 'edit'])->name('bookings.integrations.edit');
+        Route::delete('/bookings/integrations/{integration}', [IntegrationController::class, 'destroy'])->name('bookings.integrations.destroy');
+        Route::put('/bookings/integrations/{integration}/places/{place}', [IntegrationPlaceController::class, 'update'])->name('bookings.integrations.places.update');
+        Route::delete('/bookings/integrations/{integration}/places/{place}', [IntegrationPlaceController::class, 'destroy'])->name('bookings.integrations.places.destroy');
+        Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+        Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+        Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+        Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
 
-        Route::get('/access-codes', IndexAccessCodes::class)->name('access-codes.index');
-        Route::get('/access-codes/create', CreateAccessCode::class)->name('access-codes.create');
-        Route::get('/access-codes/{accessCode}/edit', EditAccessCode::class)->name('access-codes.edit');
+        // /access-codes/create precisa vir antes de /access-codes/{accessCode},
+        // senão "create" é capturado pelo parâmetro {accessCode}.
+        Route::get('/access-codes/create', [AccessCodeController::class, 'create'])->name('access-codes.create');
+        Route::get('/access-codes', [AccessCodeController::class, 'index'])->name('access-codes.index');
+        Route::post('/access-codes', [AccessCodeController::class, 'store'])->name('access-codes.store');
+        Route::get('/access-codes/{accessCode}/edit', [AccessCodeController::class, 'edit'])->name('access-codes.edit');
+        Route::put('/access-codes/{accessCode}', [AccessCodeController::class, 'update'])->name('access-codes.update');
 
-        Route::get('/devices', IndexDevices::class)->name('devices.index');
-        Route::get('/devices/integrations', IndexDeviceIntegrations::class)->name('devices.integrations.index');
-        Route::get('/devices/integrations/tuya-connect', TuyaConnect::class)->name('devices.integrations.tuya-connect');
-        Route::get('/devices/create', CreateDevice::class)->name('devices.create');
-        Route::get('/devices/{device}/edit', EditDevice::class)->name('devices.edit');
-        Route::get('/devices/{device}', ShowDevice::class)->name('devices.show');
-        Route::get('/devices/{device}/control', ControlDevice::class)->name('devices.control');
+        Route::get('/devices', [DeviceController::class, 'index'])->name('devices.index');
+        Route::post('/devices', [DeviceController::class, 'store'])->name('devices.store');
+        Route::get('/devices/integrations', [DeviceIntegrationController::class, 'index'])->name('devices.integrations.index');
+        Route::get('/devices/integrations/tuya-connect', [TuyaConnectController::class, 'create'])->name('devices.integrations.tuya-connect');
+        Route::post('/devices/integrations/tuya-connect', [TuyaConnectController::class, 'store'])->name('devices.integrations.tuya.store');
+        Route::post('/devices/integrations/tuya-connect/qr', [TuyaQrController::class, 'store'])->name('devices.integrations.tuya.qr.store');
+        Route::get('/devices/integrations/tuya-connect/qr/poll', [TuyaQrController::class, 'show'])->name('devices.integrations.tuya.qr.poll');
+        Route::delete('/devices/integrations/tuya-connect/qr', [TuyaQrController::class, 'destroy'])->name('devices.integrations.tuya.qr.destroy');
+        Route::get('/devices/create', [DeviceController::class, 'create'])->name('devices.create');
+        Route::get('/devices/{device}/edit', [DeviceController::class, 'edit'])->name('devices.edit');
+        Route::put('/devices/{device}', [DeviceController::class, 'update'])->name('devices.update');
+        Route::get('/devices/{device}', [DeviceController::class, 'show'])->name('devices.show');
+        Route::get('/devices/{device}/control', [DeviceControlController::class, 'show'])->name('devices.control');
+        Route::post('/devices/{device}/commands', [DeviceCommandController::class, 'storeForDevice'])->name('devices.commands.store');
 
         Route::redirect('/integrations', '/app/bookings/integrations');
         Route::redirect('/integrations/tuya-connect', '/app/devices/integrations/tuya-connect');
