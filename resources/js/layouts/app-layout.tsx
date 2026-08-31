@@ -8,6 +8,9 @@ import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutPageProps {
+    auth: {
+        user: { is_super_admin: boolean } | null;
+    };
     impersonation: {
         active: boolean;
     };
@@ -23,7 +26,12 @@ export interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
     const { props } = usePage<AppLayoutPageProps>();
-    const { impersonation, flash } = props;
+    const { auth, impersonation, flash } = props;
+
+    // O painel /admin so aceita super admin (User::canAccessPanel). Sem esta
+    // checagem o item aparecia para todo mundo e levava a um 403 - inclusive em
+    // sessao assumida, quando o usuario efetivo e o cliente.
+    const canAccessAdminPanel = auth.user?.is_super_admin === true;
     const { t } = useTranslations();
 
     const [open, setOpen] = useState(false);
@@ -103,9 +111,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <NavLink href={bookingsIntegrationsUrl} pattern="/app/bookings/integrations*">
                             {t('nav_bookings_integrations')}
                         </NavLink>
-                        <NavLink href={adminUrl} pattern="/admin*" external>
-                            {t('nav_admin')}
-                        </NavLink>
+                        {canAccessAdminPanel && (
+                            <NavLink href={adminUrl} pattern="/admin*" external>
+                                {t('nav_admin')}
+                            </NavLink>
+                        )}
                         <Link
                             href={logout.url()}
                             method="post"
@@ -144,9 +154,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <NavLink href={bookingsIntegrationsUrl} pattern="/app/bookings/integrations*" mobile>
                             {t('nav_bookings_integrations')}
                         </NavLink>
-                        <NavLink href={adminUrl} pattern="/admin*" mobile external>
-                            {t('nav_admin')}
-                        </NavLink>
+                        {canAccessAdminPanel && (
+                            <NavLink href={adminUrl} pattern="/admin*" mobile external>
+                                {t('nav_admin')}
+                            </NavLink>
+                        )}
                         <Link
                             href={logout.url()}
                             method="post"

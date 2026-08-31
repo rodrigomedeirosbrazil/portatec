@@ -56,4 +56,48 @@ class InertiaSharedPropsTest extends TestCase
             )
         );
     }
+
+    /**
+     * O item "Admin" do menu leva ao painel Filament, que so aceita super admin
+     * (User::canAccessPanel). Sem essa informacao nas props, o menu nao tem como
+     * decidir e acaba mostrando o link para todo mundo - levando a um 403.
+     */
+    public function test_super_admin_is_flagged_in_the_shared_props(): void
+    {
+        $superAdmin = User::factory()->create(['email' => 'contato@medeirostec.com.br']);
+
+        $this->actingAs($superAdmin)->get('/app/dashboard')->assertInertia(
+            fn (AssertableInertia $page) => $page->where('auth.user.is_super_admin', true)
+        );
+    }
+
+    public function test_regular_user_is_not_flagged_as_super_admin(): void
+    {
+        $user = User::factory()->create(['email' => 'host@portatec.test']);
+
+        $this->actingAs($user)->get('/app/dashboard')->assertInertia(
+            fn (AssertableInertia $page) => $page->where('auth.user.is_super_admin', false)
+        );
+    }
+
+    /**
+     * Em sessao assumida o usuario efetivo e o cliente, nao o super admin: os poderes
+     * precisam ser os dele. O painel ja devolve 403 nesse caso, e a flag acompanha,
+     * para o menu nao oferecer um caminho que nao funciona.
+     */
+    public function test_super_admin_is_not_flagged_while_impersonating_a_client(): void
+    {
+        $superAdmin = User::factory()->create(['email' => 'contato@medeirostec.com.br']);
+        $clientUser = User::factory()->create(['email' => 'cliente@portatec.test']);
+
+        $this->actingAs($superAdmin)
+            ->get(route('admin.impersonations.start', ['user' => $clientUser]));
+
+        $this->get('/app/dashboard')->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('auth.user.email', $clientUser->email)
+                ->where('auth.user.is_super_admin', false)
+                ->where('impersonation.active', true)
+        );
+    }
 }

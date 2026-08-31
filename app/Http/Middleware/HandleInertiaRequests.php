@@ -46,6 +46,10 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    // Decide a exibicao do item "Admin" no menu. Em sessao assumida o
+                    // usuario efetivo e o cliente, entao a flag e dele - alinhada ao 403
+                    // que User::canAccessPanel ja devolve nesse caso.
+                    'is_super_admin' => $user->hasRole('super_admin'),
                 ] : null,
             ],
             'impersonation' => [

@@ -52,6 +52,8 @@ export interface AuthUser {
     id: number;
     name: string;
     email: string;
+    /** Autorizado no painel Filament (`/admin`). Falso em sessão assumida. */
+    is_super_admin: boolean;
 }
 
 export interface Auth {
