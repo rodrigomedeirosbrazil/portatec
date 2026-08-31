@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\StartImpersonationController;
+use App\Http\Controllers\App\AccessCodeController;
 use App\Http\Controllers\App\BookingController;
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\DeviceCommandController;
@@ -23,9 +24,6 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Livewire\AccessCodes\Create as CreateAccessCode;
-use App\Livewire\AccessCodes\Edit as EditAccessCode;
-use App\Livewire\AccessCodes\Index as IndexAccessCodes;
 use App\Models\ImpersonationSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -111,9 +109,13 @@ Route::middleware('auth')
         Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
 
-        Route::get('/access-codes', IndexAccessCodes::class)->name('access-codes.index');
-        Route::get('/access-codes/create', CreateAccessCode::class)->name('access-codes.create');
-        Route::get('/access-codes/{accessCode}/edit', EditAccessCode::class)->name('access-codes.edit');
+        // /access-codes/create precisa vir antes de /access-codes/{accessCode},
+        // senão "create" é capturado pelo parâmetro {accessCode}.
+        Route::get('/access-codes/create', [AccessCodeController::class, 'create'])->name('access-codes.create');
+        Route::get('/access-codes', [AccessCodeController::class, 'index'])->name('access-codes.index');
+        Route::post('/access-codes', [AccessCodeController::class, 'store'])->name('access-codes.store');
+        Route::get('/access-codes/{accessCode}/edit', [AccessCodeController::class, 'edit'])->name('access-codes.edit');
+        Route::put('/access-codes/{accessCode}', [AccessCodeController::class, 'update'])->name('access-codes.update');
 
         Route::get('/devices', [DeviceController::class, 'index'])->name('devices.index');
         Route::post('/devices', [DeviceController::class, 'store'])->name('devices.store');
