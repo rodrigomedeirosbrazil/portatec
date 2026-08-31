@@ -10,10 +10,12 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class StopImpersonationController extends Controller
 {
-    public function __invoke(Request $request): RedirectResponse
+    public function __invoke(Request $request): RedirectResponse|SymfonyResponse
     {
         $impersonatorId = (int) $request->session()->get('impersonator_id');
         $impersonationSessionId = (int) $request->session()->get('impersonation_session_id');
@@ -58,6 +60,13 @@ class StopImpersonationController extends Controller
         $request->session()->regenerate();
         $request->session()->forget(['impersonator_id', 'impersonation_session_id']);
 
-        return redirect('/admin')->with('status', 'Sessao assumida finalizada.');
+        $request->session()->flash('status', 'Sessao assumida finalizada.');
+
+        // O painel /admin e Filament, nao Inertia. Um redirect comum faria o cliente
+        // Inertia seguir o 302 por XHR, receber HTML sem o cabecalho x-inertia e
+        // despejar o painel inteiro num modal de depuracao em vez de navegar.
+        // Inertia::location devolve 409 com X-Inertia-Location, que manda o cliente
+        // fazer uma visita de pagina inteira - e, fora do Inertia, vira um 302 normal.
+        return Inertia::location('/admin');
     }
 }

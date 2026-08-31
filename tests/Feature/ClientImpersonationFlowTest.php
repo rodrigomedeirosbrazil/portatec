@@ -98,4 +98,28 @@ class ClientImpersonationFlowTest extends TestCase
 
         $this->assertGuest();
     }
+
+    /**
+     * Finalizar a sessao assumida leva o super admin de volta ao painel /admin, que e
+     * Filament e nao Inertia.
+     *
+     * Com um redirect comum, o cliente Inertia segue o 302 por XHR, recebe HTML sem o
+     * cabecalho x-inertia e despeja o painel inteiro num modal de depuracao em vez de
+     * navegar. A resposta correta e 409 com X-Inertia-Location, que manda o cliente
+     * fazer uma visita de pagina inteira.
+     */
+    public function test_stopping_impersonation_sends_the_client_to_a_full_page_visit(): void
+    {
+        $superAdmin = User::factory()->create(['email' => 'contato@medeirostec.com.br']);
+        $clientUser = User::factory()->create();
+
+        $this->actingAs($superAdmin)
+            ->get(route('admin.impersonations.start', ['user' => $clientUser]));
+
+        $response = $this->withHeader('X-Inertia', 'true')
+            ->post(route('app.impersonations.stop'), []);
+
+        $response->assertStatus(409);
+        $response->assertHeader('X-Inertia-Location', '/admin');
+    }
 }
