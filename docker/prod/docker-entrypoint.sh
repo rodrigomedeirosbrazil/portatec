@@ -8,8 +8,8 @@ set -e
 # The image is built in CI without .env, so the initial build has undefined Reverb URL and WebSocket fails.
 chown -R www-data:www-data /var/www/storage
 chown www-data:www-data /var/www/database/database.sqlite
-# wayfinder:generate (run during the build below) writes into resources/js/actions as www-data.
-chown -R www-data:www-data /var/www/resources/js/actions
+# wayfinder:generate (run during the build below) writes into these dirs as www-data.
+chown -R www-data:www-data /var/www/resources/js/actions /var/www/resources/js/routes /var/www/resources/js/wayfinder
 
 echo "Building frontend assets with current .env (VITE_* for Reverb/WebSocket)..."
 su www-data -s /bin/sh -c "cd /var/www && npm run build"
