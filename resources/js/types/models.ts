@@ -141,6 +141,8 @@ export interface Booking {
     source: string | null;
     external_id: string | null;
     deletion_reason: string | null;
+    /** Grupo temporal calculado pelo servidor a partir de check_in/check_out. */
+    status: 'current' | 'future' | 'past' | null;
     place?: Place;
     access_code?: AccessCode;
     created_at: string | null;

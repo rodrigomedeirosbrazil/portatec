@@ -49,6 +49,10 @@ function nightsBetween(checkIn: string, checkOut: string): number {
 export default function BookingsIndex({ bookings: paginatedBookings, places, filters }: BookingsIndexProps) {
     const { t } = useTranslations();
     const items = paginatedBookings.data;
+    // `status: 'all'` é o padrão, não um recorte — não conta como filtro ativo.
+    const hasActiveFilters = Boolean(
+        filters.place_id || filters.date_from || filters.date_to || (filters.status && filters.status !== 'all') || filters.guest || filters.source,
+    );
 
     const headerActions = (
         <>
@@ -86,7 +90,10 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
                             key: 'status',
                             label: t('status'),
                             options: [
-                                { value: '', label: t('booking_status_option_all') },
+                                // 'all' e não '' porque é o valor que o backend devolve
+                                // em `filters.status`; com '' o select não casaria e
+                                // apareceria vazio.
+                                { value: 'all', label: t('booking_status_option_all') },
                                 { value: 'future', label: t('booking_status_option_future') },
                                 { value: 'current', label: t('booking_status_option_current') },
                                 { value: 'past', label: t('booking_status_option_past') },
@@ -113,10 +120,16 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
                         source: filters.source,
                     }}
                     gridClassName="sm:grid-cols-2 lg:grid-cols-3"
-                    showClear={false}
+                    showClear
+                    sendEmptyValues
                 />
 
-                <div className="grid gap-3 md:grid-cols-2">
+                <p className="m-0 text-sm text-neutral-500">{t('booking_results_count', { total: String(paginatedBookings.meta.total) })}</p>
+
+                {/* Coluna única: a lista é cronológica (em andamento -> futuras ->
+                    concluídas) e duas colunas fariam a leitura zigzaguear, escondendo
+                    essa ordem. */}
+                <div className="grid gap-3">
                     {items.length > 0 ? (
                         items.map((booking) => {
                             const nights = booking.check_in && booking.check_out ? nightsBetween(booking.check_in, booking.check_out) : 0;
@@ -132,9 +145,17 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
                                                 {booking.guest_name || t('booking_no_guest_name')}
                                             </Link>
                                         </h2>
-                                        {booking.source !== 'manual' ? (
-                                            <StatusBadge variant="neutral">{t('booking_ical_badge')}</StatusBadge>
-                                        ) : null}
+                                        <div className="flex items-center gap-1.5">
+                                            {booking.status === 'current' ? (
+                                                <StatusBadge variant="success">{t('booking_status_badge_current')}</StatusBadge>
+                                            ) : null}
+                                            {booking.status === 'past' ? (
+                                                <StatusBadge variant="neutral">{t('booking_status_badge_past')}</StatusBadge>
+                                            ) : null}
+                                            {booking.source !== 'manual' ? (
+                                                <StatusBadge variant="neutral">{t('booking_ical_badge')}</StatusBadge>
+                                            ) : null}
+                                        </div>
                                     </div>
                                     {!filters.place_id ? (
                                         <p className="mt-0 mb-1 text-sm font-medium text-neutral-700">{booking.place?.name}</p>
@@ -151,6 +172,15 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
                                 </article>
                             );
                         })
+                    ) : hasActiveFilters ? (
+                        <EmptyState
+                            message={t('booking_empty_state_filtered')}
+                            action={
+                                <Button asChild>
+                                    <Link href={bookings.index.url()}>{t('clear_filters')}</Link>
+                                </Button>
+                            }
+                        />
                     ) : (
                         <EmptyState
                             message={t('booking_empty_state')}
