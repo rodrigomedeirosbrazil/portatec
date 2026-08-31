@@ -17,12 +17,32 @@ function matchesPattern(pathname: string, pattern: string): boolean {
     return new RegExp(`^${escaped}$`).test(pathname);
 }
 
+/**
+ * Decide se o item do menu deve aparecer como ativo.
+ *
+ * `exclude` existe porque padroes de rota se aninham: `/app/bookings*` engloba
+ * `/app/bookings/integrations`, e sem exclusao os dois itens acendem juntos.
+ * O mesmo acontecia no Blade original, onde `routeIs('app.bookings.*')` casava
+ * com `app.bookings.integrations.index`.
+ */
+export function isNavLinkActive(pathname: string, pattern: string, exclude?: string | string[]): boolean {
+    if (!matchesPattern(pathname, pattern)) {
+        return false;
+    }
+
+    const excluded = exclude === undefined ? [] : Array.isArray(exclude) ? exclude : [exclude];
+
+    return !excluded.some((excludedPattern) => matchesPattern(pathname, excludedPattern));
+}
+
 export interface NavLinkProps extends Omit<ComponentProps<typeof Link>, 'href' | 'children'> {
     href: string;
     /** Glob pattern (e.g. `/app/places*`) matched against the current pathname to decide the active state. */
     pattern: string;
     /** Use the mobile dropdown spacing variant. */
     mobile?: boolean;
+    /** Padrao (ou padroes) que, se casarem, impedem o estado ativo mesmo com `pattern` casando. */
+    exclude?: string | string[];
     /**
      * Destino FORA do app Inertia (hoje, o painel Filament em `/admin`).
      *
@@ -36,10 +56,10 @@ export interface NavLinkProps extends Omit<ComponentProps<typeof Link>, 'href' |
     children: ReactNode;
 }
 
-export function NavLink({ href, pattern, mobile = false, external = false, className, children, ...props }: NavLinkProps) {
+export function NavLink({ href, pattern, mobile = false, external = false, exclude, className, children, ...props }: NavLinkProps) {
     const { url } = usePage();
     const pathname = url.split('?')[0] ?? url;
-    const isActive = matchesPattern(pathname, pattern);
+    const isActive = isNavLinkActive(pathname, pattern, exclude);
 
     const classes = cn(
         mobile && 'py-2',

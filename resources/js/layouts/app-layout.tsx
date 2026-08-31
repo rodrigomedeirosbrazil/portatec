@@ -102,7 +102,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <NavLink href={devicesUrl} pattern="/app/devices*">
                             {t('nav_devices')}
                         </NavLink>
-                        <NavLink href={bookingsUrl} pattern="/app/bookings*">
+                        <NavLink href={bookingsUrl} pattern="/app/bookings*" exclude="/app/bookings/integrations*">
                             {t('nav_bookings')}
                         </NavLink>
                         <NavLink href={accessCodesUrl} pattern="/app/access-codes*">
@@ -145,7 +145,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <NavLink href={devicesUrl} pattern="/app/devices*" mobile>
                             {t('nav_devices')}
                         </NavLink>
-                        <NavLink href={bookingsUrl} pattern="/app/bookings*" mobile>
+                        <NavLink href={bookingsUrl} pattern="/app/bookings*" exclude="/app/bookings/integrations*" mobile>
                             {t('nav_bookings')}
                         </NavLink>
                         <NavLink href={accessCodesUrl} pattern="/app/access-codes*" mobile>
