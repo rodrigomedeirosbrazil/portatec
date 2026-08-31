@@ -19,9 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: [
             '172.21.0.0/16',
         ]);
-        $middleware->web(append: [
-            HandleInertiaRequests::class,
-        ]);
     })
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR |
@@ -30,6 +27,13 @@ return Application::configure(basePath: dirname(__DIR__))
             Request::HEADER_X_FORWARDED_PROTO |
             Request::HEADER_X_FORWARDED_AWS_ELB
         );
+
+        // Este e o unico bloco withMiddleware que produz efeito: cada chamada cria uma
+        // instancia nova de Middleware e faz setMiddlewareGroups(), substituindo a
+        // anterior em vez de somar. O bloco acima, portanto, e inerte -- ver AGENTS.md.
+        $middleware->web(append: [
+            HandleInertiaRequests::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -112,7 +112,7 @@ class IntegrationsTest extends TestCase
         $response = $this->actingAs($user)->get('/app/bookings/integrations');
 
         $response->assertInertia(function ($page) use ($icalIntegration, $tuyaIntegration) {
-            $ids = collect($page->toArray()['props']['integrations']['data'])->pluck('id');
+            $ids = collect($page->toArray()['props']['integrations'])->pluck('id');
             $this->assertTrue($ids->contains($icalIntegration->id));
             $this->assertFalse($ids->contains($tuyaIntegration->id));
         });

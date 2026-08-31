@@ -14,23 +14,32 @@ export interface PaginationLink {
 }
 
 /**
- * Formato serializado pelo paginator padrão do Laravel quando passado como
- * prop do Inertia (LengthAwarePaginator::toArray()).
+ * Formato produzido por `Resource::collection($paginator)`, que é como os
+ * controllers entregam listas paginadas.
+ *
+ * ATENÇÃO: é diferente do paginator puro (`->paginate()->toArray()`). Aqui
+ * `links` é um objeto com first/last/prev/next, e o array de links por página
+ * fica em `meta.links`, junto de from/to/total. Confundir os dois quebra a
+ * paginação apenas no navegador.
  */
 export interface Paginated<T> {
     data: T[];
-    links: PaginationLink[];
-    current_page: number;
-    from: number | null;
-    to: number | null;
-    last_page: number;
-    per_page: number;
-    total: number;
-    path: string;
-    first_page_url: string | null;
-    last_page_url: string | null;
-    next_page_url: string | null;
-    prev_page_url: string | null;
+    links: {
+        first: string | null;
+        last: string | null;
+        prev: string | null;
+        next: string | null;
+    };
+    meta: {
+        current_page: number;
+        from: number | null;
+        to: number | null;
+        last_page: number;
+        per_page: number;
+        total: number;
+        path: string;
+        links: PaginationLink[];
+    };
 }
 
 /** Local (Place) mínimo necessário para popular selects e listas. */

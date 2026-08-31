@@ -7,8 +7,8 @@ import { useTranslations } from '@/hooks/use-translations';
 import type { Paginated } from '@/types';
 
 export interface PaginationProps {
-    /** Paginator do Laravel serializado por `->paginate()->withQueryString()`. */
-    paginator: Pick<Paginated<unknown>, 'links' | 'from' | 'to' | 'total'>;
+    /** Lista paginada como `Resource::collection($paginator)` a entrega. */
+    paginator: Pick<Paginated<unknown>, 'meta'>;
     /** Mostra o resumo "Mostrando X a Y de Z resultados" acima dos controles. Padrão: true. */
     showSummary?: boolean;
     className?: string;
@@ -32,7 +32,9 @@ function visit(url: string) {
  */
 export function Pagination({ paginator, showSummary = true, className }: PaginationProps) {
     const { t } = useTranslations();
-    const { links, from, to, total } = paginator;
+    // Os links por página vivem em `meta.links`; o `links` do nível raiz é
+    // apenas {first,last,prev,next} e não serve para montar os botões.
+    const { links, from, to, total } = paginator.meta;
 
     if (links.length <= 3) {
         // Laravel só emite "anterior" + páginas + "próxima": com uma página
