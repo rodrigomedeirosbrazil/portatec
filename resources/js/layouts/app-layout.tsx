@@ -177,7 +177,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 >
                     <div className="flex h-full flex-col gap-7 overflow-y-auto p-4">
                         <Link href={app.dashboard.url()} onClick={closeMenu} className="flex items-center px-2 no-underline">
-                            <img src="/images/logo/portatec-logo-branco-horizontal.png" alt="Portatec" className="h-6 w-auto" />
+                            <img src="/images/logo/portatec-logo-horizontal-transparente.png" alt="Portatec" className="h-6 w-auto" />
                         </Link>
 
                         <nav className="flex flex-col gap-0.5">
