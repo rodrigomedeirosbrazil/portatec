@@ -60,7 +60,7 @@ export default function BookingsShow({ booking, canDelete }: BookingsShowProps) 
             <Page>
                 <PageHeader title={t('booking_show_title')} backHref={bookings.index.url()} actions={actions} />
 
-                <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                     <p className="mb-2">
                         <strong>{t('place')}:</strong>{' '}
                         <Link

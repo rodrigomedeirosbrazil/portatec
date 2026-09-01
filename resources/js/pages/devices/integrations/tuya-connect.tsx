@@ -170,7 +170,7 @@ export default function TuyaConnect(props: TuyaConnectPageProps) {
                 ) : null}
 
                 {step === 'form' ? (
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                         <h2 className="mb-1 text-lg font-semibold">{t('tuya_step1_title')}</h2>
                         <p className="mb-4 text-sm text-neutral-600" dangerouslySetInnerHTML={{ __html: t('tuya_step1_instructions') }} />
 
@@ -199,7 +199,7 @@ export default function TuyaConnect(props: TuyaConnectPageProps) {
                 ) : null}
 
                 {step === 'qr' && qrUrl ? (
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5 text-center">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5 text-center">
                         <h2 className="mb-1 text-lg font-semibold">{t('tuya_step2_title')}</h2>
                         <p className="mb-4 text-sm text-neutral-600">{t('tuya_step2_instructions')}</p>
 
@@ -236,7 +236,7 @@ export default function TuyaConnect(props: TuyaConnectPageProps) {
                 ) : null}
 
                 {step === 'devices' ? (
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                         <h2 className="mb-1 text-lg font-semibold">{t('tuya_step3_title')}</h2>
                         <p className="mb-4 text-sm text-neutral-600">
                             {t('tuya_devices_found', { count: devicesFound.length })}

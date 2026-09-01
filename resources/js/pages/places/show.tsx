@@ -68,75 +68,81 @@ export default function PlacesShow({ place, activeAccessCodes, abilities }: Plac
                 <PageHeader title={place.name} backHref={places.index.url()} actions={actions} />
 
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-                        <strong>{t('place_devices_heading')}</strong>
-                        <p className="m-0 mt-1.5">{devices.length}</p>
+                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
+                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
+                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('place_devices_heading')}</p>
+                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">{devices.length}</p>
                     </div>
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-                        <strong>{t('place_bookings_recent_heading')}</strong>
-                        <p className="m-0 mt-1.5">{bookings.length}</p>
+                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
+                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
+                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('place_bookings_recent_heading')}</p>
+                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">{bookings.length}</p>
                     </div>
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-                        <strong>{t('place_active_codes_heading')}</strong>
-                        <p className="m-0 mt-1.5">{activeAccessCodes}</p>
+                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
+                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
+                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('place_active_codes_heading')}</p>
+                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">{activeAccessCodes}</p>
                     </div>
                 </div>
 
-                <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-                    <div className="mb-3 flex items-center justify-between">
-                        <h2 className="mt-0">{t('members')}</h2>
+                <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                    <div className="flex items-center justify-between border-b border-neutral-200 px-4.5 py-3">
+                        <span className="text-xs font-bold tracking-wide text-neutral-500 uppercase">{t('members')}</span>
                         {abilities.manageMembers ? (
                             <Button asChild size="sm">
                                 <Link href={places.members.url({ place: place.id })}>{t('manage_members')}</Link>
                             </Button>
                         ) : null}
                     </div>
-                    <ul className="m-0 pl-5">
-                        {placeUsers.length > 0 ? (
-                            placeUsers.map((placeUser) => (
-                                <li key={placeUser.id}>
+                    {placeUsers.length > 0 ? (
+                        placeUsers.map((placeUser) => (
+                            <div key={placeUser.id} className="flex items-center gap-3 border-b border-neutral-100 px-4.5 py-3 text-[13.5px] last:border-b-0">
+                                <span className="flex-1 font-semibold text-neutral-900">
                                     {placeUser.user?.name}
-                                    {placeUser.label ? ` (${placeUser.label})` : ''} —{' '}
+                                    {placeUser.label ? ` (${placeUser.label})` : ''}
+                                </span>
+                                <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-primary-700 uppercase">
                                     {placeUser.role === 'admin' ? t('place_roles.admin') : t('place_roles.host')}
-                                </li>
-                            ))
-                        ) : (
-                            <li className="text-neutral-500">{t('place_no_members_message')}</li>
-                        )}
-                    </ul>
+                                </span>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="m-0 px-4.5 py-3 text-[13.5px] text-neutral-500">{t('place_no_members_message')}</p>
+                    )}
                 </div>
 
-                <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-                    <div className="mb-3 flex items-center justify-between">
-                        <h2 className="mt-0">{t('place_devices_heading')}</h2>
+                <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                    <div className="flex items-center justify-between border-b border-neutral-200 px-4.5 py-3">
+                        <span className="text-xs font-bold tracking-wide text-neutral-500 uppercase">{t('place_devices_heading')}</span>
                         <Button asChild size="sm">
                             <Link href={places.devices.attach.url({ place: place.id })}>{t('place_add_device_action')}</Link>
                         </Button>
                     </div>
-                    <ul className="m-0 pl-5">
-                        {devices.length > 0 ? (
-                            devices.map((device) => (
-                                <li key={device.id} className="flex flex-wrap items-center gap-2 py-1">
-                                    <Link
-                                        href={devicesRoutes.show.url({ device: device.id })}
-                                        className="text-primary-700 no-underline hover:text-primary-500"
-                                    >
-                                        {device.name}
-                                    </Link>
-                                    <span className="text-neutral-500">({device.brand})</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setDeviceToRemove(device)}
-                                        className="rounded border border-red-200 bg-red-50 px-2 py-1 text-sm text-red-700 hover:bg-red-100"
-                                    >
-                                        {t('place_remove_device_action')}
-                                    </button>
-                                </li>
-                            ))
-                        ) : (
-                            <li>{t('place_no_devices_message')}</li>
-                        )}
-                    </ul>
+                    {devices.length > 0 ? (
+                        devices.map((device) => (
+                            <div
+                                key={device.id}
+                                className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-neutral-100 px-4.5 py-3 last:border-b-0"
+                            >
+                                <Link
+                                    href={devicesRoutes.show.url({ device: device.id })}
+                                    className="flex-1 text-[13.5px] font-semibold text-neutral-900 no-underline hover:text-primary-700"
+                                >
+                                    {device.name}
+                                </Link>
+                                <span className="text-[12.5px] text-neutral-500">({device.brand})</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setDeviceToRemove(device)}
+                                    className="rounded-md border border-error-300 bg-error-100 px-2.5 py-1 text-[12px] font-semibold text-error-700 hover:bg-error-300/40"
+                                >
+                                    {t('place_remove_device_action')}
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="m-0 px-4.5 py-3 text-[13.5px] text-neutral-500">{t('place_no_devices_message')}</p>
+                    )}
                 </div>
             </Page>
 

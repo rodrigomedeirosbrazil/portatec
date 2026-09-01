@@ -31,7 +31,7 @@ export default function PlacesCreate() {
             <Page>
                 <PageHeader title={t('create_place_title')} backHref={places.index.url()} />
 
-                <form onSubmit={submit} className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <form onSubmit={submit} className="rounded-lg border border-neutral-200 bg-white p-3.5">
                     <FormField htmlFor="name" label={t('name')} error={errors.name} required>
                         <Input
                             id="name"

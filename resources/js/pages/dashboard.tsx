@@ -49,92 +49,96 @@ export default function Dashboard({ places: dashboardPlaces, totalDevices, total
             <Page>
                 <PageHeader title={t('nav_dashboard')} />
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5 text-center">
-                        <p className="m-0 text-2xl font-bold text-neutral-900">
-                            {totalOnline} / {totalDevices}
-                        </p>
-                        <p className="m-0 mt-1 text-sm text-neutral-500">{t('dashboard_devices_online_heading')}</p>
-                    </div>
-                    <div
-                        className={cn(
-                            'rounded-[10px] border p-3.5 text-center',
-                            totalOffline > 0 ? 'border-red-300 bg-red-50' : 'border-neutral-300 bg-white',
-                        )}
-                    >
-                        <p className={cn('m-0 text-2xl font-bold', totalOffline > 0 ? 'text-red-700' : 'text-neutral-900')}>{totalOffline}</p>
-                        <p className={cn('m-0 mt-1 text-sm', totalOffline > 0 ? 'text-red-500' : 'text-neutral-500')}>
-                            {t('dashboard_devices_offline_heading')}
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
+                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
+                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('dashboard_devices_online_heading')}</p>
+                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">
+                            {totalOnline}/{totalDevices}
                         </p>
                     </div>
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5 text-center">
-                        <p className="m-0 text-2xl font-bold text-neutral-900">{activeBookings}</p>
-                        <p className="m-0 mt-1 text-sm text-neutral-500">{t('dashboard_active_bookings_heading')}</p>
+                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
+                        <span className={cn('absolute inset-y-0 left-0 w-[3px]', totalOffline > 0 ? 'bg-error-500' : 'bg-primary-500')} aria-hidden="true" />
+                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('dashboard_devices_offline_heading')}</p>
+                        <p className={cn('m-0 mt-2 font-mono text-2xl font-bold tabular-nums', totalOffline > 0 ? 'text-error-700' : 'text-neutral-900')}>
+                            {totalOffline}
+                        </p>
                     </div>
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5 text-center">
-                        <p className="m-0 text-2xl font-bold text-neutral-900">{todayCheckIns}</p>
-                        <p className="m-0 mt-1 text-sm text-neutral-500">{t('dashboard_today_checkins_heading')}</p>
+                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
+                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
+                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('dashboard_active_bookings_heading')}</p>
+                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">{activeBookings}</p>
+                    </div>
+                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
+                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
+                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('dashboard_today_checkins_heading')}</p>
+                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">{todayCheckIns}</p>
                     </div>
                 </div>
 
-                <div className="grid gap-3">
-                    {dashboardPlaces.length > 0 ? (
-                        dashboardPlaces.map((place) => {
+                {dashboardPlaces.length > 0 ? (
+                    <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                        {dashboardPlaces.map((place) => {
                             const hasOffline = place.devices_count > 0 && place.online_count < place.devices_count;
 
                             return (
-                                <article
+                                <div
                                     key={place.id}
-                                    className={cn('rounded-[10px] border bg-white p-3.5', hasOffline ? 'border-red-300' : 'border-neutral-300')}
+                                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-neutral-100 px-4.5 py-3.5 last:border-b-0"
                                 >
-                                    <div className="flex items-start justify-between">
-                                        <h2 className="mb-2 text-lg">
-                                            <Link href={places.show.url({ place: place.id })} className="text-neutral-900 no-underline hover:text-neutral-700">
-                                                {place.name}
-                                            </Link>
-                                        </h2>
+                                    <span className={cn('h-1.5 w-1.5 flex-shrink-0 rounded-full', hasOffline ? 'bg-error-500' : 'bg-success-500')} aria-hidden="true" />
+
+                                    <div className="min-w-[200px] flex-1">
+                                        <Link
+                                            href={places.show.url({ place: place.id })}
+                                            className="text-[13.5px] font-semibold text-neutral-900 no-underline hover:text-primary-700"
+                                        >
+                                            {place.name}
+                                        </Link>
                                         {place.devices_count > 0 ? (
-                                            <StatusBadge variant={hasOffline ? 'error' : 'success'}>
+                                            <StatusBadge variant={hasOffline ? 'error' : 'success'} className="ml-2 align-middle">
                                                 {hasOffline ? t('offline') : t('online')}
                                             </StatusBadge>
                                         ) : null}
                                     </div>
-                                    <p className="m-0 text-neutral-500">
+
+                                    <p className="m-0 flex-1 basis-[200px] text-[12.5px] text-neutral-500">
                                         {t('dashboard_place_online_label', { online: place.online_count, total: place.devices_count })}
                                     </p>
-                                    <p className="m-0 mt-1 text-neutral-500">
+                                    <p className="m-0 flex-1 basis-[200px] text-[12.5px] text-neutral-500">
                                         {t('dashboard_place_next_check_in_label', {
                                             date: place.next_check_in ? formatDateTime(place.next_check_in) : t('dashboard_place_no_upcoming_bookings'),
                                         })}
                                     </p>
-                                    <div className="mt-2 flex gap-2">
+
+                                    <div className="ml-auto flex flex-shrink-0 gap-2">
                                         <Link
                                             href={places.control.url({ place: place.id })}
-                                            className="text-sm text-primary-700 no-underline hover:text-primary-500"
+                                            className="rounded-md border border-neutral-200 px-3 py-1.5 text-[12.5px] font-semibold text-neutral-700 no-underline hover:bg-neutral-50"
                                         >
                                             {t('dashboard_place_control_action')}
                                         </Link>
                                         <Link
                                             href={bookings.index.url({ query: { place_id: place.id } })}
-                                            className="text-sm text-primary-700 no-underline hover:text-primary-500"
+                                            className="rounded-md bg-primary-500 px-3 py-1.5 text-[12.5px] font-semibold text-white no-underline hover:bg-primary-700"
                                         >
                                             {t('dashboard_place_bookings_action')}
                                         </Link>
                                     </div>
-                                </article>
+                                </div>
                             );
-                        })
-                    ) : (
-                        <EmptyState
-                            message={t('dashboard_empty_state')}
-                            action={
-                                <Button asChild size="sm">
-                                    <Link href={places.create.url()}>{t('new_place')}</Link>
-                                </Button>
-                            }
-                        />
-                    )}
-                </div>
+                        })}
+                    </div>
+                ) : (
+                    <EmptyState
+                        message={t('dashboard_empty_state')}
+                        action={
+                            <Button asChild size="sm">
+                                <Link href={places.create.url()}>{t('new_place')}</Link>
+                            </Button>
+                        }
+                    />
+                )}
             </Page>
         </AppLayout>
     );

@@ -78,7 +78,7 @@ export default function DeviceControl({ device, placeId, initialFunctionStatus }
                     backHref={show.url({ device: device.id })}
                 />
 
-                <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                     <div className="mb-3 flex items-center justify-between">
                         <h2 className="m-0">{t('device_control_actions')}</h2>
                         <StatusBadge variant={commands.isAvailable(device.id) ? 'success' : 'neutral'}>

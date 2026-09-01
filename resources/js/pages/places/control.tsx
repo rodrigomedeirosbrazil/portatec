@@ -85,12 +85,12 @@ export default function PlaceControl({ place, devices, initialFunctionStatus }: 
 
                 <div className="space-y-4">
                     {devices.length === 0 ? (
-                        <p className="m-0 rounded-[10px] border border-neutral-300 bg-white p-3.5 text-neutral-500">
+                        <p className="m-0 rounded-lg border border-neutral-200 bg-white p-3.5 text-neutral-500">
                             {t('device_control_no_devices')}
                         </p>
                     ) : (
                         devices.map((device) => (
-                            <div key={device.id} className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                            <div key={device.id} className="rounded-lg border border-neutral-200 bg-white p-3.5">
                                 <div className="mb-3 flex items-center justify-between">
                                     <h2 className="m-0">{device.name}</h2>
                                     <StatusBadge variant={commands.isAvailable(device.id) ? 'success' : 'neutral'}>

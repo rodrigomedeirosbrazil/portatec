@@ -44,7 +44,7 @@ export default function AccessCodesEdit({ accessCode, pin, start, end }: AccessC
             <Page>
                 <PageHeader title={t('edit_access_code_title')} backHref={accessCodes.index.url()} />
 
-                <form onSubmit={submit} className="grid gap-2.5 rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <form onSubmit={submit} className="grid gap-2.5 rounded-lg border border-neutral-200 bg-white p-3.5">
                     <p className="m-0 mb-2 text-neutral-500">{accessCode.display_name}</p>
 
                     <FormField htmlFor="pin" label={t('pin')} error={errors.pin}>

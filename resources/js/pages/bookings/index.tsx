@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import bookings from '@/routes/app/bookings';
 import type { Booking, Paginated, PlaceOption } from '@/types';
 
@@ -129,23 +130,24 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
                 {/* Coluna única: a lista é cronológica (em andamento -> futuras ->
                     concluídas) e duas colunas fariam a leitura zigzaguear, escondendo
                     essa ordem. */}
-                <div className="grid gap-3">
+                <div className={cn('overflow-hidden rounded-lg border border-neutral-200 bg-white', items.length === 0 && 'border-none bg-transparent')}>
                     {items.length > 0 ? (
                         items.map((booking) => {
                             const nights = booking.check_in && booking.check_out ? nightsBetween(booking.check_in, booking.check_out) : 0;
 
                             return (
-                                <article key={booking.id} className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-                                    <div className="flex items-start justify-between">
-                                        <h2 className="mb-2 text-lg">
-                                            <Link
-                                                href={bookings.show.url({ booking: booking.id })}
-                                                className="text-neutral-900 no-underline hover:text-neutral-700"
-                                            >
-                                                {booking.guest_name || t('booking_no_guest_name')}
-                                            </Link>
-                                        </h2>
-                                        <div className="flex items-center gap-1.5">
+                                <div
+                                    key={booking.id}
+                                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-neutral-100 px-4.5 py-3.5 last:border-b-0"
+                                >
+                                    <div className="min-w-[220px] flex-1">
+                                        <Link
+                                            href={bookings.show.url({ booking: booking.id })}
+                                            className="text-[13.5px] font-semibold text-neutral-900 no-underline hover:text-primary-700"
+                                        >
+                                            {booking.guest_name || t('booking_no_guest_name')}
+                                        </Link>
+                                        <span className="ml-2 inline-flex items-center gap-1.5 align-middle">
                                             {booking.status === 'current' ? (
                                                 <StatusBadge variant="success">{t('booking_status_badge_current')}</StatusBadge>
                                             ) : null}
@@ -155,12 +157,10 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
                                             {booking.source !== 'manual' ? (
                                                 <StatusBadge variant="neutral">{t('booking_ical_badge')}</StatusBadge>
                                             ) : null}
-                                        </div>
+                                        </span>
+                                        {!filters.place_id ? <p className="m-0 mt-0.5 text-[12.5px] text-neutral-500">{booking.place?.name}</p> : null}
                                     </div>
-                                    {!filters.place_id ? (
-                                        <p className="mt-0 mb-1 text-sm font-medium text-neutral-700">{booking.place?.name}</p>
-                                    ) : null}
-                                    <p className="m-0 text-neutral-500">
+                                    <p className="m-0 flex-1 basis-[240px] text-[12.5px] text-neutral-500">
                                         {t('booking_date_range', {
                                             check_in: booking.check_in ? formatDateTime(booking.check_in) : '',
                                             check_out: booking.check_out ? formatDateTime(booking.check_out) : '',
@@ -169,7 +169,13 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
                                             ({nights} {nights === 1 ? t('night_singular') : t('night_plural')})
                                         </span>
                                     </p>
-                                </article>
+                                    <Link
+                                        href={bookings.show.url({ booking: booking.id })}
+                                        className="ml-auto flex-shrink-0 text-[12.5px] font-semibold text-primary-700 no-underline hover:text-primary-500"
+                                    >
+                                        {t('details')}
+                                    </Link>
+                                </div>
                             );
                         })
                     ) : hasActiveFilters ? (

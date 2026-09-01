@@ -84,7 +84,7 @@ export default function ClonePlace({ place, suggestedName, placeRoles, users }: 
                 />
 
                 <form onSubmit={submit} className="space-y-6">
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                         <FormField htmlFor="name" label={t('clone_place_new_name')} error={errors.name} required>
                             <Input
                                 id="name"
@@ -97,7 +97,7 @@ export default function ClonePlace({ place, suggestedName, placeRoles, users }: 
                         </FormField>
                     </div>
 
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                         <div className="mb-3 flex items-center justify-between">
                             <h2 className="mt-0">{t('clone_place_add_people')}</h2>
                             <Button type="button" variant="outline" size="sm" onClick={addRow}>

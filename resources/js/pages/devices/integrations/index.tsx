@@ -54,7 +54,7 @@ export default function DeviceIntegrationsIndex({ integrations }: DeviceIntegrat
                         <EmptyState message={t('tuya_no_integrations')} />
                     ) : (
                         integrations.map((integration) => (
-                            <article key={integration.id} className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                            <article key={integration.id} className="rounded-lg border border-neutral-200 bg-white p-3.5">
                                 <div className="mb-2 flex items-center justify-between">
                                     <h2 className="text-lg">{integration.platform?.name ?? t('tuya_fallback_name')}</h2>
                                     <StatusBadge variant="success">{t('tuya_connected_badge')}</StatusBadge>

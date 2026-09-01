@@ -88,7 +88,7 @@ export default function DeviceEdit({ device, places, placeIds, deviceFunctions, 
             <Page>
                 <PageHeader title={t('edit_device')} backHref={devices.show.url({ device: device.id })} />
 
-                <form onSubmit={submit} className="grid gap-4 rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <form onSubmit={submit} className="grid gap-4 rounded-lg border border-neutral-200 bg-white p-3.5">
                     <FormField
                         htmlFor="placeIds"
                         label={t('places')}

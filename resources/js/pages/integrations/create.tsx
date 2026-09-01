@@ -46,7 +46,7 @@ export default function IntegrationsCreate({ platforms, places, platformId, plac
             <Page>
                 <PageHeader title={t('integration_new_action')} backHref={integrationsRoutes.index.url()} />
 
-                <form onSubmit={submit} className="grid gap-3 rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <form onSubmit={submit} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-3.5">
                     <FormField htmlFor="platformId" label={t('platform')} error={errors.platformId} required>
                         <Select value={data.platformId} onValueChange={(value) => setData('platformId', value)} required>
                             <SelectTrigger id="platformId" className="h-auto w-full min-w-0 p-2">

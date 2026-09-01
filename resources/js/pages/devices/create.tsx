@@ -53,7 +53,7 @@ export default function DeviceCreate({ places, placeIds, brands }: DeviceCreateP
             <Page>
                 <PageHeader title={t('new_device')} backHref={devices.index.url()} />
 
-                <form onSubmit={submit} className="grid gap-4 rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <form onSubmit={submit} className="grid gap-4 rounded-lg border border-neutral-200 bg-white p-3.5">
                     <FormField
                         htmlFor="placeIds"
                         label={t('places')}

@@ -60,63 +60,64 @@ export default function DevicesIndex({ devices: paginatedDevices, places, search
                     showClear={false}
                 />
 
-                <div className="grid gap-3">
-                    {items.length > 0 ? (
-                        items.map((device) => {
+                {items.length > 0 ? (
+                    <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                        {items.map((device) => {
                             const placeNames = (device.places ?? []).map((place) => place.name).join(', ') || device.place?.name;
 
                             return (
-                                <article key={device.id} className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-                                    <div className="flex items-start justify-between">
-                                        <h2 className="mb-2 text-lg">
-                                            <Link
-                                                href={devices.show.url({ device: device.id })}
-                                                className="text-neutral-900 no-underline hover:text-neutral-700"
-                                            >
-                                                {device.name}
-                                            </Link>
-                                        </h2>
-                                        <StatusBadge variant={device.is_available ? 'success' : 'neutral'}>
-                                            {device.is_available ? t('online') : t('offline')}
-                                        </StatusBadge>
-                                    </div>
-                                    <p className="m-0 text-neutral-500">
-                                        {t('device_index_locations', { names: placeNames || t('unassigned_place') })}
-                                    </p>
-                                    <p className="mt-1 m-0 text-neutral-500">
-                                        {t('brand')}: {device.brand}
-                                    </p>
-                                    <p className="mt-1 m-0 text-neutral-500">
-                                        {t('device_index_functions', { count: device.device_functions_count ?? 0 })}
-                                    </p>
-                                    <div className="mt-2.5 flex gap-2">
+                                <div
+                                    key={device.id}
+                                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-neutral-100 px-4.5 py-3.5 last:border-b-0"
+                                >
+                                    <div className="min-w-[200px] flex-1">
                                         <Link
                                             href={devices.show.url({ device: device.id })}
-                                            className="text-primary-700 no-underline hover:text-primary-500"
+                                            className="text-[13.5px] font-semibold text-neutral-900 no-underline hover:text-primary-700"
+                                        >
+                                            {device.name}
+                                        </Link>
+                                        <StatusBadge variant={device.is_available ? 'success' : 'neutral'} className="ml-2 align-middle">
+                                            {device.is_available ? t('online') : t('offline')}
+                                        </StatusBadge>
+                                        <p className="m-0 mt-0.5 text-[12.5px] text-neutral-500">
+                                            {t('device_index_locations', { names: placeNames || t('unassigned_place') })}
+                                        </p>
+                                    </div>
+                                    <p className="m-0 flex-shrink-0 text-[12.5px] text-neutral-500">
+                                        {t('brand')}: {device.brand}
+                                    </p>
+                                    <p className="m-0 flex-shrink-0 text-[12.5px] text-neutral-500">
+                                        {t('device_index_functions', { count: device.device_functions_count ?? 0 })}
+                                    </p>
+                                    <div className="ml-auto flex flex-shrink-0 gap-2">
+                                        <Link
+                                            href={devices.show.url({ device: device.id })}
+                                            className="rounded-md border border-neutral-200 px-3 py-1.5 text-[12.5px] font-semibold text-neutral-700 no-underline hover:bg-neutral-50"
                                         >
                                             {t('details')}
                                         </Link>
                                         <Link
                                             href={devices.control.url({ device: device.id })}
-                                            className="text-primary-700 no-underline hover:text-primary-500"
+                                            className="rounded-md bg-primary-500 px-3 py-1.5 text-[12.5px] font-semibold text-white no-underline hover:bg-primary-700"
                                         >
                                             {t('control')}
                                         </Link>
                                     </div>
-                                </article>
+                                </div>
                             );
-                        })
-                    ) : (
-                        <EmptyState
-                            message={t('device_empty_state')}
-                            action={
-                                <Button asChild>
-                                    <Link href={devices.create.url()}>{t('new_device')}</Link>
-                                </Button>
-                            }
-                        />
-                    )}
-                </div>
+                        })}
+                    </div>
+                ) : (
+                    <EmptyState
+                        message={t('device_empty_state')}
+                        action={
+                            <Button asChild>
+                                <Link href={devices.create.url()}>{t('new_device')}</Link>
+                            </Button>
+                        }
+                    />
+                )}
 
                 <Pagination paginator={paginatedDevices} />
             </Page>
