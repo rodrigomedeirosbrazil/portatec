@@ -112,45 +112,54 @@ export default function AccessCodesIndex({ accessCodes: paginatedAccessCodes, pl
                     showClear={false}
                 />
 
-                <div className="grid gap-3">
-                    {items.length > 0 ? (
-                        items.map((accessCode) => {
+                {items.length > 0 ? (
+                    <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                        {items.map((accessCode) => {
                             const status = codeStatus(accessCode, now);
 
                             return (
-                                <article key={accessCode.id} className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
-                                    <div className="flex items-start justify-between">
-                                        <h2 className="mb-2 text-lg">
-                                            <Link
-                                                href={accessCodes.edit.url({ accessCode: accessCode.id })}
-                                                className="text-neutral-900 no-underline hover:text-neutral-700"
-                                            >
-                                                {t('access_code_pin_label', { pin: accessCode.pin })}
-                                            </Link>
-                                        </h2>
-                                        <StatusBadge variant={statusVariant[status]}>{t(`access_code_status_${status}`)}</StatusBadge>
+                                <div
+                                    key={accessCode.id}
+                                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-neutral-100 px-4.5 py-3.5 last:border-b-0"
+                                >
+                                    <div className="min-w-[200px] flex-1">
+                                        <Link
+                                            href={accessCodes.edit.url({ accessCode: accessCode.id })}
+                                            className="font-mono text-[14.5px] font-bold tracking-wide text-neutral-900 no-underline hover:text-primary-700"
+                                        >
+                                            {t('access_code_pin_label', { pin: accessCode.pin })}
+                                        </Link>
+                                        <StatusBadge variant={statusVariant[status]} className="ml-2 align-middle">
+                                            {t(`access_code_status_${status}`)}
+                                        </StatusBadge>
+                                        <p className="m-0 mt-0.5 text-[12.5px] text-neutral-500">{accessCode.display_name}</p>
                                     </div>
-                                    <p className="m-0 text-neutral-500">{accessCode.display_name}</p>
-                                    <p className="mt-1 m-0 text-neutral-500">
+                                    <p className="m-0 flex-1 basis-[240px] text-[12.5px] text-neutral-500">
                                         {t('access_code_date_range', {
                                             start: accessCode.start ? formatDateTime(accessCode.start) : '',
                                             end: accessCode.end ? formatDateTime(accessCode.end) : t('access_code_no_end'),
                                         })}
                                     </p>
-                                </article>
+                                    <Link
+                                        href={accessCodes.edit.url({ accessCode: accessCode.id })}
+                                        className="ml-auto flex-shrink-0 text-[12.5px] font-semibold text-primary-700 no-underline hover:text-primary-500"
+                                    >
+                                        {t('details')}
+                                    </Link>
+                                </div>
                             );
-                        })
-                    ) : (
-                        <EmptyState
-                            message={t('access_code_empty_state')}
-                            action={
-                                <Button asChild>
-                                    <Link href={accessCodes.create.url()}>{t('new_access_code')}</Link>
-                                </Button>
-                            }
-                        />
-                    )}
-                </div>
+                        })}
+                    </div>
+                ) : (
+                    <EmptyState
+                        message={t('access_code_empty_state')}
+                        action={
+                            <Button asChild>
+                                <Link href={accessCodes.create.url()}>{t('new_access_code')}</Link>
+                            </Button>
+                        }
+                    />
+                )}
 
                 <Pagination paginator={paginatedAccessCodes} />
             </Page>
