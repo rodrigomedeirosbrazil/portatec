@@ -47,7 +47,7 @@ export default function IntegrationsEdit({ integration }: IntegrationsEditProps)
             <Page>
                 <PageHeader title={t('integration_edit_title')} backHref={integrationsRoutes.index.url()} />
 
-                <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                     <p className="m-0 text-neutral-500">
                         {t('platform')}: <strong className="text-neutral-700">{integration.platform?.name ?? t('platform')}</strong>
                     </p>
@@ -117,7 +117,7 @@ function IntegrationPlaceRow({ integrationId, place, onRemove }: IntegrationPlac
     };
 
     return (
-        <form onSubmit={submit} className="grid gap-3 rounded-[10px] border border-neutral-300 bg-white p-3.5">
+        <form onSubmit={submit} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-3.5">
             <div className="flex items-center justify-between">
                 <strong>{place.name}</strong>
                 <Button type="button" variant="destructive" size="sm" onClick={onRemove}>

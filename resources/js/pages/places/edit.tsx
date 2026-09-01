@@ -37,7 +37,7 @@ export default function PlacesEdit({ place }: PlacesEditProps) {
             <Page>
                 <PageHeader title={t('edit_place_title')} backHref={places.show.url({ place: place.id })} />
 
-                <form onSubmit={submit} className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <form onSubmit={submit} className="rounded-lg border border-neutral-200 bg-white p-3.5">
                     <FormField htmlFor="name" label={t('name')} error={errors.name} required>
                         <Input
                             id="name"

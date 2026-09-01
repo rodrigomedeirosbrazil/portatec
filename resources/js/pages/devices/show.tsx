@@ -38,25 +38,25 @@ export default function DevicesShow({ device, recentCommands, recentTuyaSyncs }:
                 <PageHeader title={device.name} backHref={devices.index.url()} actions={headerActions} />
 
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                         <strong>{t('places')}</strong>
                         <p className="mt-1.5 m-0">{locationsLabel}</p>
                     </div>
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                         <strong>{t('brand')}</strong>
                         <p className="mt-1.5 m-0">{device.brand}</p>
                     </div>
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                         <strong>{t('status')}</strong>
                         <p className="mt-1.5 m-0">{device.is_available ? t('online') : t('offline')}</p>
                     </div>
-                    <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                         <strong>{t('last_sync')}</strong>
                         <p className="mt-1.5 m-0">{device.last_sync ? formatDateTime(device.last_sync) : t('never_synced')}</p>
                     </div>
                 </div>
 
-                <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                     <h2 className="mt-0">{t('device_functions')}</h2>
                     <ul className="m-0 pl-5">
                         {device.device_functions && device.device_functions.length > 0 ? (
@@ -81,7 +81,7 @@ export default function DevicesShow({ device, recentCommands, recentTuyaSyncs }:
                     </ul>
                 </div>
 
-                <div className="rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                     <h2 className="mt-0">{device.is_tuya_lock ? t('device_recent_syncs_title') : t('device_recent_commands_title')}</h2>
                     <ul className="m-0 pl-5">
                         {device.is_tuya_lock ? (

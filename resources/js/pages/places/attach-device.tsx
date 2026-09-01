@@ -61,7 +61,7 @@ export default function AttachDevice({ place, devices }: AttachDeviceProps) {
 
                 <p className="text-neutral-600">{t('attach_device_description', { place: place.name })}</p>
 
-                <form onSubmit={submit} className="grid gap-2.5 rounded-[10px] border border-neutral-300 bg-white p-3.5">
+                <form onSubmit={submit} className="grid gap-2.5 rounded-lg border border-neutral-200 bg-white p-3.5">
                     <FormField htmlFor="deviceId" label={t('attach_device_select')} error={errors.deviceId} required>
                         <Select value={data.deviceId} onValueChange={(value) => setData('deviceId', value)}>
                             <SelectTrigger id="deviceId" className="w-full">
