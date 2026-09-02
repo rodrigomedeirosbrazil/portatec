@@ -109,7 +109,7 @@ export default function AccessCodesIndex({ accessCodes: paginatedAccessCodes, pl
                         search: filters.search,
                     }}
                     gridClassName="sm:grid-cols-2 lg:grid-cols-3"
-                    showClear={false}
+                    showClear
                 />
 
                 {items.length > 0 ? (
@@ -133,6 +133,9 @@ export default function AccessCodesIndex({ accessCodes: paginatedAccessCodes, pl
                                             {t(`access_code_status_${status}`)}
                                         </StatusBadge>
                                         <p className="m-0 mt-0.5 text-[12.5px] text-neutral-500">{accessCode.display_name}</p>
+                                        {!filters.place_id ? (
+                                            <p className="m-0 text-[12.5px] text-neutral-400">{accessCode.place?.name}</p>
+                                        ) : null}
                                     </div>
                                     <p className="m-0 flex-1 basis-[240px] text-[12.5px] text-neutral-500">
                                         {t('access_code_date_range', {

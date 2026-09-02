@@ -27,6 +27,7 @@ class AccessCodeResource extends JsonResource
             'end' => $this->end?->toIso8601String(),
             'display_name' => $this->display_name,
             'is_valid' => $this->isValid(),
+            'place' => new PlaceResource($this->whenLoaded('place')),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
