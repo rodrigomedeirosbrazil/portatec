@@ -8,6 +8,7 @@ use App\Enums\DeviceBrandEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Events\DeviceCreatedEvent;
 use App\Events\DeviceDeletedEvent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -76,13 +77,41 @@ class Device extends Model
         return $this->hasMany(DeviceFunction::class);
     }
 
+    /** Janela em que um dispositivo portatec ainda conta como online. */
+    public const AVAILABILITY_WINDOW_MINUTES = 10;
+
     public function isAvailable(): bool
     {
         if ($this->brand === DeviceBrandEnum::Tuya) {
             return (bool) ($this->tuya_online ?? false);
         }
 
-        return $this->last_sync ? $this->last_sync->diffInMinutes(now()) < 10 : false;
+        return $this->last_sync
+            ? $this->last_sync->diffInMinutes(now()) < self::AVAILABILITY_WINDOW_MINUTES
+            : false;
+    }
+
+    /**
+     * Contrapartida SQL de `isAvailable()`, necessária porque a lista de
+     * dispositivos é paginada e não pode ser filtrada em PHP depois do LIMIT.
+     * `DeviceAvailabilityScopeTest` garante que os dois concordem.
+     */
+    public function scopeAvailable(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query): void {
+            $query->where(function (Builder $query): void {
+                $query->where('brand', DeviceBrandEnum::Tuya)->where('tuya_online', true);
+            })->orWhere(function (Builder $query): void {
+                $query->where('brand', '!=', DeviceBrandEnum::Tuya)
+                    ->whereNotNull('last_sync')
+                    ->where('last_sync', '>=', now()->subMinutes(self::AVAILABILITY_WINDOW_MINUTES));
+            });
+        });
+    }
+
+    public function scopeUnavailable(Builder $query): Builder
+    {
+        return $query->whereNot(fn (Builder $query) => $this->scopeAvailable($query));
     }
 
     public function integration(): BelongsTo
