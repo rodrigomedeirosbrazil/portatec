@@ -70,7 +70,7 @@ Cada linha é a propriedade **exclusiva** de uma tarefa dentro da sua onda.
 
 | Arquivo | Onda 0 | Onda 1 | Onda 2 | Onda 3 | Onda 4 | Onda 5 |
 |---|---|---|---|---|---|---|
-| `package.json` / `package-lock.json` / `vite.config.ts` | **T0.0** (0a) | — | — | — | — | — |
+| `package.json` / `package-lock.json` / `vitest.config.ts` | **T0.0** (0a) | — | — | — | — | — |
 | `database/factories/*` | **T0.0b** (0a) | — | — | — | — | — |
 | `app/Models/Place.php`, `app/Models/Booking.php` | **T0.0b** (0a) | — | — | — | — | — |
 | `resources/lang/pt_BR/app.php` | **T0.1** | — | — | — | — | — |
@@ -341,18 +341,27 @@ isso ela está numa onda anterior — as duas **nunca** rodam ao mesmo tempo.
 **Por que é uma onda própria:** os testes JS que existem hoje
 (`nav-link.test.ts`, `filter-bar-params.test.ts`, `device-commands-reducer.test.ts`) são
 todos de **função pura** — nenhum renderiza componente. O projeto não tem
-`@testing-library/react` nem `jsdom`, e `vite.config.ts` não tem bloco `test`. As tarefas
-T0.2, T0.3 e T0.4 renderizam componentes; sem isto, as três falham. E se cada uma
+`@testing-library/react` nem `jsdom`, e `vitest.config.ts` declara `environment: 'node'`. As
+tarefas T0.2, T0.3 e T0.4 renderizam componentes; sem isto, as três falham. E se cada uma
 instalasse por conta própria, três agentes escreveriam `package.json`, `package-lock.json` e
-`vite.config.ts` ao mesmo tempo — exatamente a corrupção que a regra 0.1 proíbe.
+`vitest.config.ts` ao mesmo tempo — exatamente a corrupção que a regra 0.1 proíbe.
 
 Por isso esta tarefa roda **sozinha**, antes de qualquer outra do plano.
 
 **Files:**
 - Modify: `package.json`
-- Modify: `vite.config.ts`
+- Modify: `vitest.config.ts`
 - Create: `resources/js/test-setup.ts`
 - Create: `resources/js/components/__tests__/test-environment.test.tsx`
+
+> **Correção aplicada durante a execução:** a versão original desta tarefa mandava
+> configurar o Vitest em `vite.config.ts`. Está errado. O repositório tem um
+> `vitest.config.ts` dedicado na raiz, e quando ele existe o Vitest **ignora inteiramente**
+> o bloco `test` do `vite.config.ts` — não há merge. Configurar lá dá um `environment`
+> silenciosamente inerte e todo teste de componente falha com `document is not defined`.
+> A configuração vai em `vitest.config.ts`, e `vite.config.ts` não ganha bloco `test`
+> nenhum: duas fontes de config, uma delas ignorada em silêncio, é armadilha para o
+> próximo.
 
 - [ ] **Step 1: Instale as dependências**
 
@@ -370,18 +379,19 @@ import '@testing-library/jest-dom/vitest';
 
 - [ ] **Step 3: Configure o Vitest**
 
-Em `vite.config.ts`, acrescente o bloco `test` ao objeto de configuração exportado
-(irmão de `plugins`, `resolve` etc.):
+Em `vitest.config.ts` — **não** em `vite.config.ts` — preserve o `resolve.alias` e o
+`include` existentes e troque o `environment`, acrescentando o `setupFiles`:
 
 ```ts
-test: {
-    environment: 'jsdom',
-    setupFiles: ['./resources/js/test-setup.ts'],
-    globals: false,
-},
+    test: {
+        environment: 'jsdom',
+        setupFiles: ['./resources/js/test-setup.ts'],
+        include: ['resources/js/**/*.test.ts', 'resources/js/**/*.test.tsx'],
+    },
 ```
 
-`globals: false` mantém os imports explícitos de `vitest` que os testes atuais já usam.
+Sem `globals`: `false` já é o padrão do Vitest, e os testes existentes usam imports
+explícitos de `vitest`.
 
 - [ ] **Step 4: Escreva o teste que prova o ambiente**
 
@@ -418,7 +428,7 @@ são incompatíveis com ele.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add package.json package-lock.json vite.config.ts resources/js/test-setup.ts resources/js/components/__tests__/test-environment.test.tsx
+git add package.json package-lock.json vitest.config.ts resources/js/test-setup.ts resources/js/components/__tests__/test-environment.test.tsx
 git commit -m "chore: habilita teste de componente React com jsdom e testing-library"
 ```
 
