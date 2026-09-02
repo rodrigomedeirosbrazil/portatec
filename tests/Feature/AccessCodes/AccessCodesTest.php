@@ -263,6 +263,92 @@ class AccessCodesTest extends TestCase
     }
 
     // ------------------------------------------------------------------
+    // Index: "todos os locais" — regressao do bug que caia no primeiro place
+    // ------------------------------------------------------------------
+
+    /**
+     * Regressao do bug relatado: sem `place_id` na requisicao a listagem deve
+     * devolver códigos de TODOS os places do usuario, e nao cair no primeiro.
+     */
+    public function test_index_defaults_to_all_places_when_no_filter(): void
+    {
+        $user = User::factory()->create();
+        $placeA = $this->makePlaceWithAdmin($user, 'Casa A');
+        $placeB = $this->makePlaceWithAdmin($user, 'Casa B');
+
+        $codeA = $this->makeAccessCode($placeA);
+        $codeB = $this->makeAccessCode($placeB);
+
+        $response = $this->actingAs($user)->get('/app/access-codes');
+
+        $response->assertInertia(function ($page) use ($codeA, $codeB) {
+            $ids = collect($page->toArray()['props']['accessCodes']['data'])->pluck('id');
+            $this->assertTrue($ids->contains($codeA->id));
+            $this->assertTrue($ids->contains($codeB->id));
+        });
+    }
+
+    /**
+     * Regressao do bug relatado: `place_id` presente e vazio (o usuario
+     * escolheu "Todos os locais" no select) deve devolver códigos de TODOS os
+     * places do usuario, e nao cair de volta no primeiro place.
+     */
+    public function test_index_with_explicit_empty_place_id_returns_all_places(): void
+    {
+        $user = User::factory()->create();
+        $placeA = $this->makePlaceWithAdmin($user, 'Casa A');
+        $placeB = $this->makePlaceWithAdmin($user, 'Casa B');
+
+        $codeA = $this->makeAccessCode($placeA);
+        $codeB = $this->makeAccessCode($placeB);
+
+        $response = $this->actingAs($user)->get('/app/access-codes?place_id=');
+
+        $response->assertInertia(function ($page) use ($codeA, $codeB) {
+            $ids = collect($page->toArray()['props']['accessCodes']['data'])->pluck('id');
+            $this->assertTrue($ids->contains($codeA->id));
+            $this->assertTrue($ids->contains($codeB->id));
+        });
+    }
+
+    public function test_index_ignores_place_id_belonging_to_another_user(): void
+    {
+        $user = User::factory()->create();
+        $place = $this->makePlaceWithAdmin($user);
+        $code = $this->makeAccessCode($place);
+
+        $otherUser = User::factory()->create();
+        $foreignPlace = $this->makePlaceWithAdmin($otherUser, 'Casa Alheia');
+        $foreignCode = $this->makeAccessCode($foreignPlace);
+
+        $response = $this->actingAs($user)->get("/app/access-codes?place_id={$foreignPlace->id}");
+
+        $response->assertInertia(function ($page) use ($code, $foreignCode) {
+            $ids = collect($page->toArray()['props']['accessCodes']['data'])->pluck('id');
+            $this->assertTrue($ids->contains($code->id));
+            $this->assertFalse($ids->contains($foreignCode->id));
+        });
+    }
+
+    public function test_index_with_invalid_status_falls_back_to_all(): void
+    {
+        $user = User::factory()->create();
+        $place = $this->makePlaceWithAdmin($user);
+        $active = $this->makeAccessCode($place, [
+            'start' => now()->subDay(),
+            'end' => now()->addDay(),
+        ]);
+
+        $response = $this->actingAs($user)->get('/app/access-codes?status=bogus');
+
+        $response->assertInertia(function ($page) use ($active) {
+            $this->assertSame('', $page->toArray()['props']['filters']['status']);
+            $ids = collect($page->toArray()['props']['accessCodes']['data'])->pluck('id');
+            $this->assertTrue($ids->contains($active->id));
+        });
+    }
+
+    // ------------------------------------------------------------------
     // store()
     // ------------------------------------------------------------------
 
