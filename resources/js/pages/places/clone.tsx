@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
 import { Page, PageHeader } from '@/components/page';
+import places from '@/routes/app/places';
 import type { Place } from '@/types';
 
 interface CloneUserOption {
@@ -74,7 +75,13 @@ export default function ClonePlace({ place, suggestedName, placeRoles, users }: 
     }
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_places'), href: places.index.url() },
+                { label: place.name, href: places.show.url({ place: place.id }) },
+                { label: t('clone_place') },
+            ]}
+        >
             <Head title={t('clone_place')} />
 
             <Page>

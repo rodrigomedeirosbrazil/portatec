@@ -39,7 +39,12 @@ export default function BookingsCreate({ places, placeId }: BookingsCreateProps)
     };
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_bookings'), href: bookings.index.url() },
+                { label: t('new_booking') },
+            ]}
+        >
             <Head title={t('new_booking')} />
 
             <Page>

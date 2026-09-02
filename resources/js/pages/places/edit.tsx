@@ -31,7 +31,13 @@ export default function PlacesEdit({ place }: PlacesEditProps) {
     };
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_places'), href: places.index.url() },
+                { label: place.name, href: places.show.url({ place: place.id }) },
+                { label: t('edit') },
+            ]}
+        >
             <Head title={t('edit_place_title')} />
 
             <Page>

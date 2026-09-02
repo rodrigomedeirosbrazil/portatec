@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import places from '@/routes/app/places';
 import type { Place } from '@/types';
 
 interface AttachableDevice {
@@ -53,7 +54,13 @@ export default function AttachDevice({ place, devices }: AttachDeviceProps) {
     const showUrl = show.url({ place: place.id });
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_places'), href: places.index.url() },
+                { label: place.name, href: places.show.url({ place: place.id }) },
+                { label: t('attach_device') },
+            ]}
+        >
             <Head title={t('attach_device')} />
 
             <Page>

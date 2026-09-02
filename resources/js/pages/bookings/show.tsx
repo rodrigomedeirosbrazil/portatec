@@ -55,7 +55,12 @@ export default function BookingsShow({ booking, canDelete }: BookingsShowProps) 
     ) : null;
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_bookings'), href: bookings.index.url() },
+                { label: `${t('booking')} #${booking.id}` },
+            ]}
+        >
             <Head title={t('booking_show_title')} />
 
             <Page>

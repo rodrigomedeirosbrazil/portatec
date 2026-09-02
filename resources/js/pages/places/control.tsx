@@ -11,6 +11,7 @@ import type { DeviceCommandKind, DeviceCommandResult } from '@/hooks/use-device-
 import { useDeviceCommands } from '@/hooks/use-device-commands';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import places from '@/routes/app/places';
 
 interface ControllableFunction {
     pin: string;
@@ -77,7 +78,13 @@ export default function PlaceControl({ place, devices, initialFunctionStatus }: 
         functionType === 'button' ? 'push_button' : 'toggle';
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_places'), href: places.index.url() },
+                { label: place.name, href: places.show.url({ place: place.id }) },
+                { label: t('nav_control') },
+            ]}
+        >
             <Head title={t('place_control_title', { place: place.name })} />
 
             <Page>

@@ -8,6 +8,7 @@ import { Page, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import bookings from '@/routes/app/bookings';
 import integrationsRoutes from '@/routes/app/bookings/integrations';
 import type { Integration, PlaceOption } from '@/types';
 
@@ -33,7 +34,12 @@ export default function IntegrationsIndex({ integrations, places, placeId }: Int
     }
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_bookings'), href: bookings.index.url() },
+                { label: t('integrations') },
+            ]}
+        >
             <Head title={t('integrations_ical_title')} />
 
             <Page>

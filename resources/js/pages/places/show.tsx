@@ -76,7 +76,12 @@ export default function PlacesShow({ place, activeAccessCodes, bookingsCount, bo
     );
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_places'), href: places.index.url() },
+                { label: place.name },
+            ]}
+        >
             <Head title={place.name} />
 
             <Page>
