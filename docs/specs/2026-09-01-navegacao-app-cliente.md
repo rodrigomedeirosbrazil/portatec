@@ -388,6 +388,29 @@ Route::get('/control', [ControlController::class, 'index'])->name('control.index
 
 #### F5.2 Comportamento
 
+> **Corrigido depois da implementação.** O desenho descrito abaixo — `/app/control`
+> renderizando ora a lista, ora o painel do local atual — **foi revertido**. Uma URL com dois
+> significados não tem lugar fixo na hierarquia: o breadcrumb do painel aponta para
+> `/app/control` como pai, e com a rota polimórfica esse link levava de volta à própria
+> página.
+>
+> O que vale agora:
+>
+> - **`/app/control` é sempre a lista de locais.** Um significado só, pai honesto do
+>   breadcrumb, bookmarkável.
+> - **O atalho de um clique vive no `href` do item "Controle" da sidebar**, calculado no
+>   layout: aponta para `/app/places/{atual}/control` quando há local atual, e para
+>   `/app/control` quando não há. A esperteza fica na navegação, não na rota.
+> - **`/app/places/{place}/control` passa a definir o local atual**, aplicando a mesma regra
+>   de precedência de F4.4. Sem isso, um favorito antigo mostrava o local 2 enquanto o
+>   seletor do topo e a sidebar apontavam para outro — e o item "Controle" chegava a tirar o
+>   usuário do local que ele estava vendo.
+> - Como consequência, "Controle" acende em duas rotas e "Locais" para de acender em
+>   `/app/places/*/control`. Daí `isNavLinkActive` passar a aceitar lista de padrões, e o
+>   `exclude` mantido em F2.2 voltar a ter uso real.
+>
+> O texto original fica abaixo como registro do que foi tentado.
+
 `ControlController@index` consulta o local atual (`CurrentPlaceService`):
 
 - **Com local selecionado:** renderiza `places/control` para aquele local — o mesmo
@@ -449,7 +472,8 @@ regressão. Comandos: `./vendor/bin/sail test` e `./vendor/bin/sail npm run test
 | F4.4 | `place_id` explícito na query string atualiza a sessão |
 | F4.5 | com local na sessão e sem `place_id` na URL, cada uma das quatro listas volta filtrada |
 | F4.5 | `PlaceController@index` **ignora** o local da sessão |
-| F5.2 | `/app/control` com local selecionado renderiza `places/control`; com "Todos", renderiza `control/index` |
+| F5.2 | `/app/control` renderiza `control/index` com ou sem local atual |
+| F5.2 | abrir `/app/places/{id}/control` torna esse local o atual; um local proibido não vira atual |
 
 `InertiaPropContractTest` ganha casos para as props novas (`currentPlace`, `places`,
 `bookings_count`) — coleções como array, nunca envelopadas em `{"data": ...}`.
