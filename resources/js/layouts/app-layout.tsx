@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 
 import app from '@/routes/app';
 import { Breadcrumbs, type Crumb } from '@/components/breadcrumbs';
+import { CurrentPlaceSelect } from '@/components/current-place-select';
 import { NavLink, isNavLinkActive } from '@/components/nav-link';
 import { UserMenu } from '@/components/user-menu';
 import { useTranslations } from '@/hooks/use-translations';
@@ -18,6 +19,8 @@ interface AppLayoutPageProps {
     flash: {
         status: string | null;
     };
+    currentPlace: { id: number; name: string } | null;
+    places: { id: number; name: string }[];
     [key: string]: unknown;
 }
 
@@ -84,7 +87,7 @@ const NAV_ITEM_CLASS =
 
 export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
     const { props, url } = usePage<AppLayoutPageProps>();
-    const { auth, impersonation, flash } = props;
+    const { auth, impersonation, flash, currentPlace, places } = props;
     const pathname = url.split('?')[0] ?? url;
 
     const canAccessAdminPanel = auth.user?.is_super_admin === true;
@@ -151,6 +154,10 @@ export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                 <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-white">{currentLabel}</span>
             </div>
 
+            <div className="border-b border-neutral-200 bg-white px-3.5 py-2 lg:hidden">
+                <CurrentPlaceSelect places={places} currentPlace={currentPlace} className="h-9 w-full" />
+            </div>
+
             <div className="flex min-h-[calc(100vh-56px)] lg:min-h-screen">
                 {open && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={closeMenu} aria-hidden="true" />}
 
@@ -203,7 +210,8 @@ export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                 </aside>
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                    <div className="hidden h-[52px] items-center justify-between border-b border-neutral-200 bg-white px-7 lg:flex">
+                    <div className="hidden h-[52px] items-center gap-4 border-b border-neutral-200 bg-white px-7 lg:flex">
+                        <CurrentPlaceSelect places={places} currentPlace={currentPlace} className="h-8 w-[200px]" />
                         <Breadcrumbs items={[{ label: 'Portatec', href: app.dashboard.url() }, ...trail]} />
                     </div>
 
