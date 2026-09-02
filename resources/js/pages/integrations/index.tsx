@@ -3,7 +3,6 @@ import { useState } from 'react';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/empty-state';
-import { FilterBar } from '@/components/filter-bar';
 import { Page, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/hooks/use-translations';
@@ -19,7 +18,7 @@ interface IntegrationsIndexProps {
     [key: string]: unknown;
 }
 
-export default function IntegrationsIndex({ integrations, places, placeId }: IntegrationsIndexProps) {
+export default function IntegrationsIndex({ integrations }: IntegrationsIndexProps) {
     const { t } = useTranslations();
     const [integrationToDelete, setIntegrationToDelete] = useState<Integration | null>(null);
 
@@ -50,22 +49,6 @@ export default function IntegrationsIndex({ integrations, places, placeId }: Int
                             <Link href={integrationsRoutes.create.url()}>{t('integration_new_action')}</Link>
                         </Button>
                     }
-                />
-
-                <FilterBar
-                    url={integrationsRoutes.index.url()}
-                    fields={[
-                        {
-                            type: 'place',
-                            key: 'place_id',
-                            label: t('filter_by_place'),
-                            places,
-                            includeEmpty: true,
-                            emptyOptionLabel: t('all_places'),
-                        },
-                    ]}
-                    values={{ place_id: placeId ?? '' }}
-                    showClear={false}
                 />
 
                 {integrations.length > 0 ? (
