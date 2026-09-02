@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 
 import app from '@/routes/app';
+import { Breadcrumbs, type Crumb } from '@/components/breadcrumbs';
 import { NavLink, isNavLinkActive } from '@/components/nav-link';
 import { UserMenu } from '@/components/user-menu';
 import { useTranslations } from '@/hooks/use-translations';
@@ -22,6 +23,12 @@ interface AppLayoutPageProps {
 
 export interface AppLayoutProps {
     children: ReactNode;
+    /**
+     * Trilha da página. Sem ela, o layout cai no rótulo da seção ativa — o
+     * comportamento anterior — para que a adoção seja incremental e nenhuma
+     * tela quebre enquanto a onda 3 não passa por todas.
+     */
+    breadcrumbs?: Crumb[];
 }
 
 const ITEM_ICON_CLASS = 'h-4 w-4 flex-shrink-0';
@@ -75,7 +82,7 @@ function AccessCodesIcon() {
 const NAV_ITEM_CLASS =
     'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] font-medium no-underline hover:no-underline';
 
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
     const { props, url } = usePage<AppLayoutPageProps>();
     const { auth, impersonation, flash } = props;
     const pathname = url.split('?')[0] ?? url;
@@ -109,6 +116,10 @@ export function AppLayout({ children }: AppLayoutProps) {
     const activeItem = allItems.find((item) => isNavLinkActive(pathname, item.pattern));
     const crumb = activeItem?.label ?? t('nav_dashboard');
 
+    const trail: Crumb[] = breadcrumbs ?? [{ label: crumb }];
+    const currentLabel = trail[trail.length - 1]?.label ?? crumb;
+    const parent = trail.length > 1 ? trail[trail.length - 2] : undefined;
+
     return (
         <div className="min-h-screen bg-neutral-100">
             {/* Mobile: hamburger + section title + sair */}
@@ -126,7 +137,18 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <line x1="4" y1="17" x2="20" y2="17" />
                     </svg>
                 </button>
-                <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-white">{crumb}</span>
+                {parent?.href ? (
+                    <Link
+                        href={parent.href}
+                        aria-label={parent.label}
+                        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-white no-underline"
+                    >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M15 5 L8 12 L15 19" />
+                        </svg>
+                    </Link>
+                ) : null}
+                <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-white">{currentLabel}</span>
             </div>
 
             <div className="flex min-h-[calc(100vh-56px)] lg:min-h-screen">
@@ -182,9 +204,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
                 <div className="flex min-w-0 flex-1 flex-col">
                     <div className="hidden h-[52px] items-center justify-between border-b border-neutral-200 bg-white px-7 lg:flex">
-                        <span className="text-[12.5px] text-neutral-400">
-                            Portatec / <b className="font-semibold text-neutral-700">{crumb}</b>
-                        </span>
+                        <Breadcrumbs items={[{ label: 'Portatec', href: app.dashboard.url() }, ...trail]} />
                     </div>
 
                     <main className="flex-1 p-4 lg:p-7">
