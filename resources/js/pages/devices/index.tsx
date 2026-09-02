@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 
 import { EmptyState } from '@/components/empty-state';
 import { FilterBar } from '@/components/filter-bar';
@@ -9,11 +9,10 @@ import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
 import devices from '@/routes/app/devices';
-import type { Device, Paginated, PlaceOption } from '@/types';
+import type { Device, Paginated } from '@/types';
 
 interface DevicesIndexProps {
     devices: Paginated<Device>;
-    places: PlaceOption[];
     search: string;
     placeId: string | null;
     filters: {
@@ -24,8 +23,10 @@ interface DevicesIndexProps {
     [key: string]: unknown;
 }
 
-export default function DevicesIndex({ devices: paginatedDevices, places, search, placeId, filters }: DevicesIndexProps) {
+export default function DevicesIndex({ devices: paginatedDevices, search, placeId, filters }: DevicesIndexProps) {
     const { t } = useTranslations();
+    const { props } = usePage<{ currentPlace: { id: number; name: string } | null }>();
+    const currentPlace = props.currentPlace;
     const items = paginatedDevices.data;
 
     const headerActions = (
@@ -49,16 +50,19 @@ export default function DevicesIndex({ devices: paginatedDevices, places, search
                 <FilterBar
                     url={devices.index.url()}
                     fields={[
-                        {
-                            type: 'place',
-                            key: 'place_id',
-                            label: t('filter_by_place'),
-                            places,
-                            includeEmpty: true,
-                            emptyOptionLabel: t('all_places'),
-                            includeUnassigned: true,
-                            unassignedOptionLabel: t('unassigned_place'),
-                        },
+                        ...(currentPlace === null
+                            ? [
+                                  {
+                                      type: 'select' as const,
+                                      key: 'place_id',
+                                      label: t('filter_by_place'),
+                                      options: [
+                                          { value: '', label: t('all_places') },
+                                          { value: 'unassigned', label: t('devices_only_unassigned') },
+                                      ],
+                                  },
+                              ]
+                            : []),
                         {
                             type: 'select',
                             key: 'status',
