@@ -79,11 +79,16 @@ class IntegrationController extends Controller
             ->orderBy('name')
             ->get();
 
+        $requestedPlaceId = $request->integer('place_id');
+        $selectedPlaceId = $places->contains('id', $requestedPlaceId)
+            ? $requestedPlaceId
+            : $places->first()?->id;
+
         return Inertia::render('integrations/create', [
             'platforms' => PlatformResource::collection($platforms),
             'places' => PlaceResource::collection($places),
             'platformId' => $platforms->first()?->id,
-            'placeId' => $places->first()?->id,
+            'placeId' => $selectedPlaceId,
         ]);
     }
 
