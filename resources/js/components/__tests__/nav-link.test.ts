@@ -58,3 +58,47 @@ describe('isNavLinkActive', () => {
         expect(isNavLinkActive('/app/bookings/integrations/create', '/app/bookings*')).toBe(true);
     });
 });
+
+/**
+ * "Controle" vive em duas rotas: `/app/control` (a lista) e
+ * `/app/places/{id}/control` (o painel de um local). Para quem navega é a mesma
+ * seção, então o item precisa acender nas duas — e "Locais" precisa PARAR de
+ * acender na segunda, senão dois itens do menu ficam ativos ao mesmo tempo.
+ */
+describe('estado ativo de Controle e Locais', () => {
+    const CONTROL = ['/app/control', '/app/places/*/control'];
+    const PLACES = '/app/places*';
+    const PLACES_EXCLUDE = '/app/places/*/control';
+
+    it('acende Controle na lista e no painel de um local', () => {
+        expect(isNavLinkActive('/app/control', CONTROL)).toBe(true);
+        expect(isNavLinkActive('/app/places/2/control', CONTROL)).toBe(true);
+    });
+
+    it('nao acende Controle nas demais rotas de local', () => {
+        expect(isNavLinkActive('/app/places', CONTROL)).toBe(false);
+        expect(isNavLinkActive('/app/places/2', CONTROL)).toBe(false);
+        expect(isNavLinkActive('/app/places/2/members', CONTROL)).toBe(false);
+    });
+
+    it('nao acende Locais no painel de controle de um local', () => {
+        expect(isNavLinkActive('/app/places/2/control', PLACES, PLACES_EXCLUDE)).toBe(false);
+    });
+
+    it('continua acendendo Locais nas demais rotas de local', () => {
+        expect(isNavLinkActive('/app/places', PLACES, PLACES_EXCLUDE)).toBe(true);
+        expect(isNavLinkActive('/app/places/2', PLACES, PLACES_EXCLUDE)).toBe(true);
+        expect(isNavLinkActive('/app/places/2/members', PLACES, PLACES_EXCLUDE)).toBe(true);
+    });
+
+    it('os dois itens nunca ficam ativos ao mesmo tempo', () => {
+        for (const path of ['/app/control', '/app/places', '/app/places/2', '/app/places/2/control', '/app/places/2/members']) {
+            const active = [
+                isNavLinkActive(path, CONTROL),
+                isNavLinkActive(path, PLACES, PLACES_EXCLUDE),
+            ].filter(Boolean);
+
+            expect(active.length).toBeLessThanOrEqual(1);
+        }
+    });
+});

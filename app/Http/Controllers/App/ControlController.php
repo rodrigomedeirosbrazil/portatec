@@ -6,9 +6,7 @@ namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Place;
-use App\Services\CurrentPlaceService;
 use App\Services\DashboardService;
-use App\Services\Tuya\TuyaIntegrationService;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,22 +14,19 @@ use Inertia\Response;
 class ControlController extends Controller
 {
     /**
-     * Com um local atual, esta rota é um atalho para o painel daquele local — o
-     * mesmo componente de `/app/places/{place}/control`, renderizado pelo mesmo
-     * controller. Sem local atual, lista os locais para escolher.
+     * Lista os locais para escolher qual controlar. **Sempre** a lista — esta
+     * rota já foi polimórfica (painel do local atual quando havia um, lista
+     * quando não), e isso se mostrou errado: uma URL com dois significados não
+     * tem lugar fixo na hierarquia, então o breadcrumb do painel apontava para
+     * `/app/control`, que renderizava o próprio painel. Link de pai para a
+     * própria página.
+     *
+     * O atalho de um clique não sumiu: ele vive no `href` do item "Controle" da
+     * sidebar, que aponta direto para `/app/places/{atual}/control` quando há
+     * local atual. A esperteza fica na navegação, não na rota.
      */
-    public function index(
-        CurrentPlaceService $currentPlace,
-        PlaceControlController $placeControl,
-        TuyaIntegrationService $tuya,
-        DashboardService $dashboard,
-    ): Response {
-        $place = $currentPlace->get(Auth::user());
-
-        if ($place !== null) {
-            return $placeControl->show($place, $tuya);
-        }
-
+    public function index(DashboardService $dashboard): Response
+    {
         $data = $dashboard->forUser(Auth::user());
 
         return Inertia::render('control/index', [

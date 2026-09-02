@@ -284,7 +284,6 @@ return [
     'place_select_label' => 'Local atual',
     'place_select_all' => 'Todos os locais',
     'control_index_title' => 'Controle',
-    'control_all_places' => 'Ver todos os locais',
     'devices_status_label' => 'Status',
     'devices_status_online' => 'Online',
     'devices_status_offline' => 'Offline',

@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import axios from 'axios';
 import { useMemo } from 'react';
 
@@ -87,20 +87,14 @@ export default function PlaceControl({ place, devices, initialFunctionStatus }: 
             <Head title={t('place_control_title', { place: place.name })} />
 
             <Page>
+                {/*
+                  * Sem acao de "ver todos os locais" aqui: o breadcrumb ja leva a
+                  * `/app/control`, que agora e sempre a lista. Limpar o local atual
+                  * e papel do seletor no topo, nao desta tela.
+                  */}
                 <PageHeader
                     title={t('place_control_title', { place: place.name })}
                     backHref={show.url({ place: place.id })}
-                    actions={
-                        <Link
-                            href={app.currentPlace.update.url()}
-                            method="post"
-                            data={{ place_id: '' }}
-                            as="button"
-                            className="cursor-pointer rounded-md border border-neutral-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-neutral-700"
-                        >
-                            {t('control_all_places')}
-                        </Link>
-                    }
                 />
 
                 <div className="space-y-4">

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Models\Place;
+use App\Services\CurrentPlaceService;
 use App\Services\Tuya\TuyaIntegrationService;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -15,14 +16,24 @@ use Inertia\Response;
 
 class PlaceControlController extends Controller
 {
-    public function show(Place $place, TuyaIntegrationService $tuyaIntegrationService): Response
-    {
+    public function show(
+        Place $place,
+        TuyaIntegrationService $tuyaIntegrationService,
+        CurrentPlaceService $currentPlace,
+    ): Response {
         $place->load(['devices.deviceFunctions', 'devices.integration']);
 
         abort_unless(
             $place->placeUsers()->where('user_id', Auth::id())->exists(),
             403
         );
+
+        // Abrir o painel de um local torna esse local o atual. É a mesma regra
+        // de precedência que as listas aplicam a um `place_id` explícito na URL:
+        // sem isso, um link direto (ou um favorito antigo) mostraria o local 2
+        // enquanto o seletor do topo e o item "Controle" da sidebar continuariam
+        // apontando para outro. O `set()` revalida o vínculo por conta própria.
+        $currentPlace->set(Auth::user(), $place->id);
 
         $this->refreshTuyaSnapshots($place, $tuyaIntegrationService);
 

@@ -19,7 +19,6 @@ class TranslationKeysTest extends TestCase
             'nav_group_operation',
             'nav_group_setup',
             'nav_control',
-            'control_all_places',
             'control_index_title',
             'breadcrumb_home',
             'place_select_all',

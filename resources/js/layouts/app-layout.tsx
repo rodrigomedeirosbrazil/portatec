@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 
 import app from '@/routes/app';
+import placesRoutes from '@/routes/app/places';
 import { Breadcrumbs, type Crumb } from '@/components/breadcrumbs';
 import { CurrentPlaceSelect } from '@/components/current-place-select';
 import { NavLink, isNavLinkActive } from '@/components/nav-link';
@@ -94,6 +95,16 @@ function AccessCodesIcon() {
 const NAV_ITEM_CLASS =
     'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] font-medium no-underline hover:no-underline';
 
+interface NavItem {
+    href: string;
+    /** Um padrao, ou varios quando a mesma secao vive em mais de uma rota. */
+    pattern: string | string[];
+    /** Padroes que impedem o estado ativo mesmo com `pattern` casando. */
+    exclude?: string | string[];
+    label: string;
+    icon: ReactNode;
+}
+
 export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
     const { props, url } = usePage<AppLayoutPageProps>();
     const { auth, impersonation, flash, currentPlace, places } = props;
@@ -105,12 +116,24 @@ export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
     const [open, setOpen] = useState(false);
     const closeMenu = () => setOpen(false);
 
-    const groups = [
+    // Com um local atual, "Controle" vai direto ao painel dele — abrir uma porta
+    // vira um clique. A rota `/app/control` continua sendo sempre a lista; quem
+    // decide o atalho e a navegacao, nao a rota, para que cada URL siga tendo um
+    // significado so.
+    const controlHref = currentPlace ? placesRoutes.control.url({ place: currentPlace.id }) : app.control.index.url();
+
+    const groups: { label: string; items: NavItem[] }[] = [
         {
             label: t('nav_group_operation'),
             items: [
                 { href: app.dashboard.url(), pattern: '/app/dashboard', label: t('nav_dashboard'), icon: <DashboardIcon /> },
-                { href: app.control.index.url(), pattern: '/app/control', label: t('nav_control'), icon: <ControlIcon /> },
+                {
+                    href: controlHref,
+                    // A lista e o painel de um local sao a mesma secao para quem navega.
+                    pattern: ['/app/control', '/app/places/*/control'],
+                    label: t('nav_control'),
+                    icon: <ControlIcon />,
+                },
                 { href: app.bookings.index.url(), pattern: '/app/bookings*', label: t('nav_bookings'), icon: <BookingsIcon /> },
                 { href: app.accessCodes.index.url(), pattern: '/app/access-codes*', label: t('nav_access_codes'), icon: <AccessCodesIcon /> },
             ],
@@ -118,7 +141,14 @@ export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
         {
             label: t('nav_group_setup'),
             items: [
-                { href: app.places.index.url(), pattern: '/app/places*', label: t('nav_places'), icon: <PlacesIcon /> },
+                {
+                    href: app.places.index.url(),
+                    pattern: '/app/places*',
+                    // Sem isto, `/app/places/2/control` acende "Locais" e "Controle" juntos.
+                    exclude: '/app/places/*/control',
+                    label: t('nav_places'),
+                    icon: <PlacesIcon />,
+                },
                 { href: app.devices.index.url(), pattern: '/app/devices*', label: t('nav_devices'), icon: <DevicesIcon /> },
             ],
         },
@@ -126,7 +156,7 @@ export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
 
     const allItems = groups.flatMap((group) => group.items);
 
-    const activeItem = allItems.find((item) => isNavLinkActive(pathname, item.pattern));
+    const activeItem = allItems.find((item) => isNavLinkActive(pathname, item.pattern, item.exclude));
     const crumb = activeItem?.label ?? t('nav_dashboard');
 
     const trail: Crumb[] = breadcrumbs ?? [{ label: crumb }];
@@ -194,10 +224,11 @@ export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                                             key={item.href}
                                             href={item.href}
                                             pattern={item.pattern}
+                                            exclude={item.exclude}
                                             onClick={closeMenu}
                                             className={cn(
                                                 NAV_ITEM_CLASS,
-                                                isNavLinkActive(pathname, item.pattern)
+                                                isNavLinkActive(pathname, item.pattern, item.exclude)
                                                     ? 'bg-primary-500/20 text-primary-300'
                                                     : 'text-neutral-400 hover:text-neutral-100',
                                             )}
