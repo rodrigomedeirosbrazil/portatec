@@ -10,6 +10,7 @@ import type { DeviceCommandKind, DeviceCommandResult } from '@/hooks/use-device-
 import { useDeviceCommands } from '@/hooks/use-device-commands';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import devices from '@/routes/app/devices';
 
 interface ControllableFunction {
     pin: string;
@@ -69,7 +70,13 @@ export default function DeviceControl({ device, placeId, initialFunctionStatus }
         functionType === 'button' ? 'push_button' : 'toggle';
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_devices'), href: devices.index.url() },
+                { label: device.name, href: devices.show.url({ device: device.id }) },
+                { label: t('nav_control') },
+            ]}
+        >
             <Head title={t('device_control_title', { device: device.name })} />
 
             <Page>

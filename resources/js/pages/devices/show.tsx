@@ -31,7 +31,12 @@ export default function DevicesShow({ device, recentCommands, recentTuyaSyncs }:
     );
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_devices'), href: devices.index.url() },
+                { label: device.name },
+            ]}
+        >
             <Head title={device.name} />
 
             <Page>
