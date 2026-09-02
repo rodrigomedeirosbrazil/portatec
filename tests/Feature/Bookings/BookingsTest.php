@@ -12,6 +12,7 @@ use App\Models\PlaceUser;
 use App\Models\Platform;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class BookingsTest extends TestCase
@@ -586,5 +587,30 @@ class BookingsTest extends TestCase
             ->assertRedirect();
 
         $this->assertSoftDeleted('bookings', ['id' => $booking->id]);
+    }
+
+    public function test_the_list_uses_the_current_place_from_the_session(): void
+    {
+        $user = User::factory()->create();
+        $mine = Place::create(['name' => 'Casa Azul']);
+        $other = Place::create(['name' => 'Casa Verde']);
+
+        foreach ([$mine, $other] as $place) {
+            PlaceUser::create([
+                'place_id' => $place->id,
+                'user_id' => $user->id,
+                'role' => PlaceRoleEnum::Admin,
+                'label' => $user->name,
+            ]);
+        }
+
+        $this->actingAs($user)->post('/app/current-place', ['place_id' => $mine->id]);
+
+        $this->actingAs($user)
+            ->get('/app/bookings')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('bookings/index')
+                ->where('filters.place_id', $mine->id)
+            );
     }
 }

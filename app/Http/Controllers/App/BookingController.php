@@ -10,6 +10,7 @@ use App\Http\Resources\BookingResource;
 use App\Http\Resources\PlaceResource;
 use App\Models\Booking;
 use App\Models\Place;
+use App\Services\CurrentPlaceService;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
@@ -47,17 +48,11 @@ class BookingController extends Controller
      *   `date_from` assume `hoje - 7 dias` só na visita sem filtro nenhum
      *   (ver `resolveDateFrom()`). Data inválida é descartada.
      */
-    public function index(Request $request): Response
+    public function index(Request $request, CurrentPlaceService $currentPlace): Response
     {
         $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
 
-        $placeId = null;
-        if ($request->filled('place_id')) {
-            $requestedId = (int) $request->input('place_id');
-            if ($userPlaceIds->contains($requestedId)) {
-                $placeId = $requestedId;
-            }
-        }
+        $placeId = $currentPlace->resolveForRequest($request, Auth::user());
 
         $dateFrom = $this->resolveDateFrom($request);
         $dateTo = $request->filled('date_to') ? $this->parseDate($request->string('date_to')->toString()) : null;
