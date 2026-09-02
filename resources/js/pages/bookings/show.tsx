@@ -6,6 +6,7 @@ import { Page, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import accessCodes from '@/routes/app/access-codes';
 import bookings from '@/routes/app/bookings';
 import places from '@/routes/app/places';
 import type { Booking } from '@/types';
@@ -84,7 +85,17 @@ export default function BookingsShow({ booking, canDelete }: BookingsShowProps) 
                         {nights === 1 ? t('night_singular') : t('night_plural')}
                     </p>
                     <p className="m-0">
-                        <strong>{t('booking_show_pin_label')}:</strong> {booking.access_code?.pin ?? t('booking_show_pin_not_generated')}
+                        <strong>{t('booking_show_pin_label')}:</strong>{' '}
+                        {booking.access_code ? (
+                            <Link
+                                href={accessCodes.edit.url({ accessCode: booking.access_code.id })}
+                                className="font-mono font-bold text-primary-500 no-underline hover:text-primary-700"
+                            >
+                                {booking.access_code.pin}
+                            </Link>
+                        ) : (
+                            t('booking_show_pin_not_generated')
+                        )}
                     </p>
                     {!canDelete ? <p className="mt-2 text-sm text-neutral-500">{t('booking_show_ical_notice')}</p> : null}
                 </div>

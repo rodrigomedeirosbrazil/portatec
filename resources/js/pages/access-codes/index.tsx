@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
 import accessCodes from '@/routes/app/access-codes';
+import bookingsRoutes from '@/routes/app/bookings';
 import type { AccessCode, Paginated, PlaceOption } from '@/types';
 
 interface AccessCodesIndexFilters {
@@ -132,7 +133,16 @@ export default function AccessCodesIndex({ accessCodes: paginatedAccessCodes, pl
                                         <StatusBadge variant={statusVariant[status]} className="ml-2 align-middle">
                                             {t(`access_code_status_${status}`)}
                                         </StatusBadge>
-                                        <p className="m-0 mt-0.5 text-[12.5px] text-neutral-500">{accessCode.display_name}</p>
+                                        {accessCode.booking_id ? (
+                                            <Link
+                                                href={bookingsRoutes.show.url({ booking: accessCode.booking_id })}
+                                                className="m-0 mt-0.5 block text-[12.5px] text-primary-700 no-underline hover:text-primary-500"
+                                            >
+                                                {accessCode.display_name}
+                                            </Link>
+                                        ) : (
+                                            <p className="m-0 mt-0.5 text-[12.5px] text-neutral-500">{accessCode.display_name}</p>
+                                        )}
                                         {!filters.place_id ? (
                                             <p className="m-0 text-[12.5px] text-neutral-400">{accessCode.place?.name}</p>
                                         ) : null}
@@ -147,7 +157,7 @@ export default function AccessCodesIndex({ accessCodes: paginatedAccessCodes, pl
                                         href={accessCodes.edit.url({ accessCode: accessCode.id })}
                                         className="ml-auto flex-shrink-0 text-[12.5px] font-semibold text-primary-700 no-underline hover:text-primary-500"
                                     >
-                                        {t('details')}
+                                        {t('edit')}
                                     </Link>
                                 </div>
                             );

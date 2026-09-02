@@ -58,7 +58,7 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
     const headerActions = (
         <>
             <Button variant="outline" asChild>
-                <Link href={bookings.integrations.index.url()}>{t('nav_bookings_integrations')}</Link>
+                <Link href={bookings.integrations.index.url()}>{t('integrations')}</Link>
             </Button>
             <Button asChild>
                 <Link href={bookings.create.url()}>{t('new_booking')}</Link>
