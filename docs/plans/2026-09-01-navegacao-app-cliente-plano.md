@@ -434,6 +434,34 @@ git commit -m "chore: habilita teste de componente React com jsdom e testing-lib
 
 ---
 
+### T0.0c: Cleanup e contexto Inertia nos testes de componente
+
+> **Tarefa acrescentada durante a execução.** A T0.0 configurou jsdom, mas isso não basta
+> para testar componentes reais deste projeto. Duas lacunas apareceram só ao tentar:
+>
+> 1. **O cleanup automático do Testing Library não roda.** O `@testing-library/react` só
+>    registra `afterEach(cleanup)` se `afterEach` existir como global, e a config não usa
+>    `globals: true`. O DOM acumulava entre os `it()` do mesmo arquivo —
+>    `getAllByRole('link')` achava 4 elementos onde deviam ser 2.
+> 2. **`usePage()` do Inertia lança exceção fora de um app Inertia.**
+>    `resources/js/hooks/use-translations.ts` o chama, então **todo** componente que use
+>    `useTranslations()` explodia com `usePage must be used within the Inertia component`
+>    antes de qualquer asserção.
+>
+> Corrigido de forma central, sem tocar em código de produção:
+> `resources/js/test-setup.ts` registra `afterEach(cleanup)` e mocka `usePage` via
+> `vi.mock` com `importOriginal` — preservando `Link`, que os testes já usavam. Um módulo
+> novo, `resources/js/test-utils.ts`, expõe `setTestPageProps` / `resetTestPageProps` para
+> quando um teste precisar de traduções ou props específicas, com reset automático entre
+> testes.
+>
+> **Consequência para as ondas seguintes:** qualquer tarefa que escreva teste de componente
+> pode usar `render()` puro, sem wrapper. Com traduções ausentes, `t('chave')` devolve a
+> própria chave — comportamento que `useTranslations` já implementa. Não replique contornos
+> locais de cleanup nem mocks de `usePage` em arquivos de teste individuais.
+
+---
+
 ### ⛔ BARREIRA — fim da onda 0a
 
 ```bash
