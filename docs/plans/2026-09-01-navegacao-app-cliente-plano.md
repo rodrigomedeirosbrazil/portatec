@@ -36,9 +36,15 @@ Consequências, todas obrigatórias:
 2. **Nunca `git add -A`, `git add .` ou `git commit -a`.** Sempre
    `git add <caminhos exatos do seu escopo>`. Um `add -A` engole o trabalho pela metade de
    outro agente e produz um commit quebrado.
-3. **Nunca `git checkout`, `git stash`, `git reset` ou troca de branch.** Todos compartilham
+3. **Commite sempre com pathspec: `git commit <seus caminhos> -m "..."`.** Só `git add` com
+   caminhos exatos **não basta** — `git commit` sem pathspec commita tudo que está no
+   índice, incluindo o que outro agente stageou e ainda não commitou. Isso aconteceu de
+   verdade na onda 3: o commit da T3.3 absorveu os seis arquivos da T3.1. Nada se perdeu,
+   mas o commit ficou misturado e a mensagem passou a mentir sobre o próprio conteúdo. O
+   pathspec no `commit` é o que fecha essa janela.
+4. **Nunca `git checkout`, `git stash`, `git reset` ou troca de branch.** Todos compartilham
    o mesmo `HEAD`.
-4. **Ao rodar a suíte, espere falhas alheias.** Outro agente pode estar no meio de uma
+5. **Ao rodar a suíte, espere falhas alheias.** Outro agente pode estar no meio de uma
    edição. O que importa é: **os testes do seu escopo passam**. Rode-os por nome
    (`--filter=`), não a suíte inteira. A suíte inteira é responsabilidade da barreira de fim
    de onda.
