@@ -12,6 +12,7 @@ use App\Http\Resources\PlaceResource;
 use App\Models\AccessCode;
 use App\Models\Place;
 use App\Services\AccessCode\AccessCodeGeneratorService;
+use App\Services\CurrentPlaceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -26,24 +27,18 @@ class AccessCodeController extends Controller
     private const STATUS_OPTIONS = ['', 'active', 'future', 'expired'];
 
     /**
-     * `place_id` é puramente opcional. O escopo de segurança é o
-     * `whereIn('place_id', $userPlaceIds)`, não este filtro, e por isso não há
-     * fallback para o primeiro place do usuário: era ele que impedia "Todos os
-     * locais" de funcionar. Id de outro usuário é ignorado em silêncio.
+     * `place_id` é resolvido via `CurrentPlaceService`, que usa o local atual
+     * guardado em sessão (com precedência de um `place_id` explícito na query
+     * string, que atualiza a sessão). O escopo de segurança continua sendo o
+     * `whereIn('place_id', $userPlaceIds)`, não este filtro.
      * `status` usa whitelist; qualquer coisa fora dela vira "todos".
      * Ported 1:1 from `App\Livewire\AccessCodes\Index::mount()` / `render()`.
      */
-    public function index(Request $request): Response
+    public function index(Request $request, CurrentPlaceService $currentPlace): Response
     {
         $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
 
-        $placeId = null;
-        if ($request->filled('place_id')) {
-            $requestedId = (int) $request->input('place_id');
-            if ($userPlaceIds->contains($requestedId)) {
-                $placeId = $requestedId;
-            }
-        }
+        $placeId = $currentPlace->resolveForRequest($request, Auth::user());
 
         $status = $request->filled('status') ? $request->string('status')->toString() : '';
         if (! in_array($status, self::STATUS_OPTIONS, true)) {

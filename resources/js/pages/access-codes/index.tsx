@@ -58,7 +58,7 @@ const statusVariant: Record<CodeStatus, StatusBadgeVariant> = {
     expired: 'neutral',
 };
 
-export default function AccessCodesIndex({ accessCodes: paginatedAccessCodes, places, filters, now }: AccessCodesIndexProps) {
+export default function AccessCodesIndex({ accessCodes: paginatedAccessCodes, filters, now }: AccessCodesIndexProps) {
     const { t } = useTranslations();
     const items = paginatedAccessCodes.data;
 
@@ -79,14 +79,6 @@ export default function AccessCodesIndex({ accessCodes: paginatedAccessCodes, pl
                     url={accessCodes.index.url()}
                     fields={[
                         {
-                            type: 'place',
-                            key: 'place_id',
-                            label: t('place'),
-                            places,
-                            includeEmpty: true,
-                            emptyOptionLabel: t('all_places'),
-                        },
-                        {
                             type: 'select',
                             key: 'status',
                             label: t('status'),
@@ -105,7 +97,6 @@ export default function AccessCodesIndex({ accessCodes: paginatedAccessCodes, pl
                         },
                     ]}
                     values={{
-                        place_id: filters.place_id !== null ? String(filters.place_id) : '',
                         status: filters.status,
                         search: filters.search,
                     }}
