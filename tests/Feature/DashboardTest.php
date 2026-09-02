@@ -6,12 +6,14 @@ namespace Tests\Feature;
 
 use App\Enums\DeviceBrandEnum;
 use App\Enums\PlaceRoleEnum;
+use App\Models\AccessCode;
 use App\Models\Booking;
 use App\Models\Device;
 use App\Models\Place;
 use App\Models\PlaceUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
@@ -107,5 +109,36 @@ class DashboardTest extends TestCase
             $this->assertSame(1, $props['todayCheckIns']);
             $this->assertCount(1, $props['places']);
         });
+    }
+
+    /**
+     * `activeAccessCodes` já era calculado e enviado, e nenhuma tela o renderizava.
+     * O quinto tile passa a consumi-lo; este teste fixa a prop no contrato.
+     */
+    public function test_dashboard_sends_active_access_codes_count(): void
+    {
+        $user = User::factory()->create();
+        $place = Place::create(['name' => 'Casa Azul']);
+        PlaceUser::create([
+            'place_id' => $place->id,
+            'user_id' => $user->id,
+            'role' => 'admin',
+            'label' => $user->name,
+        ]);
+
+        AccessCode::create([
+            'place_id' => $place->id,
+            'user_id' => $user->id,
+            'pin' => '123456',
+            'start' => now()->subDay(),
+            'end' => now()->addDay(),
+        ]);
+
+        $this->actingAs($user)
+            ->get('/app/dashboard')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('dashboard')
+                ->where('activeAccessCodes', 1)
+            );
     }
 }
