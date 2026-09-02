@@ -159,6 +159,7 @@ export interface AccessCode {
     end: string | null;
     display_name: string;
     is_valid: boolean;
+    place?: Place;
     created_at: string | null;
     updated_at: string | null;
 }
