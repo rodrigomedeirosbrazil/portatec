@@ -16,10 +16,15 @@ interface DevicesIndexProps {
     places: PlaceOption[];
     search: string;
     placeId: string | null;
+    filters: {
+        place_id: string | null;
+        search: string;
+        status: string;
+    };
     [key: string]: unknown;
 }
 
-export default function DevicesIndex({ devices: paginatedDevices, places, search, placeId }: DevicesIndexProps) {
+export default function DevicesIndex({ devices: paginatedDevices, places, search, placeId, filters }: DevicesIndexProps) {
     const { t } = useTranslations();
     const items = paginatedDevices.data;
 
@@ -54,9 +59,19 @@ export default function DevicesIndex({ devices: paginatedDevices, places, search
                             includeUnassigned: true,
                             unassignedOptionLabel: t('unassigned_place'),
                         },
+                        {
+                            type: 'select',
+                            key: 'status',
+                            label: t('devices_status_label'),
+                            options: [
+                                { value: '', label: t('booking_source_option_all') },
+                                { value: 'online', label: t('devices_status_online') },
+                                { value: 'offline', label: t('devices_status_offline') },
+                            ],
+                        },
                         { type: 'search', key: 'search', label: t('search_label'), placeholder: t('device_search_placeholder') },
                     ]}
-                    values={{ place_id: placeId ?? '', search }}
+                    values={{ place_id: placeId ?? '', search, status: filters.status }}
                     showClear={false}
                 />
 

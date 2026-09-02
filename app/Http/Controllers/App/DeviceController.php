@@ -53,6 +53,7 @@ class DeviceController extends Controller
         $placeIdParam = $request->query('place_id');
         $placeFilter = $placeIdParam === null || $placeIdParam === '' ? null : (string) $placeIdParam;
         $search = (string) $request->query('search', '');
+        $status = (string) $request->query('status', '');
 
         $devices = Device::query()
             ->with(['places', 'place'])
@@ -89,6 +90,8 @@ class DeviceController extends Controller
                         ->orWhere('brand', 'like', $term);
                 });
             })
+            ->when($status === 'online', fn (Builder $query) => $query->available())
+            ->when($status === 'offline', fn (Builder $query) => $query->unavailable())
             ->orderBy('name')
             ->paginate(self::PER_PAGE)
             ->withQueryString();
@@ -98,6 +101,11 @@ class DeviceController extends Controller
             'places' => PlaceResource::collection($places),
             'search' => $search,
             'placeId' => $placeFilter,
+            'filters' => [
+                'place_id' => $placeFilter,
+                'search' => $search,
+                'status' => $status,
+            ],
         ]);
     }
 
