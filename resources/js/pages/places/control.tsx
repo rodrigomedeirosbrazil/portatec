@@ -12,7 +12,6 @@ import { useDeviceCommands } from '@/hooks/use-device-commands';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
 import app from '@/routes/app';
-import places from '@/routes/app/places';
 
 interface ControllableFunction {
     pin: string;
@@ -81,9 +80,8 @@ export default function PlaceControl({ place, devices, initialFunctionStatus }: 
     return (
         <AppLayout
             breadcrumbs={[
-                { label: t('nav_places'), href: places.index.url() },
-                { label: place.name, href: places.show.url({ place: place.id }) },
-                { label: t('nav_control') },
+                { label: t('nav_control'), href: app.control.index.url() },
+                { label: place.name },
             ]}
         >
             <Head title={t('place_control_title', { place: place.name })} />

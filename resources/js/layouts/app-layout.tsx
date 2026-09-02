@@ -47,6 +47,15 @@ function DashboardIcon() {
     );
 }
 
+function ControlIcon() {
+    return (
+        <svg className={ITEM_ICON_CLASS} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7 L12 12 L15.5 14" />
+        </svg>
+    );
+}
+
 function PlacesIcon() {
     return (
         <svg className={ITEM_ICON_CLASS} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -101,6 +110,7 @@ export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
             label: t('nav_group_operation'),
             items: [
                 { href: app.dashboard.url(), pattern: '/app/dashboard', label: t('nav_dashboard'), icon: <DashboardIcon /> },
+                { href: app.control.index.url(), pattern: '/app/control', label: t('nav_control'), icon: <ControlIcon /> },
                 { href: app.bookings.index.url(), pattern: '/app/bookings*', label: t('nav_bookings'), icon: <BookingsIcon /> },
                 { href: app.accessCodes.index.url(), pattern: '/app/access-codes*', label: t('nav_access_codes'), icon: <AccessCodesIcon /> },
             ],
