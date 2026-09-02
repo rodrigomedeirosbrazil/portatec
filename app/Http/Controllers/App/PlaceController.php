@@ -7,6 +7,7 @@ namespace App\Http\Controllers\App;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePlaceRequest;
 use App\Http\Requests\UpdatePlaceRequest;
+use App\Http\Resources\IntegrationResource;
 use App\Http\Resources\PlaceResource;
 use App\Models\Place;
 use App\Models\PlaceUser;
@@ -71,12 +72,18 @@ class PlaceController extends Controller
             'bookings' => fn ($query) => $query->latest('check_in')->limit(10),
             'accessCodes',
             'placeUsers.user',
+            'integrations' => fn ($query) => $query->whereHas(
+                'platform',
+                fn ($q) => $q->where('slug', '!=', 'tuya')
+            )->with('platform'),
         ]);
 
         abort_unless(
             $place->placeUsers()->where('user_id', Auth::id())->exists(),
             403
         );
+
+        $place->loadCount('bookings');
 
         $activeAccessCodes = $place->accessCodes()
             ->where('start', '<=', now())
@@ -88,6 +95,8 @@ class PlaceController extends Controller
         return Inertia::render('places/show', [
             'place' => new PlaceResource($place),
             'activeAccessCodes' => $activeAccessCodes,
+            'bookingsCount' => $place->bookings_count,
+            'bookingSources' => IntegrationResource::collection($place->integrations),
             'abilities' => [
                 'manageMembers' => Auth::user()?->can('manageMembers', $place) ?? false,
                 'replicate' => Auth::user()?->can('replicate', $place) ?? false,

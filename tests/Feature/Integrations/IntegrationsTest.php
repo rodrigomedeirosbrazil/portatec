@@ -13,6 +13,7 @@ use App\Models\Platform;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class IntegrationsTest extends TestCase
@@ -381,5 +382,25 @@ class IntegrationsTest extends TestCase
             'integration_id' => $integration->id,
             'place_id' => $placeB->id,
         ]);
+    }
+
+    // ------------------------------------------------------------------
+    // Local atual na sessao
+    // ------------------------------------------------------------------
+
+    public function test_the_list_uses_the_current_place_from_the_session(): void
+    {
+        $user = User::factory()->create();
+        $mine = $this->makePlaceWithAdmin($user, 'Casa Azul');
+        $other = $this->makePlaceWithAdmin($user, 'Casa Verde');
+
+        $this->actingAs($user)->post('/app/current-place', ['place_id' => $mine->id]);
+
+        $this->actingAs($user)
+            ->get('/app/bookings/integrations')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('integrations/index')
+                ->where('placeId', (string) $mine->id)
+            );
     }
 }

@@ -3,11 +3,11 @@ import { useState } from 'react';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/empty-state';
-import { FilterBar } from '@/components/filter-bar';
 import { Page, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import bookings from '@/routes/app/bookings';
 import integrationsRoutes from '@/routes/app/bookings/integrations';
 import type { Integration, PlaceOption } from '@/types';
 
@@ -18,7 +18,7 @@ interface IntegrationsIndexProps {
     [key: string]: unknown;
 }
 
-export default function IntegrationsIndex({ integrations, places, placeId }: IntegrationsIndexProps) {
+export default function IntegrationsIndex({ integrations }: IntegrationsIndexProps) {
     const { t } = useTranslations();
     const [integrationToDelete, setIntegrationToDelete] = useState<Integration | null>(null);
 
@@ -33,7 +33,12 @@ export default function IntegrationsIndex({ integrations, places, placeId }: Int
     }
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_bookings'), href: bookings.index.url() },
+                { label: t('integrations') },
+            ]}
+        >
             <Head title={t('integrations_ical_title')} />
 
             <Page>
@@ -44,22 +49,6 @@ export default function IntegrationsIndex({ integrations, places, placeId }: Int
                             <Link href={integrationsRoutes.create.url()}>{t('integration_new_action')}</Link>
                         </Button>
                     }
-                />
-
-                <FilterBar
-                    url={integrationsRoutes.index.url()}
-                    fields={[
-                        {
-                            type: 'place',
-                            key: 'place_id',
-                            label: t('filter_by_place'),
-                            places,
-                            includeEmpty: true,
-                            emptyOptionLabel: t('all_places'),
-                        },
-                    ]}
-                    values={{ place_id: placeId ?? '' }}
-                    showClear={false}
                 />
 
                 {integrations.length > 0 ? (

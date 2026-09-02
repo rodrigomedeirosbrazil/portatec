@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Models\Place;
+use App\Services\CurrentPlaceService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -59,6 +61,27 @@ class HandleInertiaRequests extends Middleware
                 'status' => fn () => $request->session()->get('status'),
             ],
             'translations' => fn () => trans('app'),
+            'currentPlace' => function () use ($user): ?array {
+                if ($user === null) {
+                    return null;
+                }
+
+                $place = app(CurrentPlaceService::class)->get($user);
+
+                return $place === null ? null : ['id' => $place->id, 'name' => $place->name];
+            },
+            'places' => function () use ($user): array {
+                if ($user === null) {
+                    return [];
+                }
+
+                return Place::query()
+                    ->whereHas('placeUsers', fn ($query) => $query->where('user_id', $user->id))
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                    ->map(fn (Place $place): array => ['id' => $place->id, 'name' => $place->name])
+                    ->all();
+            },
         ];
     }
 }

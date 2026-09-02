@@ -20,13 +20,20 @@ function matchesPattern(pathname: string, pattern: string): boolean {
 /**
  * Decide se o item do menu deve aparecer como ativo.
  *
- * `exclude` existe porque padroes de rota se aninham: `/app/bookings*` engloba
- * `/app/bookings/integrations`, e sem exclusao os dois itens acendem juntos.
- * O mesmo acontecia no Blade original, onde `routeIs('app.bookings.*')` casava
- * com `app.bookings.integrations.index`.
+ * `pattern` aceita lista porque um item de menu pode viver em mais de um lugar
+ * da URL: "Controle" acende tanto em `/app/control` (a lista) quanto em
+ * `/app/places/{id}/control` (o painel de um local), que sao a mesma secao para
+ * quem navega, ainda que rotas diferentes.
+ *
+ * `exclude` existe porque padroes se aninham: `/app/places*` engloba
+ * `/app/places/{id}/control`, e sem exclusao "Locais" e "Controle" acendem
+ * juntos. Mesma classe de problema que o Blade original ja tinha, onde
+ * `routeIs('app.bookings.*')` casava com `app.bookings.integrations.index`.
  */
-export function isNavLinkActive(pathname: string, pattern: string, exclude?: string | string[]): boolean {
-    if (!matchesPattern(pathname, pattern)) {
+export function isNavLinkActive(pathname: string, pattern: string | string[], exclude?: string | string[]): boolean {
+    const patterns = Array.isArray(pattern) ? pattern : [pattern];
+
+    if (!patterns.some((candidate) => matchesPattern(pathname, candidate))) {
         return false;
     }
 
@@ -35,10 +42,12 @@ export function isNavLinkActive(pathname: string, pattern: string, exclude?: str
     return !excluded.some((excludedPattern) => matchesPattern(pathname, excludedPattern));
 }
 
-export interface NavLinkProps extends Omit<ComponentProps<typeof Link>, 'href' | 'children'> {
+// `pattern` tambem e atributo HTML (de `<input>`), tipado como `string`, e vem
+// herdado por `Link`. Sem omitir, o nosso `string | string[]` conflita com ele.
+export interface NavLinkProps extends Omit<ComponentProps<typeof Link>, 'href' | 'children' | 'pattern'> {
     href: string;
-    /** Glob pattern (e.g. `/app/places*`) matched against the current pathname to decide the active state. */
-    pattern: string;
+    /** Glob pattern — ou lista deles — casado contra o pathname atual para decidir o estado ativo. */
+    pattern: string | string[];
     /** Use the mobile dropdown spacing variant. */
     mobile?: boolean;
     /** Padrao (ou padroes) que, se casarem, impedem o estado ativo mesmo com `pattern` casando. */

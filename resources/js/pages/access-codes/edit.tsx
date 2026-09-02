@@ -38,7 +38,12 @@ export default function AccessCodesEdit({ accessCode, pin, start, end }: AccessC
     };
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_access_codes'), href: accessCodes.index.url() },
+                { label: t('edit') },
+            ]}
+        >
             <Head title={t('edit_access_code_title')} />
 
             <Page>

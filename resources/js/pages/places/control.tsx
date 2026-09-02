@@ -11,6 +11,7 @@ import type { DeviceCommandKind, DeviceCommandResult } from '@/hooks/use-device-
 import { useDeviceCommands } from '@/hooks/use-device-commands';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import app from '@/routes/app';
 
 interface ControllableFunction {
     pin: string;
@@ -77,11 +78,24 @@ export default function PlaceControl({ place, devices, initialFunctionStatus }: 
         functionType === 'button' ? 'push_button' : 'toggle';
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_control'), href: app.control.index.url() },
+                { label: place.name },
+            ]}
+        >
             <Head title={t('place_control_title', { place: place.name })} />
 
             <Page>
-                <PageHeader title={t('place_control_title', { place: place.name })} backHref={show.url({ place: place.id })} />
+                {/*
+                  * Sem acao de "ver todos os locais" aqui: o breadcrumb ja leva a
+                  * `/app/control`, que agora e sempre a lista. Limpar o local atual
+                  * e papel do seletor no topo, nao desta tela.
+                  */}
+                <PageHeader
+                    title={t('place_control_title', { place: place.name })}
+                    backHref={show.url({ place: place.id })}
+                />
 
                 <div className="space-y-4">
                     {devices.length === 0 ? (

@@ -34,7 +34,12 @@ export default function DeviceIntegrationsIndex({ integrations }: DeviceIntegrat
     const { t } = useTranslations();
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_devices'), href: devices.index.url() },
+                { label: t('integrations') },
+            ]}
+        >
             <Head title={t('tuya_integrations_title')} />
 
             <Page>

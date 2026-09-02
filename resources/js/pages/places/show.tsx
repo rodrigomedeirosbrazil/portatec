@@ -3,16 +3,23 @@ import { useState } from 'react';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Page, PageHeader } from '@/components/page';
+import { StatTile } from '@/components/stat-tile';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import accessCodesRoutes from '@/routes/app/access-codes';
+import bookingsRoutes from '@/routes/app/bookings';
+import integrationsRoutes from '@/routes/app/bookings/integrations';
 import devicesRoutes from '@/routes/app/devices';
 import places from '@/routes/app/places';
-import type { Device, Place } from '@/types';
+import type { Device, Integration, Place } from '@/types';
 
 interface PlacesShowProps {
     place: Place;
     activeAccessCodes: number;
+    bookingsCount: number;
+    bookingSources: Integration[];
     abilities: {
         manageMembers: boolean;
         replicate: boolean;
@@ -21,12 +28,11 @@ interface PlacesShowProps {
     [key: string]: unknown;
 }
 
-export default function PlacesShow({ place, activeAccessCodes, abilities }: PlacesShowProps) {
+export default function PlacesShow({ place, activeAccessCodes, bookingsCount, bookingSources, abilities }: PlacesShowProps) {
     const { t } = useTranslations();
     const [deviceToRemove, setDeviceToRemove] = useState<Device | null>(null);
 
     const devices = place.devices ?? [];
-    const bookings = place.bookings ?? [];
     const placeUsers = place.place_users ?? [];
 
     function confirmRemoveDevice() {
@@ -44,45 +50,89 @@ export default function PlacesShow({ place, activeAccessCodes, abilities }: Plac
             <Button asChild>
                 <Link href={places.control.url({ place: place.id })}>{t('place_control_action')}</Link>
             </Button>
-            <Button asChild variant="outline">
-                <Link href={places.edit.url({ place: place.id })}>{t('place_edit_action')}</Link>
-            </Button>
-            {abilities.manageMembers ? (
-                <Button asChild variant="outline">
-                    <Link href={places.members.url({ place: place.id })}>{t('manage_members')}</Link>
-                </Button>
-            ) : null}
-            {abilities.replicate ? (
-                <Button asChild variant="outline">
-                    <Link href={places.clone.url({ place: place.id })}>{t('clone_place')}</Link>
-                </Button>
-            ) : null}
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" aria-label={t('details')}>
+                        …
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                        <Link href={places.edit.url({ place: place.id })}>{t('place_edit_action')}</Link>
+                    </DropdownMenuItem>
+                    {abilities.manageMembers ? (
+                        <DropdownMenuItem asChild>
+                            <Link href={places.members.url({ place: place.id })}>{t('manage_members')}</Link>
+                        </DropdownMenuItem>
+                    ) : null}
+                    {abilities.replicate ? (
+                        <DropdownMenuItem asChild>
+                            <Link href={places.clone.url({ place: place.id })}>{t('clone_place')}</Link>
+                        </DropdownMenuItem>
+                    ) : null}
+                </DropdownMenuContent>
+            </DropdownMenu>
         </>
     );
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_places'), href: places.index.url() },
+                { label: place.name },
+            ]}
+        >
             <Head title={place.name} />
 
             <Page>
                 <PageHeader title={place.name} backHref={places.index.url()} actions={actions} />
 
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
-                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
-                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
-                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('place_devices_heading')}</p>
-                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">{devices.length}</p>
+                    <StatTile
+                        label={t('place_devices_heading')}
+                        value={devices.length}
+                        href={devicesRoutes.index.url({ query: { place_id: place.id } })}
+                    />
+                    <StatTile
+                        label={t('bookings')}
+                        value={bookingsCount}
+                        href={bookingsRoutes.index.url({ query: { place_id: place.id } })}
+                    />
+                    <StatTile
+                        label={t('place_active_codes_heading')}
+                        value={activeAccessCodes}
+                        href={accessCodesRoutes.index.url({ query: { place_id: place.id } })}
+                    />
+                </div>
+
+                <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                    <div className="flex items-center justify-between border-b border-neutral-200 px-4.5 py-3">
+                        <span className="text-xs font-bold tracking-wide text-neutral-500 uppercase">
+                            {t('place_booking_sources_heading')}
+                        </span>
+                        <Button asChild size="sm">
+                            <Link href={integrationsRoutes.create.url({ query: { place_id: place.id } })}>
+                                {t('place_add_booking_source')}
+                            </Link>
+                        </Button>
                     </div>
-                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
-                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
-                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('place_bookings_recent_heading')}</p>
-                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">{bookings.length}</p>
-                    </div>
-                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
-                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
-                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('place_active_codes_heading')}</p>
-                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">{activeAccessCodes}</p>
-                    </div>
+                    {bookingSources.length > 0 ? (
+                        bookingSources.map((source) => (
+                            <div key={source.id} className="flex items-center gap-3 border-b border-neutral-100 px-4.5 py-3 text-[13.5px] last:border-b-0">
+                                <Link
+                                    href={integrationsRoutes.edit.url({ integration: source.id })}
+                                    className="flex-1 font-semibold text-neutral-900 no-underline hover:text-primary-700"
+                                >
+                                    {source.platform?.name ?? t('platform')}
+                                </Link>
+                                <span className="text-[12.5px] text-neutral-500">
+                                    {source.updated_at ? new Date(source.updated_at).toLocaleString('pt-BR') : ''}
+                                </span>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="m-0 px-4.5 py-3 text-[13.5px] text-neutral-500">{t('place_no_booking_sources')}</p>
+                    )}
                 </div>
 
                 <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">

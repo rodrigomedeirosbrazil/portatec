@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 
 import { EmptyState } from '@/components/empty-state';
 import { FilterBar } from '@/components/filter-bar';
@@ -9,18 +9,24 @@ import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
 import devices from '@/routes/app/devices';
-import type { Device, Paginated, PlaceOption } from '@/types';
+import type { Device, Paginated } from '@/types';
 
 interface DevicesIndexProps {
     devices: Paginated<Device>;
-    places: PlaceOption[];
     search: string;
     placeId: string | null;
+    filters: {
+        place_id: string | null;
+        search: string;
+        status: string;
+    };
     [key: string]: unknown;
 }
 
-export default function DevicesIndex({ devices: paginatedDevices, places, search, placeId }: DevicesIndexProps) {
+export default function DevicesIndex({ devices: paginatedDevices, search, placeId, filters }: DevicesIndexProps) {
     const { t } = useTranslations();
+    const { props } = usePage<{ currentPlace: { id: number; name: string } | null }>();
+    const currentPlace = props.currentPlace;
     const items = paginatedDevices.data;
 
     const headerActions = (
@@ -44,19 +50,32 @@ export default function DevicesIndex({ devices: paginatedDevices, places, search
                 <FilterBar
                     url={devices.index.url()}
                     fields={[
+                        ...(currentPlace === null
+                            ? [
+                                  {
+                                      type: 'select' as const,
+                                      key: 'place_id',
+                                      label: t('filter_by_place'),
+                                      options: [
+                                          { value: '', label: t('all_places') },
+                                          { value: 'unassigned', label: t('devices_only_unassigned') },
+                                      ],
+                                  },
+                              ]
+                            : []),
                         {
-                            type: 'place',
-                            key: 'place_id',
-                            label: t('filter_by_place'),
-                            places,
-                            includeEmpty: true,
-                            emptyOptionLabel: t('all_places'),
-                            includeUnassigned: true,
-                            unassignedOptionLabel: t('unassigned_place'),
+                            type: 'select',
+                            key: 'status',
+                            label: t('devices_status_label'),
+                            options: [
+                                { value: '', label: t('booking_source_option_all') },
+                                { value: 'online', label: t('devices_status_online') },
+                                { value: 'offline', label: t('devices_status_offline') },
+                            ],
                         },
                         { type: 'search', key: 'search', label: t('search_label'), placeholder: t('device_search_placeholder') },
                     ]}
-                    values={{ place_id: placeId ?? '', search }}
+                    values={{ place_id: placeId ?? '', search, status: filters.status }}
                     showClear={false}
                 />
 

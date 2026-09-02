@@ -159,7 +159,13 @@ export default function TuyaConnect(props: TuyaConnectPageProps) {
     };
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_devices'), href: devices.index.url() },
+                { label: t('integrations'), href: devices.integrations.index.url() },
+                { label: t('tuya_connect_action') },
+            ]}
+        >
             <Head title={t('tuya_connect_page_title')} />
 
             <Page>

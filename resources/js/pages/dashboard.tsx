@@ -2,11 +2,14 @@ import { Head, Link } from '@inertiajs/react';
 
 import { EmptyState } from '@/components/empty-state';
 import { Page, PageHeader } from '@/components/page';
+import { StatTile } from '@/components/stat-tile';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import accessCodes from '@/routes/app/access-codes';
 import bookings from '@/routes/app/bookings';
+import devicesRoutes from '@/routes/app/devices';
 import places from '@/routes/app/places';
 import { cn } from '@/lib/utils';
 
@@ -39,8 +42,18 @@ function formatDateTime(iso: string): string {
     }).format(new Date(iso));
 }
 
-export default function Dashboard({ places: dashboardPlaces, totalDevices, totalOnline, totalOffline, activeBookings, todayCheckIns }: DashboardProps) {
+export default function Dashboard({
+    places: dashboardPlaces,
+    totalDevices,
+    totalOnline,
+    totalOffline,
+    activeBookings,
+    todayCheckIns,
+    activeAccessCodes,
+}: DashboardProps) {
     const { t } = useTranslations();
+
+    const today = new Date().toISOString().slice(0, 10);
 
     return (
         <AppLayout>
@@ -49,31 +62,33 @@ export default function Dashboard({ places: dashboardPlaces, totalDevices, total
             <Page>
                 <PageHeader title={t('nav_dashboard')} />
 
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
-                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
-                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('dashboard_devices_online_heading')}</p>
-                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">
-                            {totalOnline}/{totalDevices}
-                        </p>
-                    </div>
-                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
-                        <span className={cn('absolute inset-y-0 left-0 w-[3px]', totalOffline > 0 ? 'bg-error-500' : 'bg-primary-500')} aria-hidden="true" />
-                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('dashboard_devices_offline_heading')}</p>
-                        <p className={cn('m-0 mt-2 font-mono text-2xl font-bold tabular-nums', totalOffline > 0 ? 'text-error-700' : 'text-neutral-900')}>
-                            {totalOffline}
-                        </p>
-                    </div>
-                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
-                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
-                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('dashboard_active_bookings_heading')}</p>
-                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">{activeBookings}</p>
-                    </div>
-                    <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white py-3.5 pr-4 pl-[18px]">
-                        <span className="absolute inset-y-0 left-0 w-[3px] bg-primary-500" aria-hidden="true" />
-                        <p className="m-0 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t('dashboard_today_checkins_heading')}</p>
-                        <p className="m-0 mt-2 font-mono text-2xl font-bold text-neutral-900 tabular-nums">{todayCheckIns}</p>
-                    </div>
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+                    <StatTile
+                        label={t('dashboard_devices_online_heading')}
+                        value={`${totalOnline}/${totalDevices}`}
+                        href={devicesRoutes.index.url({ query: { status: 'online' } })}
+                    />
+                    <StatTile
+                        label={t('dashboard_devices_offline_heading')}
+                        value={totalOffline}
+                        tone={totalOffline > 0 ? 'error' : 'default'}
+                        href={devicesRoutes.index.url({ query: { status: 'offline' } })}
+                    />
+                    <StatTile
+                        label={t('dashboard_active_bookings_heading')}
+                        value={activeBookings}
+                        href={bookings.index.url({ query: { status: 'current' } })}
+                    />
+                    <StatTile
+                        label={t('dashboard_today_checkins_heading')}
+                        value={todayCheckIns}
+                        href={bookings.index.url({ query: { date_from: today, date_to: today } })}
+                    />
+                    <StatTile
+                        label={t('dashboard_active_codes_heading')}
+                        value={activeAccessCodes}
+                        href={accessCodes.index.url({ query: { status: 'active' } })}
+                    />
                 </div>
 
                 {dashboardPlaces.length > 0 ? (

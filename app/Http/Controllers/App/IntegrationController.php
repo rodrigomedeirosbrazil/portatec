@@ -13,6 +13,7 @@ use App\Jobs\SyncIntegrationBookingsJob;
 use App\Models\Integration;
 use App\Models\Place;
 use App\Models\Platform;
+use App\Services\CurrentPlaceService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ class IntegrationController extends Controller
      * Porte 1:1 de `App\Livewire\Integrations\Index::render()`, incluindo o
      * filtro `platform.slug != 'tuya'` e o filtro opcional por place.
      */
-    public function index(Request $request): Response
+    public function index(Request $request, CurrentPlaceService $currentPlace): Response
     {
         $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
 
@@ -41,8 +42,7 @@ class IntegrationController extends Controller
             ->orderBy('name')
             ->get();
 
-        $placeIdParam = $request->query('place_id');
-        $placeFilter = $placeIdParam === null || $placeIdParam === '' ? null : (int) $placeIdParam;
+        $placeFilter = $currentPlace->resolveForRequest($request, Auth::user());
 
         $integrations = Integration::query()
             ->where('user_id', Auth::id())
@@ -79,11 +79,16 @@ class IntegrationController extends Controller
             ->orderBy('name')
             ->get();
 
+        $requestedPlaceId = $request->integer('place_id');
+        $selectedPlaceId = $places->contains('id', $requestedPlaceId)
+            ? $requestedPlaceId
+            : $places->first()?->id;
+
         return Inertia::render('integrations/create', [
             'platforms' => PlatformResource::collection($platforms),
             'places' => PlaceResource::collection($places),
             'platformId' => $platforms->first()?->id,
-            'placeId' => $places->first()?->id,
+            'placeId' => $selectedPlaceId,
         ]);
     }
 

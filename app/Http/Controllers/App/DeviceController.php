@@ -18,6 +18,7 @@ use App\Models\CommandLog;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Models\Place;
+use App\Services\CurrentPlaceService;
 use App\Services\Device\DevicePlaceFunctionSyncService;
 use App\Services\Tuya\TuyaIntegrationService;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,7 +40,7 @@ class DeviceController extends Controller
      * `allowedPlaceIds()`. The rest of the screen (place options, full
      * filter UI) is fleshed out by the parallel implementation phase.
      */
-    public function index(Request $request): Response
+    public function index(Request $request, CurrentPlaceService $currentPlace): Response
     {
         $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
         $hasDeviceUserTable = Schema::hasTable('device_user');
@@ -51,8 +52,16 @@ class DeviceController extends Controller
             ->get();
 
         $placeIdParam = $request->query('place_id');
-        $placeFilter = $placeIdParam === null || $placeIdParam === '' ? null : (string) $placeIdParam;
+
+        if ($placeIdParam === 'unassigned') {
+            $placeFilter = 'unassigned';
+        } else {
+            $resolved = $currentPlace->resolveForRequest($request, Auth::user());
+            $placeFilter = $resolved === null ? null : (string) $resolved;
+        }
+
         $search = (string) $request->query('search', '');
+        $status = (string) $request->query('status', '');
 
         $devices = Device::query()
             ->with(['places', 'place'])
@@ -89,6 +98,8 @@ class DeviceController extends Controller
                         ->orWhere('brand', 'like', $term);
                 });
             })
+            ->when($status === 'online', fn (Builder $query) => $query->available())
+            ->when($status === 'offline', fn (Builder $query) => $query->unavailable())
             ->orderBy('name')
             ->paginate(self::PER_PAGE)
             ->withQueryString();
@@ -98,6 +109,11 @@ class DeviceController extends Controller
             'places' => PlaceResource::collection($places),
             'search' => $search,
             'placeId' => $placeFilter,
+            'filters' => [
+                'place_id' => $placeFilter,
+                'search' => $search,
+                'status' => $status,
+            ],
         ]);
     }
 

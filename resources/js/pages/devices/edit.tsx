@@ -82,7 +82,13 @@ export default function DeviceEdit({ device, places, placeIds, deviceFunctions, 
     const fieldErrors = errors as Record<string, string>;
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_devices'), href: devices.index.url() },
+                { label: device.name, href: devices.show.url({ device: device.id }) },
+                { label: t('edit') },
+            ]}
+        >
             <Head title={t('edit_device')} />
 
             <Page>

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import bookings from '@/routes/app/bookings';
 import integrationsRoutes from '@/routes/app/bookings/integrations';
 import type { Platform, PlaceOption } from '@/types';
 
@@ -40,7 +41,13 @@ export default function IntegrationsCreate({ platforms, places, platformId, plac
     };
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_bookings'), href: bookings.index.url() },
+                { label: t('integrations'), href: integrationsRoutes.index.url() },
+                { label: t('integration_new_action') },
+            ]}
+        >
             <Head title={t('integration_new_action')} />
 
             <Page>

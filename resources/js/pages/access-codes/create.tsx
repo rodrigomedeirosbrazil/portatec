@@ -39,7 +39,12 @@ export default function AccessCodesCreate({ places, placeId }: AccessCodesCreate
     };
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_access_codes'), href: accessCodes.index.url() },
+                { label: t('new_access_code') },
+            ]}
+        >
             <Head title={t('new_access_code_title')} />
 
             <Page>

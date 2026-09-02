@@ -47,7 +47,7 @@ function nightsBetween(checkIn: string, checkOut: string): number {
     return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export default function BookingsIndex({ bookings: paginatedBookings, places, filters }: BookingsIndexProps) {
+export default function BookingsIndex({ bookings: paginatedBookings, filters }: BookingsIndexProps) {
     const { t } = useTranslations();
     const items = paginatedBookings.data;
     // `status: 'all'` é o padrão, não um recorte — não conta como filtro ativo.
@@ -58,7 +58,7 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
     const headerActions = (
         <>
             <Button variant="outline" asChild>
-                <Link href={bookings.integrations.index.url()}>{t('nav_bookings_integrations')}</Link>
+                <Link href={bookings.integrations.index.url()}>{t('integrations')}</Link>
             </Button>
             <Button asChild>
                 <Link href={bookings.create.url()}>{t('new_booking')}</Link>
@@ -76,14 +76,6 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
                 <FilterBar
                     url={bookings.index.url()}
                     fields={[
-                        {
-                            type: 'place',
-                            key: 'place_id',
-                            label: t('place'),
-                            places,
-                            includeEmpty: true,
-                            emptyOptionLabel: t('all_places'),
-                        },
                         { type: 'date', key: 'date_from', label: t('date_from_label') },
                         { type: 'date', key: 'date_to', label: t('date_to_label') },
                         {
@@ -113,7 +105,6 @@ export default function BookingsIndex({ bookings: paginatedBookings, places, fil
                         },
                     ]}
                     values={{
-                        place_id: filters.place_id !== null ? String(filters.place_id) : '',
                         date_from: filters.date_from ?? '',
                         date_to: filters.date_to ?? '',
                         status: filters.status,

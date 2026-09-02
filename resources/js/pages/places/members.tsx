@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import places from '@/routes/app/places';
 import type { Place, PlaceUser } from '@/types';
 
 interface MembersPageProps {
@@ -113,7 +114,13 @@ export default function Members({ place, placeUsers, placeRoles }: MembersPagePr
     }
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_places'), href: places.index.url() },
+                { label: place.name, href: places.show.url({ place: place.id }) },
+                { label: t('members') },
+            ]}
+        >
             <Head title={`${t('manage_members')} – ${place.name}`} />
             <Page>
                 <PageHeader title={`${t('manage_members')} – ${place.name}`} backHref={show.url(place.id)} />

@@ -2,14 +2,17 @@ import { Link, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 
 import app from '@/routes/app';
-import { logout } from '@/routes';
+import placesRoutes from '@/routes/app/places';
+import { Breadcrumbs, type Crumb } from '@/components/breadcrumbs';
+import { CurrentPlaceSelect } from '@/components/current-place-select';
 import { NavLink, isNavLinkActive } from '@/components/nav-link';
+import { UserMenu } from '@/components/user-menu';
 import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutPageProps {
     auth: {
-        user: { is_super_admin: boolean } | null;
+        user: { is_super_admin: boolean; name: string; email: string } | null;
     };
     impersonation: {
         active: boolean;
@@ -17,11 +20,19 @@ interface AppLayoutPageProps {
     flash: {
         status: string | null;
     };
+    currentPlace: { id: number; name: string } | null;
+    places: { id: number; name: string }[];
     [key: string]: unknown;
 }
 
 export interface AppLayoutProps {
     children: ReactNode;
+    /**
+     * Trilha da página. Sem ela, o layout cai no rótulo da seção ativa — o
+     * comportamento anterior — para que a adoção seja incremental e nenhuma
+     * tela quebre enquanto a onda 3 não passa por todas.
+     */
+    breadcrumbs?: Crumb[];
 }
 
 const ITEM_ICON_CLASS = 'h-4 w-4 flex-shrink-0';
@@ -33,6 +44,15 @@ function DashboardIcon() {
             <rect x="13" y="3" width="8" height="8" rx="1.5" />
             <rect x="3" y="13" width="8" height="8" rx="1.5" />
             <rect x="13" y="13" width="8" height="8" rx="1.5" />
+        </svg>
+    );
+}
+
+function ControlIcon() {
+    return (
+        <svg className={ITEM_ICON_CLASS} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7 L12 12 L15.5 14" />
         </svg>
     );
 }
@@ -72,38 +92,22 @@ function AccessCodesIcon() {
     );
 }
 
-function IntegrationsIcon() {
-    return (
-        <svg className={ITEM_ICON_CLASS} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M4 12 A8 8 0 1 1 8 18.9" />
-            <path d="M4 12 L4 7 M4 12 L8.5 12" />
-        </svg>
-    );
-}
-
-function AdminIcon() {
-    return (
-        <svg className={ITEM_ICON_CLASS} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 3 L20 6 L20 12 C20 17 16.5 20.5 12 22 C7.5 20.5 4 17 4 12 L4 6 Z" />
-        </svg>
-    );
-}
-
-function LogoutIcon() {
-    return (
-        <svg className={ITEM_ICON_CLASS} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M9 4 L5 4 L5 20 L9 20" />
-            <path d="M13 12 L20 12 M20 12 L16.5 8.5 M20 12 L16.5 15.5" />
-        </svg>
-    );
-}
-
 const NAV_ITEM_CLASS =
     'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] font-medium no-underline hover:no-underline';
 
-export function AppLayout({ children }: AppLayoutProps) {
+interface NavItem {
+    href: string;
+    /** Um padrao, ou varios quando a mesma secao vive em mais de uma rota. */
+    pattern: string | string[];
+    /** Padroes que impedem o estado ativo mesmo com `pattern` casando. */
+    exclude?: string | string[];
+    label: string;
+    icon: ReactNode;
+}
+
+export function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
     const { props, url } = usePage<AppLayoutPageProps>();
-    const { auth, impersonation, flash } = props;
+    const { auth, impersonation, flash, currentPlace, places } = props;
     const pathname = url.split('?')[0] ?? url;
 
     const canAccessAdminPanel = auth.user?.is_super_admin === true;
@@ -112,29 +116,52 @@ export function AppLayout({ children }: AppLayoutProps) {
     const [open, setOpen] = useState(false);
     const closeMenu = () => setOpen(false);
 
-    const items = [
-        { href: app.dashboard.url(), pattern: '/app/dashboard', label: t('nav_dashboard'), icon: <DashboardIcon /> },
-        { href: app.places.index.url(), pattern: '/app/places*', label: t('nav_places'), icon: <PlacesIcon /> },
-        { href: app.devices.index.url(), pattern: '/app/devices*', label: t('nav_devices'), icon: <DevicesIcon /> },
+    // Com um local atual, "Controle" vai direto ao painel dele — abrir uma porta
+    // vira um clique. A rota `/app/control` continua sendo sempre a lista; quem
+    // decide o atalho e a navegacao, nao a rota, para que cada URL siga tendo um
+    // significado so.
+    const controlHref = currentPlace ? placesRoutes.control.url({ place: currentPlace.id }) : app.control.index.url();
+
+    const groups: { label: string; items: NavItem[] }[] = [
         {
-            href: app.bookings.index.url(),
-            pattern: '/app/bookings*',
-            exclude: '/app/bookings/integrations*',
-            label: t('nav_bookings'),
-            icon: <BookingsIcon />,
+            label: t('nav_group_operation'),
+            items: [
+                { href: app.dashboard.url(), pattern: '/app/dashboard', label: t('nav_dashboard'), icon: <DashboardIcon /> },
+                {
+                    href: controlHref,
+                    // A lista e o painel de um local sao a mesma secao para quem navega.
+                    pattern: ['/app/control', '/app/places/*/control'],
+                    label: t('nav_control'),
+                    icon: <ControlIcon />,
+                },
+                { href: app.bookings.index.url(), pattern: '/app/bookings*', label: t('nav_bookings'), icon: <BookingsIcon /> },
+                { href: app.accessCodes.index.url(), pattern: '/app/access-codes*', label: t('nav_access_codes'), icon: <AccessCodesIcon /> },
+            ],
         },
-        { href: app.accessCodes.index.url(), pattern: '/app/access-codes*', label: t('nav_access_codes'), icon: <AccessCodesIcon /> },
         {
-            href: app.bookings.integrations.index.url(),
-            pattern: '/app/bookings/integrations*',
-            label: t('nav_bookings_integrations'),
-            icon: <IntegrationsIcon />,
+            label: t('nav_group_setup'),
+            items: [
+                {
+                    href: app.places.index.url(),
+                    pattern: '/app/places*',
+                    // Sem isto, `/app/places/2/control` acende "Locais" e "Controle" juntos.
+                    exclude: '/app/places/*/control',
+                    label: t('nav_places'),
+                    icon: <PlacesIcon />,
+                },
+                { href: app.devices.index.url(), pattern: '/app/devices*', label: t('nav_devices'), icon: <DevicesIcon /> },
+            ],
         },
     ];
 
-    const activeItem = items.find((item) => isNavLinkActive(pathname, item.pattern, item.exclude));
+    const allItems = groups.flatMap((group) => group.items);
+
+    const activeItem = allItems.find((item) => isNavLinkActive(pathname, item.pattern, item.exclude));
     const crumb = activeItem?.label ?? t('nav_dashboard');
-    const adminUrl = '/admin';
+
+    const trail: Crumb[] = breadcrumbs ?? [{ label: crumb }];
+    const currentLabel = trail[trail.length - 1]?.label ?? crumb;
+    const parent = trail.length > 1 ? trail[trail.length - 2] : undefined;
 
     return (
         <div className="min-h-screen bg-neutral-100">
@@ -153,16 +180,22 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <line x1="4" y1="17" x2="20" y2="17" />
                     </svg>
                 </button>
-                <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-white">{crumb}</span>
-                <Link
-                    href={logout.url()}
-                    method="post"
-                    as="button"
-                    aria-label={t('nav_logout')}
-                    className="flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-white/10 text-white"
-                >
-                    <LogoutIcon />
-                </Link>
+                {parent?.href ? (
+                    <Link
+                        href={parent.href}
+                        aria-label={parent.label}
+                        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-white no-underline"
+                    >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M15 5 L8 12 L15 19" />
+                        </svg>
+                    </Link>
+                ) : null}
+                <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-white">{currentLabel}</span>
+            </div>
+
+            <div className="border-b border-neutral-200 bg-white px-3.5 py-2 lg:hidden">
+                <CurrentPlaceSelect places={places} currentPlace={currentPlace} className="h-9 w-full" />
             </div>
 
             <div className="flex min-h-[calc(100vh-56px)] lg:min-h-screen">
@@ -180,70 +213,47 @@ export function AppLayout({ children }: AppLayoutProps) {
                             <img src="/images/logo/portatec-logo-horizontal-transparente.png" alt="Portatec" className="h-6 w-auto" />
                         </Link>
 
-                        <nav className="flex flex-col gap-0.5">
-                            {items.map((item) => (
-                                <NavLink
-                                    key={item.href}
-                                    href={item.href}
-                                    pattern={item.pattern}
-                                    exclude={item.exclude}
-                                    onClick={closeMenu}
-                                    className={cn(
-                                        NAV_ITEM_CLASS,
-                                        isNavLinkActive(pathname, item.pattern, item.exclude)
-                                            ? 'bg-primary-500/20 text-primary-300'
-                                            : 'text-neutral-400 hover:text-neutral-100',
-                                    )}
-                                >
-                                    {item.icon}
-                                    {item.label}
-                                </NavLink>
+                        <nav className="flex flex-col gap-5">
+                            {groups.map((group) => (
+                                <div key={group.label} className="flex flex-col gap-0.5">
+                                    <span className="px-2.5 pb-1 text-[10.5px] font-bold tracking-wider text-neutral-500 uppercase">
+                                        {group.label}
+                                    </span>
+                                    {group.items.map((item) => (
+                                        <NavLink
+                                            key={item.href}
+                                            href={item.href}
+                                            pattern={item.pattern}
+                                            exclude={item.exclude}
+                                            onClick={closeMenu}
+                                            className={cn(
+                                                NAV_ITEM_CLASS,
+                                                isNavLinkActive(pathname, item.pattern, item.exclude)
+                                                    ? 'bg-primary-500/20 text-primary-300'
+                                                    : 'text-neutral-400 hover:text-neutral-100',
+                                            )}
+                                        >
+                                            {item.icon}
+                                            {item.label}
+                                        </NavLink>
+                                    ))}
+                                </div>
                             ))}
-                            {canAccessAdminPanel && (
-                                <NavLink
-                                    href={adminUrl}
-                                    pattern="/admin*"
-                                    external
-                                    className={cn(NAV_ITEM_CLASS, 'text-neutral-400 hover:text-neutral-100')}
-                                >
-                                    <AdminIcon />
-                                    {t('nav_admin')}
-                                </NavLink>
-                            )}
                         </nav>
 
-                        <Link
-                            href={logout.url()}
-                            method="post"
-                            as="button"
-                            className={cn(NAV_ITEM_CLASS, 'mt-auto cursor-pointer border-0 bg-transparent text-left text-neutral-400 hover:text-neutral-100 lg:hidden')}
-                        >
-                            <LogoutIcon />
-                            {t('nav_logout')}
-                        </Link>
+                        <UserMenu
+                            name={auth.user?.name ?? ''}
+                            email={auth.user?.email ?? ''}
+                            isSuperAdmin={canAccessAdminPanel}
+                            onNavigate={closeMenu}
+                        />
                     </div>
                 </aside>
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                    <div className="hidden h-[52px] items-center justify-between border-b border-neutral-200 bg-white px-7 lg:flex">
-                        <span className="text-[12.5px] text-neutral-400">
-                            Portatec / <b className="font-semibold text-neutral-700">{crumb}</b>
-                        </span>
-                        <div className="flex items-center gap-4">
-                            {canAccessAdminPanel && (
-                                <a href={adminUrl} className="text-[13px] font-medium text-neutral-500 no-underline hover:text-neutral-900">
-                                    {t('nav_admin')}
-                                </a>
-                            )}
-                            <Link
-                                href={logout.url()}
-                                method="post"
-                                as="button"
-                                className="cursor-pointer border-0 bg-transparent p-0 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900"
-                            >
-                                {t('nav_logout')}
-                            </Link>
-                        </div>
+                    <div className="hidden h-[52px] items-center gap-4 border-b border-neutral-200 bg-white px-7 lg:flex">
+                        <CurrentPlaceSelect places={places} currentPlace={currentPlace} className="h-8 w-[200px]" />
+                        <Breadcrumbs items={[{ label: 'Portatec', href: app.dashboard.url() }, ...trail]} />
                     </div>
 
                     <main className="flex-1 p-4 lg:p-7">

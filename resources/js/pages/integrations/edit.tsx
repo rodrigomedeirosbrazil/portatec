@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import bookings from '@/routes/app/bookings';
 import integrationsRoutes from '@/routes/app/bookings/integrations';
 import type { Integration, IntegrationPlace } from '@/types';
 
@@ -41,7 +42,13 @@ export default function IntegrationsEdit({ integration }: IntegrationsEditProps)
     }
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_bookings'), href: bookings.index.url() },
+                { label: t('integrations'), href: integrationsRoutes.index.url() },
+                { label: t('edit') },
+            ]}
+        >
             <Head title={t('integration_edit_title')} />
 
             <Page>
