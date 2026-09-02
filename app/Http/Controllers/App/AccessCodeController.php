@@ -23,7 +23,14 @@ class AccessCodeController extends Controller
 {
     private const PER_PAGE = 20;
 
+    private const STATUS_OPTIONS = ['', 'active', 'future', 'expired'];
+
     /**
+     * `place_id` é puramente opcional. O escopo de segurança é o
+     * `whereIn('place_id', $userPlaceIds)`, não este filtro, e por isso não há
+     * fallback para o primeiro place do usuário: era ele que impedia "Todos os
+     * locais" de funcionar. Id de outro usuário é ignorado em silêncio.
+     * `status` usa whitelist; qualquer coisa fora dela vira "todos".
      * Ported 1:1 from `App\Livewire\AccessCodes\Index::mount()` / `render()`.
      */
     public function index(Request $request): Response
@@ -31,18 +38,17 @@ class AccessCodeController extends Controller
         $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
 
         $placeId = null;
-        if ($request->has('place_id')) {
+        if ($request->filled('place_id')) {
             $requestedId = (int) $request->input('place_id');
             if ($userPlaceIds->contains($requestedId)) {
                 $placeId = $requestedId;
             }
         }
 
-        if ($placeId === null) {
-            $placeId = Auth::user()->placeUsers()->value('place_id');
-        }
-
         $status = $request->filled('status') ? $request->string('status')->toString() : '';
+        if (! in_array($status, self::STATUS_OPTIONS, true)) {
+            $status = '';
+        }
         $search = $request->filled('search') ? $request->string('search')->toString() : '';
 
         $places = Place::query()
@@ -53,6 +59,7 @@ class AccessCodeController extends Controller
         $now = now();
 
         $accessCodes = AccessCode::query()
+            ->with('place')
             ->whereIn('place_id', $userPlaceIds)
             ->when($placeId, fn ($query) => $query->where('place_id', $placeId))
             ->when($status === 'active', function ($query) use ($now): void {
