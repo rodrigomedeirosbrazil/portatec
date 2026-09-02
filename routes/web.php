@@ -17,6 +17,7 @@ use App\Http\Controllers\App\PlaceController;
 use App\Http\Controllers\App\PlaceDeviceController;
 use App\Http\Controllers\App\PlaceMemberController;
 use App\Http\Controllers\App\PlaceMemberSearchController;
+use App\Http\Controllers\App\SetCurrentPlaceController;
 use App\Http\Controllers\App\StopImpersonationController;
 use App\Http\Controllers\App\TuyaConnectController;
 use App\Http\Controllers\App\TuyaQrController;
@@ -74,6 +75,7 @@ Route::middleware('auth')
     ->group(function () {
         Route::redirect('/', '/app/dashboard');
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::post('/current-place', SetCurrentPlaceController::class)->name('current-place.update');
 
         Route::get('/places', [PlaceController::class, 'index'])->name('places.index');
         Route::get('/places/create', [PlaceController::class, 'create'])->name('places.create');
