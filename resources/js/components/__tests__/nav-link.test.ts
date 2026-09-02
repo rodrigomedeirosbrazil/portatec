@@ -46,4 +46,15 @@ describe('isNavLinkActive', () => {
         expect(isNavLinkActive('/app/bookings/x', '/app/bookings*', ['/app/bookings/y*', '/app/bookings/x*'])).toBe(false);
         expect(isNavLinkActive('/app/bookings/z', '/app/bookings*', ['/app/bookings/y*', '/app/bookings/x*'])).toBe(true);
     });
+
+    /**
+     * Com "Integrações iCal" fora da sidebar, o item Reservas acender em
+     * /app/bookings/integrations passa a ser o comportamento correto: aquela tela é
+     * uma sub-página de Reservas. O `exclude` continua existindo para o dia em que
+     * um item de menu voltar a aninhar sob outro.
+     */
+    it('marca Reservas nas integrações iCal quando não há exclusão', () => {
+        expect(isNavLinkActive('/app/bookings/integrations', '/app/bookings*')).toBe(true);
+        expect(isNavLinkActive('/app/bookings/integrations/create', '/app/bookings*')).toBe(true);
+    });
 });
