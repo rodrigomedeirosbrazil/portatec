@@ -1,17 +1,9 @@
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
 
 describe('Breadcrumbs', () => {
-    // Sem isto o DOM se acumula entre os `it` deste arquivo: o vitest.config.ts
-    // não tem `globals: true`, então o `afterEach` automático do
-    // @testing-library/react nunca se registra (ele só se ativa se `afterEach`
-    // já existir como global). Ver testing-library/react/dist/index.js.
-    afterEach(() => {
-        cleanup();
-    });
-
     const trail = [
         { label: 'Locais', href: '/app/places' },
         { label: 'Casa Azul', href: '/app/places/1' },
