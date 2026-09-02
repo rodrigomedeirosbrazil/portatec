@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import axios from 'axios';
 import { useMemo } from 'react';
 
@@ -11,6 +11,7 @@ import type { DeviceCommandKind, DeviceCommandResult } from '@/hooks/use-device-
 import { useDeviceCommands } from '@/hooks/use-device-commands';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
+import app from '@/routes/app';
 import places from '@/routes/app/places';
 
 interface ControllableFunction {
@@ -88,7 +89,21 @@ export default function PlaceControl({ place, devices, initialFunctionStatus }: 
             <Head title={t('place_control_title', { place: place.name })} />
 
             <Page>
-                <PageHeader title={t('place_control_title', { place: place.name })} backHref={show.url({ place: place.id })} />
+                <PageHeader
+                    title={t('place_control_title', { place: place.name })}
+                    backHref={show.url({ place: place.id })}
+                    actions={
+                        <Link
+                            href={app.currentPlace.update.url()}
+                            method="post"
+                            data={{ place_id: '' }}
+                            as="button"
+                            className="cursor-pointer rounded-md border border-neutral-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-neutral-700"
+                        >
+                            {t('control_all_places')}
+                        </Link>
+                    }
+                />
 
                 <div className="space-y-4">
                     {devices.length === 0 ? (

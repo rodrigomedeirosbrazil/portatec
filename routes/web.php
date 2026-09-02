@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\StartImpersonationController;
 use App\Http\Controllers\App\AccessCodeController;
 use App\Http\Controllers\App\BookingController;
+use App\Http\Controllers\App\ControlController;
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\DeviceCommandController;
 use App\Http\Controllers\App\DeviceControlController;
@@ -76,6 +77,7 @@ Route::middleware('auth')
         Route::redirect('/', '/app/dashboard');
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::post('/current-place', SetCurrentPlaceController::class)->name('current-place.update');
+        Route::get('/control', [ControlController::class, 'index'])->name('control.index');
 
         Route::get('/places', [PlaceController::class, 'index'])->name('places.index');
         Route::get('/places/create', [PlaceController::class, 'create'])->name('places.create');
