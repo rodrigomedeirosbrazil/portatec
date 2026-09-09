@@ -27,7 +27,12 @@ class DeviceResource extends JsonResource
             'place_id' => $this->place_id,
             'integration_id' => $this->integration_id,
             'brand' => $this->brand?->value,
-            'default_pin' => $this->default_pin,
+            // `default_pin` abre a porta: vai no payload enviado ao
+            // equipamento e serve de fallback no evento de acesso. Num
+            // dispositivo compartilhado por 16 unidades, mandá-lo para todo
+            // mundo que pode VER o dispositivo entrega a credencial do portão
+            // do condomínio a cada morador. Só o admin do dispositivo recebe.
+            'default_pin' => $this->when($this->viewerIsDeviceAdmin(), fn () => $this->default_pin),
             'last_sync' => $this->last_sync?->toIso8601String(),
             'wifi_strength' => $this->wifi_strength,
             'firmware_version' => $this->firmware_version,
@@ -49,6 +54,13 @@ class DeviceResource extends JsonResource
         ];
     }
 
+    private function viewerIsDeviceAdmin(): bool
+    {
+        $user = Auth::user();
+
+        return $user instanceof User && $this->isAdministeredBy($user);
+    }
+
     /**
      * Um dispositivo compartilhado pertence a vários locais de donos
      * diferentes. Devolver a lista inteira contaria a cada morador o nome da
@@ -68,7 +80,7 @@ class DeviceResource extends JsonResource
             return collect();
         }
 
-        if ($this->isAdministeredBy($user)) {
+        if ($this->viewerIsDeviceAdmin()) {
             return $this->places;
         }
 

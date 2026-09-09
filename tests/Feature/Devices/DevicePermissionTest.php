@@ -158,6 +158,28 @@ class DevicePermissionTest extends TestCase
             ->assertSee('CONDOMINIO SEGREDO');
     }
 
+    public function test_default_pin_is_only_sent_to_the_device_admin(): void
+    {
+        $admin = User::factory()->create();
+        $grantee = User::factory()->create();
+
+        $device = $this->deviceOwnedBy($admin);
+        $device->update(['default_pin' => '424242']);
+        $device->deviceUsers()->create(['user_id' => $grantee->id, 'role' => 'user']);
+
+        // O PIN padrao abre a porta: vai no payload do equipamento e e
+        // fallback do evento de acesso. Nao pode chegar em quem so usa.
+        $this->actingAs($grantee)
+            ->get("/app/devices/{$device->id}")
+            ->assertOk()
+            ->assertDontSee('424242');
+
+        $this->actingAs($admin)
+            ->get("/app/devices/{$device->id}")
+            ->assertOk()
+            ->assertSee('424242');
+    }
+
     private function deviceOwnedBy(User $user): Device
     {
         $device = Device::withoutEvents(fn (): Device => Device::create([
