@@ -7,6 +7,7 @@ namespace App\Http\Controllers\App;
 use App\Http\Controllers\Controller;
 use App\Models\Device;
 use App\Models\Place;
+use App\Services\AccessCodeSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -24,6 +25,10 @@ class PlaceDeviceController extends Controller
                     ->orWhere('place_id', $place->id);
             })
             ->firstOrFail();
+
+        foreach ($place->getValidAccessCodes() as $accessCode) {
+            app(AccessCodeSyncService::class)->syncDeletedAccessCode($accessCode);
+        }
 
         $place->devices()->detach($device->id);
 
