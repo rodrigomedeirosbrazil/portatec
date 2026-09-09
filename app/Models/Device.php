@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Device extends Model
@@ -59,18 +58,6 @@ class Device extends Model
         static::deleted(function (Device $device) {
             event(new DeviceDeletedEvent($device->id));
         });
-    }
-
-    public function placeDeviceFunctions(): HasManyThrough
-    {
-        return $this->hasManyThrough(
-            PlaceDeviceFunction::class,
-            DeviceFunction::class,
-            'device_id',
-            'device_function_id',
-            'id',
-            'id'
-        );
     }
 
     public function deviceFunctions(): HasMany

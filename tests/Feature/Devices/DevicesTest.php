@@ -10,7 +10,6 @@ use App\Enums\PlaceRoleEnum;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Models\Place;
-use App\Models\PlaceDeviceFunction;
 use App\Models\PlaceUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -404,9 +403,6 @@ class DevicesTest extends TestCase
 
         $toKeep = DeviceFunction::create(['device_id' => $device->id, 'type' => DeviceTypeEnum::Switch, 'pin' => '1']);
         $toRemove = DeviceFunction::create(['device_id' => $device->id, 'type' => DeviceTypeEnum::Button, 'pin' => '2']);
-
-        PlaceDeviceFunction::create(['place_id' => $placeA->id, 'device_function_id' => $toKeep->id]);
-        PlaceDeviceFunction::create(['place_id' => $placeA->id, 'device_function_id' => $toRemove->id]);
 
         $this->actingAs($user)
             ->put("/app/devices/{$device->id}", [

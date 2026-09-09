@@ -44,13 +44,6 @@ class DeviceCommandServicePayloadMappingTest extends TestCase
             'status' => true,
         ]);
 
-        DB::table('place_device_functions')->insert([
-            'place_id' => $placeId,
-            'device_function_id' => $deviceFunction->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         $commandLog = CommandLog::create([
             'command_id' => 'cmd-uuid-123',
             'place_id' => $placeId,
@@ -97,13 +90,6 @@ class DeviceCommandServicePayloadMappingTest extends TestCase
             'status' => true,
         ]);
 
-        DB::table('place_device_functions')->insert([
-            'place_id' => $placeId,
-            'device_function_id' => $deviceFunction->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         $service = app(DeviceCommandService::class);
         $service->handleAck('chip-ack-cmd2', [
             'pin' => '13',
@@ -143,13 +129,6 @@ class DeviceCommandServicePayloadMappingTest extends TestCase
             'type' => 'switch',
             'pin' => '13',
             'status' => true,
-        ]);
-
-        DB::table('place_device_functions')->insert([
-            'place_id' => $placeId,
-            'device_function_id' => $deviceFunction->id,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         $service = app(DeviceCommandService::class);
@@ -192,13 +171,6 @@ class DeviceCommandServicePayloadMappingTest extends TestCase
             'status' => null,
         ]);
 
-        DB::table('place_device_functions')->insert([
-            'place_id' => $placeId,
-            'device_function_id' => $deviceFunction->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         $service = app(DeviceCommandService::class);
         $service->handleAck('esp-37feb9', [
             'pin' => '3',
@@ -238,13 +210,6 @@ class DeviceCommandServicePayloadMappingTest extends TestCase
             'status' => null,
         ]);
 
-        DB::table('place_device_functions')->insert([
-            'place_id' => $placeId,
-            'device_function_id' => $deviceFunction->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         $service = app(DeviceCommandService::class);
         $service->handleStatus('chip-status-1', [
             'device-name' => 'Portao Atualizado',
@@ -263,5 +228,24 @@ class DeviceCommandServicePayloadMappingTest extends TestCase
 
         $deviceFunction->refresh();
         $this->assertSame(1, $deviceFunction->status);
+    }
+
+    public function test_command_log_resolves_place_from_device_places(): void
+    {
+        $place = \App\Models\Place::create(['name' => 'Apto 1']);
+
+        $device = \App\Models\Device::withoutEvents(fn () => \App\Models\Device::create([
+            'name' => 'Garagem A',
+            'brand' => 'portatec',
+            'external_device_id' => 'chip-a',
+        ]));
+        $device->places()->attach($place->id);
+
+        $function = \App\Models\DeviceFunction::create([
+            'device_id' => $device->id, 'type' => 'switch', 'pin' => '2',
+        ]);
+
+        $this->assertSame($place->id, $device->places()->value('places.id'));
+        $this->assertSame($device->id, $function->device_id);
     }
 }

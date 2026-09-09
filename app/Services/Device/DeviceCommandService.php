@@ -50,8 +50,7 @@ class DeviceCommandService
         $mqtt->disconnect();
 
         $placeId = $device->places()->value('places.id')
-            ?? $device->place_id
-            ?? $device->placeDeviceFunctions()->value('place_id');
+            ?? $device->place_id;
 
         if ($placeId === null) {
             return $commandId;
@@ -147,7 +146,6 @@ class DeviceCommandService
         $device->refresh();
         $placeIds = $device->places()
             ->pluck('places.id')
-            ->merge($device->placeDeviceFunctions()->pluck('place_id'))
             ->unique();
 
         $pin = data_get($payload, 'pin') ?? data_get($payload, 'sensor-pin');
@@ -183,7 +181,6 @@ class DeviceCommandService
 
         $placeIds = $device->places()
             ->pluck('places.id')
-            ->merge($device->placeDeviceFunctions()->pluck('place_id'))
             ->unique();
         foreach ($placeIds as $placeId) {
             PlaceDeviceStatusEvent::dispatch((int) $placeId, $device->id, $device->isAvailable());
@@ -321,7 +318,7 @@ class DeviceCommandService
 
     private function dispatchAckToPlaces(Device $device, DeviceFunction $deviceFunction, string $command, ?string $commandId = null): void
     {
-        $placeIds = $deviceFunction->placeDeviceFunctions->pluck('place_id')->unique();
+        $placeIds = $deviceFunction->device->places->pluck('id')->unique();
 
         if ($placeIds->isEmpty()) {
             $placeIds = $device->places()->pluck('places.id');

@@ -7,7 +7,6 @@ namespace Tests\Feature\Places;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Models\Place;
-use App\Models\PlaceDeviceFunction;
 use App\Models\PlaceUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -295,11 +294,6 @@ class PlacesTest extends TestCase
             'device_id' => $device->id,
             'type' => 'switch',
             'pin' => '1',
-        ]);
-
-        PlaceDeviceFunction::create([
-            'place_id' => $place->id,
-            'device_function_id' => $function->id,
         ]);
 
         $this->actingAs($user)
