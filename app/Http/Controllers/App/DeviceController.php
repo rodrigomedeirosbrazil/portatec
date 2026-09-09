@@ -19,7 +19,6 @@ use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Models\Place;
 use App\Services\CurrentPlaceService;
-use App\Services\Device\DevicePlaceFunctionSyncService;
 use App\Services\Tuya\TuyaIntegrationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -320,40 +319,24 @@ class DeviceController extends Controller
     }
 
     /**
-     * Ported 1:1 from `App\Livewire\Devices\Edit::save()`: same ownership
-     * re-check on `placeIds` as `store()`, then reconciles device functions
-     * (deletes the ones missing from the payload, updates the ones with an
-     * `id` — always scoped to this device — and creates the rest) before
-     * delegating the place/place-function pivot sync to
-     * `DevicePlaceFunctionSyncService`.
+     * Ported 1:1 from `App\Livewire\Devices\Edit::save()`, minus place
+     * management: locais só mudam pelos endpoints de anexar/desanexar
+     * (Task 2.1). Reconcilia as funções do dispositivo (apaga as que faltam
+     * no payload, atualiza as que têm `id` — sempre escopado a este
+     * dispositivo — e cria o resto).
      */
-    public function update(UpdateDeviceRequest $request, Device $device, DevicePlaceFunctionSyncService $syncService): RedirectResponse
+    public function update(UpdateDeviceRequest $request, Device $device): RedirectResponse
     {
         // Unlike the Livewire component (whose `save()` runs against an
         // already-`mount()`-checked, signed component snapshot), this route
         // takes `{device}` straight from the URL, so it needs its own
-        // access check — the placeIds ownership check below only validates
-        // the *target* places, not that the caller may touch this device.
+        // access check.
         abort_unless(Auth::user()?->can('update', $device), 403);
 
         $validated = $request->validated();
 
-        $placeIds = collect($validated['placeIds'])
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
-
-        $allowedPlaceIds = Auth::user()
-            ->placeUsers()
-            ->whereIn('place_id', $placeIds)
-            ->pluck('place_id')
-            ->all();
-
-        abort_unless(count($allowedPlaceIds) === count($placeIds), 403);
-
         $device->update([
-            'place_id' => $placeIds[0] ?? null,
+            'place_id' => $device->place_id,
             'name' => $validated['name'],
             'brand' => DeviceBrandEnum::from($validated['brand']),
             'external_device_id' => ($validated['external_device_id'] ?? null) ?: null,
@@ -389,9 +372,6 @@ class DeviceController extends Controller
                 'pin' => $function['pin'],
             ]);
         }
-
-        $device->places()->sync($placeIds);
-        $syncService->sync($device, $placeIds);
 
         return redirect()
             ->route('app.devices.show', ['device' => $device->id])

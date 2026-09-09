@@ -387,7 +387,12 @@ class DevicesTest extends TestCase
     // Edit: reconcile device functions + sync place_device_functions
     // ------------------------------------------------------------------
 
-    public function test_update_deletes_removed_function_updates_existing_and_creates_new_and_resyncs_places(): void
+    /**
+     * Task 2.1: `update()` deixou de sincronizar locais — locais só mudam
+     * pelos endpoints de anexar/desanexar. O `placeIds` do payload é
+     * ignorado; o pivot de `placeA` permanece intacto.
+     */
+    public function test_update_deletes_removed_function_updates_existing_and_creates_new_and_does_not_touch_places(): void
     {
         $user = User::factory()->create();
         $placeA = $this->makePlaceWithAdmin($user, 'Casa A');
@@ -426,13 +431,9 @@ class DevicesTest extends TestCase
         // new function created
         $this->assertDatabaseHas('device_functions', ['device_id' => $device->id, 'type' => 'button', 'pin' => '3']);
 
-        // places pivot resynced to placeB only
-        $this->assertTrue($device->fresh()->places()->where('places.id', $placeB->id)->exists());
-        $this->assertFalse($device->fresh()->places()->where('places.id', $placeA->id)->exists());
-
-        // place_device_functions resynced: old place link for kept function gone, no leftover for removed function
-        $this->assertDatabaseMissing('place_device_functions', ['place_id' => $placeA->id, 'device_function_id' => $toKeep->id]);
-        $this->assertDatabaseMissing('place_device_functions', ['device_function_id' => $toRemove->id]);
+        // places pivot untouched: still placeA, not placeB (placeIds is ignored)
+        $this->assertTrue($device->fresh()->places()->where('places.id', $placeA->id)->exists());
+        $this->assertFalse($device->fresh()->places()->where('places.id', $placeB->id)->exists());
     }
 
     public function test_update_rejects_place_ids_the_user_does_not_own(): void

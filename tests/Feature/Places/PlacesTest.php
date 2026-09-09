@@ -306,11 +306,6 @@ class PlacesTest extends TestCase
             ->delete("/app/places/{$place->id}/devices/{$device->id}")
             ->assertRedirect("/app/places/{$place->id}");
 
-        $this->assertDatabaseMissing('place_device_functions', [
-            'place_id' => $place->id,
-            'device_function_id' => $function->id,
-        ]);
-
         $this->assertDatabaseMissing('device_place', [
             'place_id' => $place->id,
             'device_id' => $device->id,
@@ -489,7 +484,12 @@ class PlacesTest extends TestCase
     // Attach device
     // ------------------------------------------------------------------
 
-    public function test_attach_device_creates_place_device_functions(): void
+    /**
+     * Task 2.1: anexar exige `DevicePolicy::attach` (admin do dispositivo
+     * ou concessão de uso) — o dispositivo precisa de vínculo em
+     * `device_user`, não basta estar sem local.
+     */
+    public function test_attach_device_assigns_place_id_when_device_has_none(): void
     {
         $user = User::factory()->create();
         $place = $this->makePlaceWithAdmin($user);
@@ -498,8 +498,9 @@ class PlacesTest extends TestCase
             'name' => 'Sensor Livre',
             'brand' => 'portatec',
         ]));
+        $device->deviceUsers()->create(['user_id' => $user->id, 'role' => 'admin']);
 
-        $function = DeviceFunction::create([
+        DeviceFunction::create([
             'device_id' => $device->id,
             'type' => 'switch',
             'pin' => '2',
@@ -508,11 +509,6 @@ class PlacesTest extends TestCase
         $this->actingAs($user)
             ->post("/app/places/{$place->id}/devices/attach", ['deviceId' => $device->id])
             ->assertRedirect("/app/places/{$place->id}");
-
-        $this->assertDatabaseHas('place_device_functions', [
-            'place_id' => $place->id,
-            'device_function_id' => $function->id,
-        ]);
 
         $device->refresh();
         $this->assertSame($place->id, $device->place_id);
@@ -528,6 +524,7 @@ class PlacesTest extends TestCase
             'name' => 'Ja Associado',
             'brand' => 'portatec',
         ]));
+        $device->deviceUsers()->create(['user_id' => $user->id, 'role' => 'admin']);
         $device->places()->attach($place->id);
 
         $this->actingAs($user)

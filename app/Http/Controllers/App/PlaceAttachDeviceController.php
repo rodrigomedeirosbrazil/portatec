@@ -9,7 +9,7 @@ use App\Http\Requests\StorePlaceAttachDeviceRequest;
 use App\Http\Resources\PlaceResource;
 use App\Models\Device;
 use App\Models\Place;
-use App\Models\PlaceDeviceFunction;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -17,33 +17,22 @@ use Inertia\Response;
 
 class PlaceAttachDeviceController extends Controller
 {
+    /**
+     * Spec §5. A lista é "o que EU posso trazer para cá": dispositivos que eu
+     * administro mais os que me foram concedidos. A versão anterior tinha um
+     * ramo `whereDoesntHave('places')->whereNull('place_id')` sem escopo
+     * nenhum, que mostrava os dispositivos sem local de TODAS as contas.
+     */
     public function create(Place $place): Response
     {
-        abort_unless(
-            $place->placeUsers()->where('user_id', Auth::id())->exists(),
-            403
-        );
-
-        $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
+        $this->authorize('update', $place);
 
         $devices = Device::query()
             ->withCount('deviceFunctions')
             ->with('places')
-            ->where(function ($query) use ($userPlaceIds): void {
-                $query->where(function ($query): void {
-                    $query->whereDoesntHave('places')
-                        ->whereNull('place_id');
-                })
-                    ->orWhereHas('places', fn ($q) => $q->whereIn('places.id', $userPlaceIds))
-                    ->orWhereIn('place_id', $userPlaceIds);
-            })
-            ->where(function ($query) use ($place): void {
-                $query->whereDoesntHave('places', fn ($query) => $query->where('places.id', $place->id))
-                    ->where(function ($query) use ($place): void {
-                        $query->whereNull('place_id')
-                            ->orWhere('place_id', '!=', $place->id);
-                    });
-            })
+            ->whereHas('deviceUsers', fn (Builder $query) => $query->where('user_id', Auth::id()))
+            ->whereDoesntHave('places', fn (Builder $query) => $query->where('places.id', $place->id))
+            ->where(fn (Builder $query) => $query->whereNull('place_id')->orWhere('place_id', '!=', $place->id))
             ->orderBy('name')
             ->get();
 
@@ -64,11 +53,11 @@ class PlaceAttachDeviceController extends Controller
     {
         $this->authorize('update', $place);
 
-        $validated = $request->validated();
+        $device = Device::query()->findOrFail($request->validated()['deviceId']);
 
-        $device = Device::query()
-            ->with('deviceFunctions')
-            ->findOrFail($validated['deviceId']);
+        // A checagem que faltava: ser admin do local de destino não diz nada
+        // sobre o direito de mexer NESTE dispositivo.
+        $this->authorize('attach', $device);
 
         if ($device->places()->where('places.id', $place->id)->exists() || $device->place_id === $place->id) {
             return redirect()
@@ -77,17 +66,9 @@ class PlaceAttachDeviceController extends Controller
         }
 
         $device->places()->syncWithoutDetaching([$place->id]);
+
         if ($device->place_id === null) {
             $device->update(['place_id' => $place->id]);
-        }
-
-        $functionIds = $device->deviceFunctions->pluck('id');
-
-        foreach ($functionIds as $deviceFunctionId) {
-            PlaceDeviceFunction::firstOrCreate([
-                'place_id' => $place->id,
-                'device_function_id' => $deviceFunctionId,
-            ]);
         }
 
         return redirect()
