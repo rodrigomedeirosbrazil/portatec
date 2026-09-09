@@ -249,6 +249,30 @@ de códigos de acesso.
 local — com 16 unidades no mesmo portão de pedestres, cada morador acompanharia a
 movimentação de todos os outros.
 
+### A regra geral, aprendida na implementação
+
+Esta seção decidia só sobre códigos e histórico. Durante a implementação o mesmo vazamento
+apareceu em **mais quatro lugares**, sempre pela mesma causa: `device_user` mudou de
+significado neste trabalho — era importação Tuya (dispositivo *seu*) e passou a ser
+concessão (dispositivo de *terceiro*). Todo código escrito sob o significado antigo virou
+exposição entre contas sem que ninguém o tocasse:
+
+| Onde | O que vazava |
+|---|---|
+| `DeviceController::allowedPlaceIds()` | nome dos locais dos vizinhos no filtro da listagem |
+| `DeviceResource::places` | idem, na linha e na tela do dispositivo |
+| `DeviceResource::default_pin` | **o PIN mestre do equipamento**, para quem só tinha uso |
+| `PlaceAttachDeviceController::create()` | nome dos locais dos vizinhos na tela de anexar |
+
+Daí a regra que passa a valer para tudo que exibir um dispositivo compartilhado:
+
+> **Quem não administra o dispositivo vê dele apenas o que diz respeito aos próprios
+> locais, e nunca uma credencial.** O admin do dispositivo vê tudo.
+
+`Device::visiblePlacesFor(?User)` é a implementação única dessa regra para a lista de
+locais — vive no model, e não em quem exibe, justamente porque vazou duas vezes enquanto
+estava duplicada.
+
 ## 9. O que sai
 
 **Clonar local** é removido: rota, `PlaceCloneController`, `PlaceCloneService`, telas,
