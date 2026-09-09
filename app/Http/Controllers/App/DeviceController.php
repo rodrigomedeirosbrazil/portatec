@@ -117,30 +117,25 @@ class DeviceController extends Controller
     }
 
     /**
+     * Os locais que alimentam o filtro da listagem. São SÓ os locais do
+     * próprio usuário.
+     *
+     * Já foram os locais dele mais os de todo dispositivo a que ele estivesse
+     * vinculado em `device_user`. Aquilo era inofensivo enquanto `device_user`
+     * só guardava importação Tuya — o vínculo era com dispositivo dele, nos
+     * locais dele. Com a concessão, virou vazamento: o morador que recebeu o
+     * portão do condomínio passaria a ver, no filtro, o nome do condomínio e
+     * o da unidade de cada vizinho que divide aquele portão.
+     *
+     * A listagem de dispositivos não depende disto para escopo — ela tem o
+     * próprio ramo `whereHas('deviceUsers')`, que mostra o dispositivo
+     * concedido independentemente do local.
+     *
      * @return Collection<int, int>
      */
     private function allowedPlaceIds(): Collection
     {
-        $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
-        $sharedDevicePlaceIds = collect();
-        if (Schema::hasTable('device_user')) {
-            $sharedDevicePlaceIds = Device::query()
-                ->whereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()))
-                ->with('places:id')
-                ->get()
-                ->flatMap(function (Device $device) {
-                    $placeIds = $device->places->pluck('id');
-                    if ($device->place_id !== null) {
-                        $placeIds->push($device->place_id);
-                    }
-
-                    return $placeIds;
-                })
-                ->unique()
-                ->values();
-        }
-
-        return $userPlaceIds->merge($sharedDevicePlaceIds)->unique()->filter()->values();
+        return Auth::user()->placeUsers()->pluck('place_id')->unique()->filter()->values();
     }
 
     /**

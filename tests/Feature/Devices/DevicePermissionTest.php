@@ -126,6 +126,38 @@ class DevicePermissionTest extends TestCase
         $this->actingAs($admin)->get("/app/devices/{$device->id}/edit")->assertOk();
     }
 
+    public function test_grantee_does_not_see_names_of_other_places_sharing_the_device(): void
+    {
+        $admin = User::factory()->create();
+        $grantee = User::factory()->create();
+
+        $device = $this->deviceOwnedBy($admin);
+        $device->deviceUsers()->create(['user_id' => $grantee->id, 'role' => 'user']);
+
+        $condominio = Place::create(['name' => 'CONDOMINIO SEGREDO']);
+        $vizinho = Place::create(['name' => 'APTO DO VIZINHO']);
+        $meuApto = Place::create(['name' => 'Meu apto']);
+        PlaceUser::create(['place_id' => $meuApto->id, 'user_id' => $grantee->id, 'role' => 'admin']);
+
+        $device->places()->attach([$condominio->id, $vizinho->id, $meuApto->id]);
+
+        // Um portao dividido por 16 unidades nao pode contar a cada morador o
+        // nome da unidade dos outros 15 - mesmo vazamento que o spec §8 fecha
+        // no historico de acesso.
+        $this->actingAs($grantee)
+            ->get('/app/devices')
+            ->assertOk()
+            ->assertDontSee('CONDOMINIO SEGREDO')
+            ->assertDontSee('APTO DO VIZINHO')
+            ->assertSee('Meu apto');
+
+        // O admin do dispositivo continua vendo todos os locais.
+        $this->actingAs($admin)
+            ->get("/app/devices/{$device->id}")
+            ->assertOk()
+            ->assertSee('CONDOMINIO SEGREDO');
+    }
+
     private function deviceOwnedBy(User $user): Device
     {
         $device = Device::withoutEvents(fn (): Device => Device::create([
