@@ -1316,9 +1316,13 @@ git commit -m "fix: resolve evento de acesso por PIN e instante em dispositivo c
 
 **Files:**
 - Modify: `app/Policies/DevicePolicy.php`
+- Modify: `app/Http/Controllers/App/DeviceController.php` (`store()` grava o admin; `edit()` passa a usar `can('update')`)
+- Modify: `app/Http/Controllers/App/TuyaConnectController.php`
 - Test: `tests/Feature/Devices/DevicePermissionTest.php`
 
 Some o ramo que hoje concede acesso a qualquer dispositivo Tuya sem local para qualquer usuário que tenha uma integração Tuya própria — era brecha entre contas.
+
+> **Correção aplicada depois da primeira execução (commit `8484d08`):** este plano não mandava mexer no `DeviceController::edit()`, que continuava com a checagem antiga por vínculo com o local. Como a tela de edição mostra pinos, funções e `external_device_id`, ela era uma porta de leitura da configuração para quem só tinha concessão de uso ou era membro do local. Passou a usar `can('update', $device)`, com regressão em `DevicePermissionTest::test_edit_screen_is_closed_to_grantee_and_place_member()`. Toda tela que exibe configuração precisa da mesma habilidade do `update()` — vale checar isso nas fases seguintes.
 
 - [ ] **Step 1: Escrever o teste (vai falhar)**
 
