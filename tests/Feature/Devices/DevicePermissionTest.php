@@ -180,6 +180,26 @@ class DevicePermissionTest extends TestCase
             ->assertSee('424242');
     }
 
+    public function test_show_screen_only_offers_edit_to_the_device_admin(): void
+    {
+        $admin = User::factory()->create();
+        $grantee = User::factory()->create();
+
+        $device = $this->deviceOwnedBy($admin);
+        $device->deviceUsers()->create(['user_id' => $grantee->id, 'role' => 'user']);
+
+        // Quem so tem uso via o botao Editar e tomava 403 ao clicar.
+        $this->actingAs($grantee)
+            ->get("/app/devices/{$device->id}")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('abilities.update', false));
+
+        $this->actingAs($admin)
+            ->get("/app/devices/{$device->id}")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('abilities.update', true));
+    }
+
     private function deviceOwnedBy(User $user): Device
     {
         $device = Device::withoutEvents(fn (): Device => Device::create([

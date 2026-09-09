@@ -19,7 +19,7 @@ interface DevicesShowProps {
     recentCommands: CommandLog[];
     recentTuyaSyncs: AccessCodeDeviceSync[];
     codesOnDevice: CodeOnDevice[];
-    abilities: { managePermissions: boolean };
+    abilities: { update: boolean; managePermissions: boolean };
     [key: string]: unknown;
 }
 
@@ -35,9 +35,13 @@ export default function DevicesShow({ device, recentCommands, recentTuyaSyncs, c
                     <Link href={devices.permissions.index.url({ device: device.id })}>{t('device_permissions_title')}</Link>
                 </Button>
             ) : null}
-            <Button variant="outline" asChild>
-                <Link href={devices.edit.url({ device: device.id })}>{t('edit')}</Link>
-            </Button>
+            {/* Editar e configuracao do dispositivo: so o admin dele. Sem este
+                gate o botao aparecia para quem so tem uso e devolvia 403. */}
+            {abilities.update ? (
+                <Button variant="outline" asChild>
+                    <Link href={devices.edit.url({ device: device.id })}>{t('edit')}</Link>
+                </Button>
+            ) : null}
             <Button asChild>
                 <Link href={devices.control.url({ device: device.id })}>{t('control')}</Link>
             </Button>

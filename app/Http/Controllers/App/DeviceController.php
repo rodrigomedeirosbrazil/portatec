@@ -272,7 +272,12 @@ class DeviceController extends Controller
             'recentCommands' => CommandLogResource::collection($recentCommands),
             'recentTuyaSyncs' => AccessCodeDeviceSyncResource::collection($recentTuyaSyncs),
             'codesOnDevice' => $codesOnDevice,
-            'abilities' => ['managePermissions' => $isDeviceAdmin],
+            // Falando pela Policy, nao pela flag: e ela que decide, e se as
+            // duas habilidades divergirem no futuro a tela acompanha.
+            'abilities' => [
+                'update' => Auth::user()?->can('update', $device) ?? false,
+                'managePermissions' => Auth::user()?->can('managePermissions', $device) ?? false,
+            ],
         ]);
     }
 
