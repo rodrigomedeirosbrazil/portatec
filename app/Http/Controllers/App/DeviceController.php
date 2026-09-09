@@ -13,6 +13,7 @@ use App\Http\Resources\AccessCodeDeviceSyncResource;
 use App\Http\Resources\CommandLogResource;
 use App\Http\Resources\DeviceResource;
 use App\Http\Resources\PlaceResource;
+use App\Models\AccessCode;
 use App\Models\AccessCodeDeviceSync;
 use App\Models\CommandLog;
 use App\Models\Device;
@@ -243,11 +244,33 @@ class DeviceController extends Controller
             ->limit(20)
             ->get();
 
+        $isDeviceAdmin = $device->isAdministeredBy(Auth::user());
+
+        $codesOnDevice = $isDeviceAdmin
+            ? AccessCode::query()
+                ->with('place')
+                ->whereIn('place_id', $device->places()->pluck('places.id'))
+                ->where('start', '<=', now())
+                ->where(fn ($query) => $query->whereNull('end')->orWhere('end', '>=', now()))
+                ->get()
+                // Spec §8: o dono do equipamento audita e revoga, mas não
+                // ganha a credencial do hóspede de outra pessoa. Sem `pin`.
+                ->map(fn (AccessCode $code): array => [
+                    'id' => $code->id,
+                    'place_name' => $code->place?->name,
+                    'start' => $code->start?->toIso8601String(),
+                    'end' => $code->end?->toIso8601String(),
+                ])
+                ->values()
+                ->all()
+            : [];
+
         return Inertia::render('devices/show', [
             'device' => new DeviceResource($device),
             'recentCommands' => CommandLogResource::collection($recentCommands),
             'recentTuyaSyncs' => AccessCodeDeviceSyncResource::collection($recentTuyaSyncs),
-            'abilities' => ['managePermissions' => $device->isAdministeredBy(Auth::user())],
+            'codesOnDevice' => $codesOnDevice,
+            'abilities' => ['managePermissions' => $isDeviceAdmin],
         ]);
     }
 
