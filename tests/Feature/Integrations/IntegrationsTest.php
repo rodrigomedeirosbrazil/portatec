@@ -136,6 +136,56 @@ class IntegrationsTest extends TestCase
     // IDOR
     // ------------------------------------------------------------------
 
+    public function test_host_cannot_bind_an_ical_feed_to_the_place(): void
+    {
+        $admin = User::factory()->create();
+        $host = User::factory()->create();
+
+        $place = Place::create(['name' => 'Village']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $admin->id, 'role' => 'admin']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $host->id, 'role' => 'host']);
+
+        $platform = Platform::firstOrCreate(['slug' => 'airbnb'], ['name' => 'Airbnb']);
+
+        // Ligar um feed nao e usar o local, e configura-lo: as reservas viram
+        // AccessCode e os PINs vao para os dispositivos. Um `host` ligando um
+        // iCal proprio fabricaria PIN nos portoes sem ninguem aprovar.
+        $this->actingAs($host)
+            ->post('/app/bookings/integrations', [
+                'platformId' => $platform->id,
+                'placeId' => $place->id,
+                'externalId' => 'https://www.airbnb.com/calendar/ical/1.ics',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(0, $place->integrations()->count());
+
+        $this->actingAs($admin)
+            ->post('/app/bookings/integrations', [
+                'platformId' => $platform->id,
+                'placeId' => $place->id,
+                'externalId' => 'https://www.airbnb.com/calendar/ical/1.ics',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(1, $place->integrations()->count());
+    }
+
+    public function test_host_does_not_see_the_place_in_the_integration_form(): void
+    {
+        $admin = User::factory()->create();
+        $host = User::factory()->create();
+
+        $place = Place::create(['name' => 'LOCAL SO DO ADMIN']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $admin->id, 'role' => 'admin']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $host->id, 'role' => 'host']);
+
+        $this->actingAs($host)
+            ->get('/app/bookings/integrations/create')
+            ->assertOk()
+            ->assertDontSee('LOCAL SO DO ADMIN');
+    }
+
     public function test_edit_of_other_users_integration_is_forbidden(): void
     {
         $owner = User::factory()->create();

@@ -106,11 +106,13 @@ export default function PlacesShow({ place, activeAccessCodes, bookingsCount, bo
                         <span className="text-xs font-bold tracking-wide text-neutral-500 uppercase">
                             {t('place_booking_sources_heading')}
                         </span>
-                        <Button asChild size="sm">
-                            <Link href={integrationsRoutes.create.url({ query: { place_id: place.id } })}>
-                                {t('place_add_booking_source')}
-                            </Link>
-                        </Button>
+                        {abilities.update ? (
+                            <Button asChild size="sm">
+                                <Link href={integrationsRoutes.create.url({ query: { place_id: place.id } })}>
+                                    {t('place_add_booking_source')}
+                                </Link>
+                            </Button>
+                        ) : null}
                     </div>
                     {bookingSources.length > 0 ? (
                         bookingSources.map((source) => (

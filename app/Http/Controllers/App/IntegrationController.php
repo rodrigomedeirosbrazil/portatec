@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\App;
 
+use App\Enums\PlaceRoleEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreIntegrationRequest;
 use App\Http\Resources\IntegrationResource;
@@ -74,8 +75,14 @@ class IntegrationController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Ligar um feed de reservas a um local e CONFIGURAR o local: as
+        // reservas viram AccessCode e os PINs vao para os dispositivos dele.
+        // Por isso a lista e a de locais que o usuario administra, nao a de
+        // locais em que ele apenas participa.
         $places = Place::query()
-            ->whereHas('placeUsers', fn (Builder $query) => $query->where('user_id', Auth::id()))
+            ->whereHas('placeUsers', fn (Builder $query) => $query
+                ->where('user_id', Auth::id())
+                ->where('role', PlaceRoleEnum::Admin->value))
             ->orderBy('name')
             ->get();
 
@@ -99,12 +106,13 @@ class IntegrationController extends Controller
     {
         $validated = $request->validated();
 
-        $hasAccess = Auth::user()
-            ->placeUsers()
-            ->where('place_id', $validated['placeId'])
-            ->exists();
+        // Vinculo cru deixava passar `host`: ele ligava um iCal proprio ao
+        // local e o feed passava a fabricar PIN nos dispositivos de la, sem
+        // ninguem do local aprovar nada. Ligar um feed e configuracao do
+        // local, entao a habilidade e a mesma de renomear/anexar.
+        $place = Place::findOrFail($validated['placeId']);
 
-        abort_unless($hasAccess, 403);
+        abort_unless(Auth::user()?->can('update', $place), 403);
 
         $integration = Integration::firstOrCreate([
             'platform_id' => $validated['platformId'],
