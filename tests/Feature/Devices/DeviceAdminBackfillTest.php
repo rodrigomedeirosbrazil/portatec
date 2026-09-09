@@ -75,6 +75,44 @@ class DeviceAdminBackfillTest extends TestCase
         $this->assertSame(0, DB::table('device_user')->where('device_id', $device->id)->count());
     }
 
+    public function test_other_place_admins_get_a_grant_so_they_can_reattach(): void
+    {
+        $first = User::factory()->create();
+        $second = User::factory()->create();
+        $host = User::factory()->create();
+        $place = Place::create(['name' => 'Village']);
+
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $first->id, 'role' => 'admin']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $second->id, 'role' => 'admin']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $host->id, 'role' => 'host']);
+
+        $device = Device::withoutEvents(fn (): Device => Device::create([
+            'name' => 'Portão',
+            'brand' => 'portatec',
+            'place_id' => $place->id,
+        ]));
+
+        $this->runBackfill();
+
+        // O admin mais antigo do local manda no dispositivo.
+        $this->assertSame('admin', DB::table('device_user')
+            ->where('device_id', $device->id)->where('user_id', $first->id)->value('role'));
+
+        // O segundo admin do local recebe uso: sem isso ele consegue
+        // desanexar o dispositivo do local e nao consegue anexar de volta.
+        $this->assertSame('user', DB::table('device_user')
+            ->where('device_id', $device->id)->where('user_id', $second->id)->value('role'));
+
+        $device->refresh();
+        $this->assertTrue($device->isUsableBy($second));
+        $this->assertFalse($device->isAdministeredBy($second));
+
+        // `host` nunca pode desanexar, entao nao ha porta de mao unica para
+        // fechar - e um vinculo lhe daria acesso que ele nao tinha.
+        $this->assertNull(DB::table('device_user')
+            ->where('device_id', $device->id)->where('user_id', $host->id)->value('role'));
+    }
+
     private function runBackfill(): void
     {
         require_once database_path('migrations/2026_09_08_000001_add_role_to_device_user_table.php');

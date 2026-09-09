@@ -80,5 +80,71 @@ return new class extends Migration
                 'updated_at' => now(),
             ]);
         }
+
+        $this->grantToRemainingPlaceAdmins();
+    }
+
+    /**
+     * Um local pode ter mais de um admin, e antes desta mudança todos eles
+     * configuravam e reanexavam qualquer dispositivo do local. O backfill
+     * escolhe UM deles como admin do dispositivo — os outros ficariam sem
+     * vínculo nenhum, e aí caem numa porta de mão única: `PlacePolicy::update`
+     * ainda os deixa DESANEXAR o dispositivo do local, mas `DevicePolicy::attach`
+     * não os deixa ANEXAR de volta. Local quebrado sem quem consiga arrumar.
+     *
+     * Verificado num dump de produção: o local "Village" tem dois admins, e o
+     * segundo ficava exatamente nesse estado.
+     *
+     * A concessão de uso resolve sem alargar nada: quem já mandava no local
+     * continua podendo usar e reanexar, e só o admin do dispositivo configura.
+     * Membro `host` não entra aqui — ele nunca pôde desanexar, então não tem
+     * porta de mão única para fechar, e um vínculo lhe daria acesso novo.
+     */
+    private function grantToRemainingPlaceAdmins(): void
+    {
+        $admins = DB::table('device_user')
+            ->where('role', DeviceRoleEnum::Admin->value)
+            ->get(['device_id', 'user_id']);
+
+        foreach ($admins as $admin) {
+            $placeIds = DB::table('device_place')
+                ->where('device_id', $admin->device_id)
+                ->pluck('place_id')
+                ->push(
+                    DB::table('devices')->where('id', $admin->device_id)->value('place_id')
+                )
+                ->filter()
+                ->unique();
+
+            if ($placeIds->isEmpty()) {
+                continue;
+            }
+
+            $otherAdminIds = DB::table('place_users')
+                ->whereIn('place_id', $placeIds)
+                ->where('role', 'admin')
+                ->where('user_id', '!=', $admin->user_id)
+                ->pluck('user_id')
+                ->unique();
+
+            foreach ($otherAdminIds as $userId) {
+                $alreadyLinked = DB::table('device_user')
+                    ->where('device_id', $admin->device_id)
+                    ->where('user_id', $userId)
+                    ->exists();
+
+                if ($alreadyLinked) {
+                    continue;
+                }
+
+                DB::table('device_user')->insert([
+                    'device_id' => $admin->device_id,
+                    'user_id' => $userId,
+                    'role' => DeviceRoleEnum::User->value,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
     }
 };
