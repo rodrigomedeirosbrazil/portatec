@@ -2492,9 +2492,221 @@ com os dois `use` no topo, ao lado dos outros imports de `App\Http\Controllers\A
 
 - [ ] **Step 7: Criar a tela**
 
-`resources/js/pages/devices/permissions.tsx` — siga o padrão de `resources/js/pages/places/members.tsx`: `page-header`, formulário com um campo de e-mail (`user_email_label` / `user_email_placeholder`), tabela de concedidos com botão de revogar via `confirm-dialog` (texto `device_permission_revoke_confirm`), e um bloco separado com o admin atual e o botão de transferir (texto `device_transfer_confirm`). Todo texto vem de `t('...')` — nenhuma string literal, regra 10.5 do `AGENTS.md`.
+`resources/js/pages/devices/permissions.tsx`, na íntegra:
 
-Em `resources/js/pages/devices/show.tsx`, adicionar um link para a nova tela, visível só quando o usuário é o admin do dispositivo (exponha essa flag no `DeviceResource` ou num array `abilities` no `DeviceController::show()`, como `PlaceController::show()` já faz).
+```tsx
+import { Head, router, useForm } from '@inertiajs/react';
+import { useState, type FormEventHandler } from 'react';
+
+import { destroy, index, store } from '@/actions/App/Http/Controllers/App/DevicePermissionController';
+import { store as transfer } from '@/actions/App/Http/Controllers/App/DeviceTransferController';
+import { show } from '@/actions/App/Http/Controllers/App/DeviceController';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { FormField } from '@/components/form-field';
+import { Page, PageHeader } from '@/components/page';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useTranslations } from '@/hooks/use-translations';
+import { AppLayout } from '@/layouts/app-layout';
+import devices from '@/routes/app/devices';
+
+interface PermissionUser {
+    id: number;
+    name: string;
+    email: string;
+}
+
+interface Grantee {
+    id: number;
+    user: PermissionUser | null;
+}
+
+interface DevicePermissionsProps {
+    device: { id: number; name: string };
+    admin: PermissionUser | null;
+    grantees: Grantee[];
+    [key: string]: unknown;
+}
+
+interface EmailForm {
+    email: string;
+}
+
+export default function DevicePermissions({ device, admin, grantees }: DevicePermissionsProps) {
+    const { t } = useTranslations();
+
+    const [granteeToRevoke, setGranteeToRevoke] = useState<Grantee | null>(null);
+    const [transferConfirmOpen, setTransferConfirmOpen] = useState(false);
+
+    const grantForm = useForm<EmailForm>({ email: '' });
+    const transferForm = useForm<EmailForm>({ email: '' });
+
+    const submitGrant: FormEventHandler = (event) => {
+        event.preventDefault();
+        grantForm.post(store.url({ device: device.id }), {
+            preserveScroll: true,
+            onSuccess: () => grantForm.reset('email'),
+        });
+    };
+
+    function confirmRevoke() {
+        if (!granteeToRevoke) {
+            return;
+        }
+
+        router.delete(destroy.url({ device: device.id, deviceUser: granteeToRevoke.id }), {
+            preserveScroll: true,
+            onFinish: () => setGranteeToRevoke(null),
+        });
+    }
+
+    // A transferência não tem volta pela interface, então o e-mail é validado
+    // pelo servidor só depois do "confirmar" — o diálogo mostra o que foi
+    // digitado, e é o servidor que diz se aquela conta existe.
+    function confirmTransfer() {
+        transferForm.post(transfer.url({ device: device.id }), {
+            preserveScroll: true,
+            onSuccess: () => transferForm.reset('email'),
+            onFinish: () => setTransferConfirmOpen(false),
+        });
+    }
+
+    return (
+        <AppLayout
+            breadcrumbs={[
+                { label: t('nav_devices'), href: devices.index.url() },
+                { label: device.name, href: devices.show.url({ device: device.id }) },
+                { label: t('device_permissions_title') },
+            ]}
+        >
+            <Head title={`${t('device_permissions_title')} – ${device.name}`} />
+
+            <Page>
+                <PageHeader
+                    title={`${t('device_permissions_title')} – ${device.name}`}
+                    backHref={show.url({ device: device.id })}
+                />
+
+                <div className="rounded-[10px] border border-border bg-card p-3.5">
+                    <h2 className="mt-0 mb-3">{t('device_permissions_heading')}</h2>
+                    <ul className="m-0 list-none space-y-0 p-0">
+                        {grantees.length === 0 ? (
+                            <li className="text-muted-foreground">{t('device_permissions_empty')}</li>
+                        ) : (
+                            grantees.map((grantee) => (
+                                <li
+                                    key={grantee.id}
+                                    className="flex items-center justify-between gap-2 border-b border-border py-2 last:border-b-0"
+                                >
+                                    <div>
+                                        <strong>{grantee.user?.name}</strong>{' '}
+                                        <span className="text-muted-foreground">({grantee.user?.email})</span>
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setGranteeToRevoke(grantee)}>
+                                        {t('device_permission_revoke')}
+                                    </Button>
+                                </li>
+                            ))
+                        )}
+                    </ul>
+                </div>
+
+                <div className="rounded-[10px] border border-border bg-card p-3.5">
+                    <h2 className="mt-0 mb-3">{t('device_permission_grant')}</h2>
+                    <form onSubmit={submitGrant} className="space-y-3">
+                        <FormField htmlFor="grantEmail" label={t('user_email_label')} error={grantForm.errors.email}>
+                            <Input
+                                id="grantEmail"
+                                type="email"
+                                autoComplete="off"
+                                placeholder={t('user_email_placeholder')}
+                                value={grantForm.data.email}
+                                onChange={(event) => grantForm.setData('email', event.target.value)}
+                            />
+                        </FormField>
+
+                        <Button type="submit" disabled={grantForm.processing || grantForm.data.email === ''}>
+                            {t('device_permission_grant')}
+                        </Button>
+                    </form>
+                </div>
+
+                <div className="rounded-[10px] border border-border bg-card p-3.5">
+                    <h2 className="mt-0 mb-3">{t('device_admin_heading')}</h2>
+
+                    {admin ? (
+                        <p className="mt-0 mb-3">
+                            <strong>{admin.name}</strong> <span className="text-muted-foreground">({admin.email})</span>
+                        </p>
+                    ) : (
+                        <p className="mt-0 mb-3 text-muted-foreground">{t('device_admin_none')}</p>
+                    )}
+
+                    <form
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            setTransferConfirmOpen(true);
+                        }}
+                        className="space-y-3"
+                    >
+                        <FormField htmlFor="transferEmail" label={t('user_email_label')} error={transferForm.errors.email}>
+                            <Input
+                                id="transferEmail"
+                                type="email"
+                                autoComplete="off"
+                                placeholder={t('user_email_placeholder')}
+                                value={transferForm.data.email}
+                                onChange={(event) => transferForm.setData('email', event.target.value)}
+                            />
+                        </FormField>
+
+                        <Button type="submit" variant="outline" disabled={transferForm.processing || transferForm.data.email === ''}>
+                            {t('device_transfer')}
+                        </Button>
+                    </form>
+                </div>
+
+                <ConfirmDialog
+                    open={granteeToRevoke !== null}
+                    onOpenChange={(nextOpen) => {
+                        if (!nextOpen) {
+                            setGranteeToRevoke(null);
+                        }
+                    }}
+                    title={t('device_permission_revoke')}
+                    description={t('device_permission_revoke_confirm', { name: granteeToRevoke?.user?.name ?? '' })}
+                    onConfirm={confirmRevoke}
+                />
+
+                <ConfirmDialog
+                    open={transferConfirmOpen}
+                    onOpenChange={setTransferConfirmOpen}
+                    title={t('device_transfer')}
+                    description={t('device_transfer_confirm', {
+                        name: transferForm.data.email,
+                        email: transferForm.data.email,
+                    })}
+                    onConfirm={confirmTransfer}
+                />
+            </Page>
+        </AppLayout>
+    );
+}
+```
+
+Nota sobre `device_transfer_confirm`: a chave tem os placeholders `:name` e `:email`, mas a tela só conhece o e-mail digitado — quem resolve o nome é o servidor. Passar o e-mail nos dois é proposital e o texto continua fazendo sentido; não invente uma busca de nome no cliente só para preencher o `:name`, porque ela seria exatamente a enumeração que o spec §6 fecha.
+
+Em `resources/js/pages/devices/show.tsx`, dentro de `headerActions`, adicionar antes do botão de controle:
+
+```tsx
+            {abilities.managePermissions ? (
+                <Button variant="outline" asChild>
+                    <Link href={devices.permissions.index.url({ device: device.id })}>{t('device_permissions_title')}</Link>
+                </Button>
+            ) : null}
+```
+
+e acrescentar `abilities: { managePermissions: boolean }` às props de `DevicesShowProps`, desestruturando no componente. O `DeviceController::show()` passa esse array na Task 3.2 — nesta tarefa, adicione já a chave `'abilities' => ['managePermissions' => $device->isAdministeredBy(Auth::user())],` no `Inertia::render` do `show()`.
 
 - [ ] **Step 8: Trocar a busca de membro por e-mail exato**
 
@@ -2518,7 +2730,66 @@ Em `resources/js/pages/devices/show.tsx`, adicionar um link para a nova tela, vi
         return response()->json(['data' => $users]);
 ```
 
-Ajustar `resources/js/pages/places/members.tsx` para mandar `email` em vez de `search` e para tratar "não encontrado" com `user_email_not_found`.
+`app/Http/Requests/StorePlaceMemberRequest.php` — trocar a regra `user_id` por `email`:
+
+```php
+            'email' => ['required', 'string', 'email', 'exists:users,email'],
+            'role' => ['required', 'string', 'in:admin,host'],
+            'label' => ['nullable', 'string', 'max:255'],
+```
+
+e no `withValidator()`, resolver o usuário pelo e-mail antes de checar duplicidade:
+
+```php
+            $userId = User::query()->where('email', $this->input('email'))->value('id');
+
+            if (! $place instanceof Place || $userId === null) {
+                return;
+            }
+```
+
+`app/Http/Controllers/App/PlaceMemberController::store()` — resolver o usuário pelo e-mail:
+
+```php
+        $user = User::query()->where('email', $validated['email'])->firstOrFail();
+
+        $service->create($place, $user->id, $validated['role'], $validated['label'] ?: null);
+```
+
+Em `resources/js/pages/places/members.tsx`, a busca com `Popover` + `Command` deixa de existir. Remover os imports de `Command*`, `Popover*` e `searchMembers`, os estados `selectedUser`, `searchTerm`, `results`, `open`, `searchTimer`, o `useEffect` de busca e as funções `selectUser`/`clearSelectedUser`. O formulário passa a ser:
+
+```tsx
+    const { data, setData, post, processing, errors, reset } = useForm<AddMemberForm>({
+        email: '',
+        role: 'host',
+        label: '',
+    });
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        post(store.url(place.id), {
+            preserveScroll: true,
+            onSuccess: () => reset('email', 'role', 'label'),
+        });
+    };
+```
+
+com `AddMemberForm` virando `{ email: string; role: string; label: string }`, e o primeiro `FormField` do formulário virando:
+
+```tsx
+                        <FormField htmlFor="memberEmail" label={t('user_email_label')} error={errors.email}>
+                            <Input
+                                id="memberEmail"
+                                type="email"
+                                autoComplete="off"
+                                placeholder={t('user_email_placeholder')}
+                                value={data.email}
+                                onChange={(e) => setData('email', e.target.value)}
+                            />
+                        </FormField>
+```
+
+O `disabled` do botão passa de `!data.user_id` para `data.email === ''`. A rota `places.members.search` continua existindo e serve à validação assíncrona opcional; se ficar sem nenhum consumidor no front, deixe-a no lugar — remover rota é escopo de outra tarefa.
 
 - [ ] **Step 9: Rodar e ver passar**
 
@@ -2988,7 +3259,61 @@ Import: `App\Models\AccessCode`.
 
 - [ ] **Step 5: Renderizar na tela**
 
-Em `resources/js/pages/devices/show.tsx`, adicionar um bloco com `device_codes_heading`, colunas `device_codes_origin_place` e `device_codes_window`, e `device_codes_empty` quando vazio. Nenhum campo de PIN.
+Em `resources/js/pages/devices/show.tsx`, acrescentar ao tipo das props:
+
+```tsx
+interface CodeOnDevice {
+    id: number;
+    place_name: string | null;
+    start: string | null;
+    end: string | null;
+}
+```
+
+e o campo `codesOnDevice: CodeOnDevice[];` em `DevicesShowProps`, desestruturando no componente.
+
+Inserir o bloco abaixo depois do card de funções do dispositivo e antes do card de comandos/syncs recentes:
+
+```tsx
+                {abilities.managePermissions ? (
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
+                        <h2 className="mt-0">{t('device_codes_heading')}</h2>
+                        {codesOnDevice.length === 0 ? (
+                            <p className="m-0 text-muted-foreground">{t('device_codes_empty')}</p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse text-left">
+                                    <thead>
+                                        <tr className="border-b border-neutral-200">
+                                            <th className="py-2 pr-3 font-medium">{t('device_codes_origin_place')}</th>
+                                            <th className="py-2 font-medium">{t('device_codes_window')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {/*
+                                          Spec §8: o dono do equipamento audita e revoga, mas não
+                                          ganha a credencial do hóspede de outra pessoa. Nenhuma
+                                          coluna de PIN aqui — nem o backend manda o dígito.
+                                        */}
+                                        {codesOnDevice.map((code) => (
+                                            <tr key={code.id} className="border-b border-neutral-200 last:border-b-0">
+                                                <td className="py-2 pr-3">{code.place_name ?? '—'}</td>
+                                                <td className="py-2">
+                                                    {code.start ? formatDateTime(code.start) : '—'}
+                                                    {' – '}
+                                                    {code.end ? formatDateTime(code.end) : '∞'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                ) : null}
+```
+
+`formatDateTime` já existe no rodapé deste arquivo — reutilize, não crie outra.
 
 - [ ] **Step 6: Rodar e ver passar**
 
