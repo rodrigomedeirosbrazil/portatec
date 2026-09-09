@@ -80,6 +80,10 @@ class DevicesTest extends TestCase
         $device = Device::create(['name' => 'Fechadura', 'brand' => DeviceBrandEnum::Portatec]);
         $device->places()->attach($place->id);
 
+        // Editar é configuração, não uso: exige ser admin DO DISPOSITIVO, e
+        // não basta administrar um local que o contém.
+        $device->deviceUsers()->create(['user_id' => $user->id, 'role' => 'admin']);
+
         $this->actingAs($user)
             ->get("/app/devices/{$device->id}/edit")
             ->assertOk()

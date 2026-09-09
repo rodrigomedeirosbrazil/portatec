@@ -106,6 +106,26 @@ class DevicePermissionTest extends TestCase
         $this->assertFalse($member->can('attach', $device));
     }
 
+    public function test_edit_screen_is_closed_to_grantee_and_place_member(): void
+    {
+        $admin = User::factory()->create();
+        $grantee = User::factory()->create();
+        $member = User::factory()->create();
+
+        $device = $this->deviceOwnedBy($admin);
+        $device->deviceUsers()->create(['user_id' => $grantee->id, 'role' => 'user']);
+
+        $place = Place::create(['name' => 'Apto 1']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $member->id, 'role' => 'admin']);
+        $device->places()->attach($place->id);
+
+        // A tela de edição expõe pinos e external_device_id: é configuração,
+        // não uso. Só o admin do dispositivo entra.
+        $this->actingAs($grantee)->get("/app/devices/{$device->id}/edit")->assertForbidden();
+        $this->actingAs($member)->get("/app/devices/{$device->id}/edit")->assertForbidden();
+        $this->actingAs($admin)->get("/app/devices/{$device->id}/edit")->assertOk();
+    }
+
     private function deviceOwnedBy(User $user): Device
     {
         $device = Device::withoutEvents(fn (): Device => Device::create([

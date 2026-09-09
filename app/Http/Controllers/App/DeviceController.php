@@ -270,24 +270,20 @@ class DeviceController extends Controller
     }
 
     /**
-     * Ported 1:1 from `App\Livewire\Devices\Edit::mount()`: access is
-     * granted either through the user's link to one of the device's places,
-     * or — for a device with no place yet — through the direct
-     * `device_user` link. `deviceFunctions` falls back to a single empty
-     * row when the device has none, matching `Edit::addFunction()`.
+     * A tela de edição mostra pinos, funções e `external_device_id` — ou seja,
+     * a configuração do dispositivo. Ela tem que usar a MESMA habilidade do
+     * `update()`, senão vira uma porta de leitura para quem só recebeu
+     * concessão de uso ou é membro de um local que contém o dispositivo.
+     * `deviceFunctions` cai para uma linha vazia quando o dispositivo não tem
+     * nenhuma, como o formulário espera.
      */
     public function edit(Request $request, Device $device): Response
     {
+        abort_unless(Auth::user()?->can('update', $device), 403);
+
         $device->load(['deviceFunctions', 'places']);
 
-        $devicePlaceIds = $device->places->pluck('id')->all();
-        $hasAccess = $devicePlaceIds !== []
-            ? Auth::user()->placeUsers()->whereIn('place_id', $devicePlaceIds)->exists()
-            : Auth::user()->devices()->where('devices.id', $device->id)->exists();
-
-        abort_unless($hasAccess, 403);
-
-        $placeIds = $devicePlaceIds;
+        $placeIds = $device->places->pluck('id')->all();
         if ($placeIds === [] && $device->place_id !== null) {
             $placeIds = [$device->place_id];
         }
