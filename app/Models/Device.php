@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\DeviceBrandEnum;
+use App\Enums\DeviceRoleEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Events\DeviceCreatedEvent;
 use App\Events\DeviceDeletedEvent;
@@ -122,6 +123,30 @@ class Device extends Model
     public function deviceUsers(): HasMany
     {
         return $this->hasMany(DeviceUser::class);
+    }
+
+    /** O dono do dispositivo. `null` em dispositivo órfão — ver spec §4. */
+    public function adminUser(): ?User
+    {
+        return $this->deviceUsers()
+            ->where('role', DeviceRoleEnum::Admin)
+            ->first()?->user;
+    }
+
+    public function isAdministeredBy(User $user): bool
+    {
+        return $this->deviceUsers()
+            ->where('user_id', $user->id)
+            ->where('role', DeviceRoleEnum::Admin)
+            ->exists();
+    }
+
+    /** Admin conta como quem pode usar: quem manda também usa. */
+    public function isUsableBy(User $user): bool
+    {
+        return $this->deviceUsers()
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     public function accessCodeDeviceSyncs(): HasMany
