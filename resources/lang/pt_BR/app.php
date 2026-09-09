@@ -146,6 +146,34 @@ return [
         'host' => 'Anfitrião',
     ],
 
+    // Permissão de dispositivo
+    'device_roles' => [
+        'admin' => 'Administrador',
+        'user' => 'Uso',
+    ],
+
+    'device_permissions_title' => 'Permissões do dispositivo',
+    'device_permissions_heading' => 'Quem pode usar',
+    'device_permissions_empty' => 'Ninguém além do administrador tem acesso a este dispositivo.',
+    'device_permission_grant' => 'Conceder acesso',
+    'device_permission_granted' => 'Acesso concedido.',
+    'device_permission_revoke' => 'Revogar',
+    'device_permission_revoked' => 'Acesso revogado. O dispositivo saiu dos locais dessa pessoa e os códigos de acesso originados neles foram apagados do equipamento.',
+    'device_permission_revoke_confirm' => 'Revogar o acesso de :name? Hóspedes com estadia em andamento perdem o acesso a este dispositivo imediatamente.',
+    'device_admin_heading' => 'Administrador do dispositivo',
+    'device_admin_none' => 'Este dispositivo está sem administrador. Fale com o suporte.',
+    'device_transfer' => 'Transferir administração',
+    'device_transfer_confirm' => 'Transferir a administração deste dispositivo para :name (:email)? Você continua podendo acioná-lo, mas perde a configuração e não desfaz essa ação sozinho.',
+    'device_transferred' => 'Administração transferida para :name.',
+    'device_codes_heading' => 'Códigos gravados neste dispositivo',
+    'device_codes_empty' => 'Nenhum código de acesso ativo neste dispositivo.',
+    'device_codes_origin_place' => 'Local de origem',
+    'device_codes_window' => 'Validade',
+    'user_email_label' => 'E-mail da pessoa',
+    'user_email_placeholder' => 'nome@exemplo.com',
+    'user_email_not_found' => 'Nenhuma conta encontrada com esse e-mail.',
+    'access_code_pin_conflict' => 'Este PIN já está em uso em um dos dispositivos deste local, num período que se sobrepõe.',
+
     // Membros do local
     'members' => 'Membros',
     'manage_members' => 'Gerir membros',

@@ -57,4 +57,41 @@ class TranslationKeysTest extends TestCase
             .'os dois cabeçalhos de integrações passam a usar [app.integrations].'
         );
     }
+
+    public function test_device_permission_keys_exist(): void
+    {
+        $keys = [
+            'device_roles.admin',
+            'device_roles.user',
+            'device_permissions_title',
+            'device_permissions_heading',
+            'device_permissions_empty',
+            'device_permission_grant',
+            'device_permission_granted',
+            'device_permission_revoke',
+            'device_permission_revoked',
+            'device_permission_revoke_confirm',
+            'device_admin_heading',
+            'device_admin_none',
+            'device_transfer',
+            'device_transfer_confirm',
+            'device_transferred',
+            'device_codes_heading',
+            'device_codes_empty',
+            'device_codes_origin_place',
+            'device_codes_window',
+            'user_email_label',
+            'user_email_placeholder',
+            'user_email_not_found',
+            'access_code_pin_conflict',
+        ];
+
+        foreach ($keys as $key) {
+            $this->assertNotSame(
+                "app.{$key}",
+                trans("app.{$key}"),
+                "A chave de tradução [app.{$key}] não existe."
+            );
+        }
+    }
 }
