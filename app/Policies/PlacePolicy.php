@@ -63,11 +63,6 @@ class PlacePolicy
         return true;
     }
 
-    public function replicate(User $user, Place $place): bool
-    {
-        return $this->hasPlaceAdminAccess($user, $place->id);
-    }
-
     public function manageMembers(User $user, Place $place): bool
     {
         return $this->hasPlaceAdminAccess($user, $place->id);

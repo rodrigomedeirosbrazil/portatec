@@ -96,7 +96,6 @@ class PlaceController extends Controller
             'bookingSources' => IntegrationResource::collection($place->integrations),
             'abilities' => [
                 'manageMembers' => Auth::user()?->can('manageMembers', $place) ?? false,
-                'replicate' => Auth::user()?->can('replicate', $place) ?? false,
                 'update' => Auth::user()?->can('update', $place) ?? false,
             ],
         ]);

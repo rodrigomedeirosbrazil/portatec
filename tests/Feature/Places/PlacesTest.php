@@ -164,17 +164,6 @@ class PlacesTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('places/members'));
     }
 
-    public function test_clone_renders_places_clone(): void
-    {
-        $user = User::factory()->create();
-        $place = $this->makePlaceWithAdmin($user);
-
-        $this->actingAs($user)
-            ->get("/app/places/{$place->id}/clone")
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('places/clone'));
-    }
-
     public function test_attach_device_renders_places_attach_device(): void
     {
         $user = User::factory()->create();
@@ -247,17 +236,6 @@ class PlacesTest extends TestCase
 
         $this->actingAs($user)
             ->get("/app/places/{$foreignPlace->id}/members")
-            ->assertForbidden();
-    }
-
-    public function test_user_cannot_clone_place_of_another_user(): void
-    {
-        $user = User::factory()->create();
-        $otherUser = User::factory()->create();
-        $foreignPlace = $this->makePlaceWithAdmin($otherUser);
-
-        $this->actingAs($user)
-            ->get("/app/places/{$foreignPlace->id}/clone")
             ->assertForbidden();
     }
 
@@ -505,47 +483,6 @@ class PlacesTest extends TestCase
         $this->actingAs($user)
             ->getJson("/app/places/{$foreignPlace->id}/members/search?search=an")
             ->assertForbidden();
-    }
-
-    // ------------------------------------------------------------------
-    // Clone
-    // ------------------------------------------------------------------
-
-    public function test_clone_creates_new_place_ignoring_empty_rows_and_self(): void
-    {
-        $user = User::factory()->create();
-        $place = $this->makePlaceWithAdmin($user, 'Original');
-        $otherMember = User::factory()->create();
-
-        $this->actingAs($user)
-            ->post("/app/places/{$place->id}/clone", [
-                'name' => 'Clone da Original',
-                'additionalMembers' => [
-                    ['user_id' => null, 'role' => 'host'],
-                    ['user_id' => $user->id, 'role' => 'admin'],
-                    ['user_id' => $otherMember->id, 'role' => 'host', 'label' => 'Convidado'],
-                ],
-            ])
-            ->assertRedirect();
-
-        $newPlace = Place::query()->where('name', 'Clone da Original')->firstOrFail();
-
-        $this->assertDatabaseHas('place_users', [
-            'place_id' => $newPlace->id,
-            'user_id' => $user->id,
-            'role' => 'admin',
-        ]);
-
-        $this->assertDatabaseHas('place_users', [
-            'place_id' => $newPlace->id,
-            'user_id' => $otherMember->id,
-            'role' => 'host',
-        ]);
-
-        $this->assertSame(
-            2,
-            PlaceUser::query()->where('place_id', $newPlace->id)->count()
-        );
     }
 
     // ------------------------------------------------------------------

@@ -12,7 +12,6 @@ use App\Http\Controllers\App\DeviceIntegrationController;
 use App\Http\Controllers\App\IntegrationController;
 use App\Http\Controllers\App\IntegrationPlaceController;
 use App\Http\Controllers\App\PlaceAttachDeviceController;
-use App\Http\Controllers\App\PlaceCloneController;
 use App\Http\Controllers\App\PlaceControlController;
 use App\Http\Controllers\App\PlaceController;
 use App\Http\Controllers\App\PlaceDeviceController;
@@ -89,8 +88,6 @@ Route::middleware('auth')
         Route::post('/places/{place}/members', [PlaceMemberController::class, 'store'])->name('places.members.store');
         Route::delete('/places/{place}/members/{placeUser}', [PlaceMemberController::class, 'destroy'])->name('places.members.destroy');
         Route::get('/places/{place}/members/search', PlaceMemberSearchController::class)->name('places.members.search');
-        Route::get('/places/{place}/clone', [PlaceCloneController::class, 'create'])->name('places.clone');
-        Route::post('/places/{place}/clone', [PlaceCloneController::class, 'store'])->name('places.clone.store');
         Route::get('/places/{place}', [PlaceController::class, 'show'])->name('places.show');
         Route::get('/places/{place}/control', [PlaceControlController::class, 'show'])->name('places.control');
         Route::post('/places/{place}/commands', [DeviceCommandController::class, 'store'])->name('places.commands.store');

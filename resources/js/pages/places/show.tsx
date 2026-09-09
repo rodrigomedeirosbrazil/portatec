@@ -22,7 +22,6 @@ interface PlacesShowProps {
     bookingSources: Integration[];
     abilities: {
         manageMembers: boolean;
-        replicate: boolean;
         update: boolean;
     };
     [key: string]: unknown;
@@ -65,11 +64,6 @@ export default function PlacesShow({ place, activeAccessCodes, bookingsCount, bo
                     {abilities.manageMembers ? (
                         <DropdownMenuItem asChild>
                             <Link href={places.members.url({ place: place.id })}>{t('manage_members')}</Link>
-                        </DropdownMenuItem>
-                    ) : null}
-                    {abilities.replicate ? (
-                        <DropdownMenuItem asChild>
-                            <Link href={places.clone.url({ place: place.id })}>{t('clone_place')}</Link>
                         </DropdownMenuItem>
                     ) : null}
                 </DropdownMenuContent>
