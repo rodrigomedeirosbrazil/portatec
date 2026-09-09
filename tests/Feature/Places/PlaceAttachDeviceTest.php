@@ -133,6 +133,51 @@ class PlaceAttachDeviceTest extends TestCase
             ->assertDontSee('APTO DO VIZINHO');
     }
 
+    public function test_place_admin_without_any_grant_sees_the_empty_state(): void
+    {
+        $owner = User::factory()->create();
+        $resident = User::factory()->create();
+
+        // O morador e host no condominio e admin do local dele, mas nao tem
+        // concessao nenhuma: nao ha o que associar, e a tela precisa explicar
+        // por que - o texto antigo dizia "use um que esteja em outro local que
+        // voce acessa", exatamente o que deixou de funcionar.
+        $condominio = Place::create(['name' => 'Village']);
+        PlaceUser::create(['place_id' => $condominio->id, 'user_id' => $owner->id, 'role' => 'admin']);
+        PlaceUser::create(['place_id' => $condominio->id, 'user_id' => $resident->id, 'role' => 'host']);
+
+        $gate = $this->deviceOwnedBy($owner, 'Garagem A');
+        $gate->places()->attach($condominio->id);
+
+        $casa = $this->placeAdministeredBy($resident, 'Village - Casa 3');
+
+        $this->actingAs($resident)
+            ->get("/app/places/{$casa->id}/devices/attach")
+            ->assertOk()
+            ->assertDontSee('Garagem A')
+            // A tela renderiza `attach_device_empty` quando a lista vem vazia;
+            // o texto em si e coberto por TranslationKeysTest.
+            ->assertInertia(fn ($page) => $page
+                ->component('places/attach-device')
+                ->where('devices', []));
+    }
+
+    public function test_after_a_grant_the_device_shows_up(): void
+    {
+        $owner = User::factory()->create();
+        $resident = User::factory()->create();
+
+        $gate = $this->deviceOwnedBy($owner, 'Garagem A');
+        $gate->deviceUsers()->create(['user_id' => $resident->id, 'role' => 'user']);
+
+        $casa = $this->placeAdministeredBy($resident, 'Village - Casa 3');
+
+        $this->actingAs($resident)
+            ->get("/app/places/{$casa->id}/devices/attach")
+            ->assertOk()
+            ->assertSee('Garagem A');
+    }
+
     private function deviceOwnedBy(User $user, string $name): Device
     {
         $device = Device::withoutEvents(fn (): Device => Device::create([

@@ -58,6 +58,25 @@ class TranslationKeysTest extends TestCase
         );
     }
 
+    /**
+     * O texto da tela de anexar descrevia a regra ANTIGA: "use um que já
+     * esteja em outro local que você acessa". Depois da permissão por
+     * dispositivo isso deixou de funcionar, e a tela continuava prometendo —
+     * um morador seguiu a instrução e não entendeu a lista vazia.
+     */
+    public function test_attach_device_copy_does_not_promise_the_old_rule(): void
+    {
+        foreach (['attach_device_description', 'attach_device_empty'] as $key) {
+            $this->assertStringNotContainsString(
+                'que você acessa',
+                trans("app.{$key}"),
+                "O texto [app.{$key}] ainda descreve a regra antiga de acesso por local."
+            );
+        }
+
+        $this->assertStringContainsString('concedeu', trans('app.attach_device_empty'));
+    }
+
     public function test_device_permission_keys_exist(): void
     {
         $keys = [

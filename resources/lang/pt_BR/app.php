@@ -206,12 +206,12 @@ return [
 
     // Associar dispositivo ao local
     'attach_device' => 'Adicionar dispositivo ao local',
-    'attach_device_description' => 'Escolha um dispositivo existente ou que esteja em outro local que você acessa para associá-lo a :place.',
+    'attach_device_description' => 'Escolha um dispositivo que você administra ou que alguém concedeu a você, para associá-lo a :place.',
     'attach_device_select' => 'Dispositivo',
     'attach_device_select_placeholder' => 'Selecione um dispositivo',
     'attach_device_no_place' => 'Sem local',
     'attach_device_submit' => 'Associar ao local',
-    'attach_device_empty' => 'Não há dispositivos disponíveis para associar. Crie um novo dispositivo em Dispositivos ou use um que já esteja em outro local que você acessa.',
+    'attach_device_empty' => 'Nenhum dispositivo disponível. Você só pode associar dispositivos que administra ou que alguém concedeu a você — participar de um local que contém o dispositivo não basta. Para usar o dispositivo de outra pessoa, peça a quem o administra para conceder acesso a você na tela de permissões do dispositivo. Ou cadastre um dispositivo novo em Dispositivos.',
     'device_already_in_place' => 'Este dispositivo já está associado a este local.',
     'device_attached' => 'Dispositivo ":name" associado ao local com sucesso.',
 
