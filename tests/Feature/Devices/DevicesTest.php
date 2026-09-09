@@ -10,7 +10,6 @@ use App\Enums\PlaceRoleEnum;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Models\Place;
-use App\Models\PlaceDeviceFunction;
 use App\Models\PlaceUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -80,10 +79,61 @@ class DevicesTest extends TestCase
         $device = Device::create(['name' => 'Fechadura', 'brand' => DeviceBrandEnum::Portatec]);
         $device->places()->attach($place->id);
 
+        // Editar é configuração, não uso: exige ser admin DO DISPOSITIVO, e
+        // não basta administrar um local que o contém.
+        $device->deviceUsers()->create(['user_id' => $user->id, 'role' => 'admin']);
+
         $this->actingAs($user)
             ->get("/app/devices/{$device->id}/edit")
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('devices/edit'));
+    }
+
+    public function test_host_cannot_create_a_device_inside_the_place(): void
+    {
+        $admin = User::factory()->create();
+        $host = User::factory()->create();
+
+        $place = Place::create(['name' => 'Village']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $admin->id, 'role' => 'admin']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $host->id, 'role' => 'host']);
+
+        // Criar um dispositivo ja anexado e o mesmo ato que anexar, por outra
+        // porta. "So o admin adiciona dispositivo" tem que valer nos dois.
+        $this->actingAs($host)
+            ->post('/app/devices', [
+                'name' => 'Portao pirata',
+                'brand' => 'portatec',
+                'placeIds' => [$place->id],
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(0, $place->devices()->count());
+
+        $this->actingAs($admin)
+            ->post('/app/devices', [
+                'name' => 'Portao legitimo',
+                'brand' => 'portatec',
+                'placeIds' => [$place->id],
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(1, $place->devices()->count());
+    }
+
+    public function test_host_does_not_see_the_place_in_the_device_form(): void
+    {
+        $admin = User::factory()->create();
+        $host = User::factory()->create();
+
+        $place = Place::create(['name' => 'LOCAL SO DO ADMIN']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $admin->id, 'role' => 'admin']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $host->id, 'role' => 'host']);
+
+        $this->actingAs($host)
+            ->get('/app/devices/create')
+            ->assertOk()
+            ->assertDontSee('LOCAL SO DO ADMIN');
     }
 
     public function test_control_renders_devices_control(): void
@@ -383,7 +433,12 @@ class DevicesTest extends TestCase
     // Edit: reconcile device functions + sync place_device_functions
     // ------------------------------------------------------------------
 
-    public function test_update_deletes_removed_function_updates_existing_and_creates_new_and_resyncs_places(): void
+    /**
+     * Task 2.1: `update()` deixou de sincronizar locais — locais só mudam
+     * pelos endpoints de anexar/desanexar. O `placeIds` do payload é
+     * ignorado; o pivot de `placeA` permanece intacto.
+     */
+    public function test_update_deletes_removed_function_updates_existing_and_creates_new_and_does_not_touch_places(): void
     {
         $user = User::factory()->create();
         $placeA = $this->makePlaceWithAdmin($user, 'Casa A');
@@ -391,12 +446,10 @@ class DevicesTest extends TestCase
 
         $device = Device::create(['name' => 'Dispositivo', 'brand' => DeviceBrandEnum::Portatec]);
         $device->places()->attach($placeA->id);
+        $device->deviceUsers()->create(['user_id' => $user->id, 'role' => 'admin']);
 
         $toKeep = DeviceFunction::create(['device_id' => $device->id, 'type' => DeviceTypeEnum::Switch, 'pin' => '1']);
         $toRemove = DeviceFunction::create(['device_id' => $device->id, 'type' => DeviceTypeEnum::Button, 'pin' => '2']);
-
-        PlaceDeviceFunction::create(['place_id' => $placeA->id, 'device_function_id' => $toKeep->id]);
-        PlaceDeviceFunction::create(['place_id' => $placeA->id, 'device_function_id' => $toRemove->id]);
 
         $this->actingAs($user)
             ->put("/app/devices/{$device->id}", [
@@ -421,13 +474,9 @@ class DevicesTest extends TestCase
         // new function created
         $this->assertDatabaseHas('device_functions', ['device_id' => $device->id, 'type' => 'button', 'pin' => '3']);
 
-        // places pivot resynced to placeB only
-        $this->assertTrue($device->fresh()->places()->where('places.id', $placeB->id)->exists());
-        $this->assertFalse($device->fresh()->places()->where('places.id', $placeA->id)->exists());
-
-        // place_device_functions resynced: old place link for kept function gone, no leftover for removed function
-        $this->assertDatabaseMissing('place_device_functions', ['place_id' => $placeA->id, 'device_function_id' => $toKeep->id]);
-        $this->assertDatabaseMissing('place_device_functions', ['device_function_id' => $toRemove->id]);
+        // places pivot untouched: still placeA, not placeB (placeIds is ignored)
+        $this->assertTrue($device->fresh()->places()->where('places.id', $placeA->id)->exists());
+        $this->assertFalse($device->fresh()->places()->where('places.id', $placeB->id)->exists());
     }
 
     public function test_update_rejects_place_ids_the_user_does_not_own(): void

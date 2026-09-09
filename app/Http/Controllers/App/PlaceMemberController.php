@@ -11,6 +11,7 @@ use App\Http\Resources\PlaceResource;
 use App\Http\Resources\PlaceUserResource;
 use App\Models\Place;
 use App\Models\PlaceUser;
+use App\Models\User;
 use App\Services\PlaceMemberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,12 +39,9 @@ class PlaceMemberController extends Controller
 
         $validated = $request->validated();
 
-        $service->create(
-            $place,
-            (int) $validated['user_id'],
-            $validated['role'],
-            $validated['label'] ?: null
-        );
+        $user = User::query()->where('email', $validated['email'])->firstOrFail();
+
+        $service->create($place, $user->id, $validated['role'], $validated['label'] ?: null);
 
         return redirect()
             ->route('app.places.members', ['place' => $place->id])

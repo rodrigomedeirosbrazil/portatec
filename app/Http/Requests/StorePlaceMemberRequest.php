@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Models\Place;
 use App\Models\PlaceUser;
+use App\Models\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -22,7 +23,7 @@ class StorePlaceMemberRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'email' => ['required', 'string', 'email', 'exists:users,email'],
             'role' => ['required', 'string', 'in:admin,host'],
             'label' => ['nullable', 'string', 'max:255'],
         ];
@@ -32,7 +33,7 @@ class StorePlaceMemberRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $place = $this->route('place');
-            $userId = $this->input('user_id');
+            $userId = User::query()->where('email', $this->input('email'))->value('id');
 
             if (! $place instanceof Place || $userId === null) {
                 return;
@@ -44,7 +45,7 @@ class StorePlaceMemberRequest extends FormRequest
                 ->exists();
 
             if ($alreadyMember) {
-                $validator->errors()->add('user_id', __('app.member_already_in_place'));
+                $validator->errors()->add('email', __('app.member_already_in_place'));
             }
         });
     }

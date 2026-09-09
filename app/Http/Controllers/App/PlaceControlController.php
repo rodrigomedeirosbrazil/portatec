@@ -23,10 +23,8 @@ class PlaceControlController extends Controller
     ): Response {
         $place->load(['devices.deviceFunctions', 'devices.integration']);
 
-        abort_unless(
-            $place->placeUsers()->where('user_id', Auth::id())->exists(),
-            403
-        );
+        // Ver o painel de controle e USO: membro do local basta.
+        abort_unless(Auth::user()?->can('view', $place), 403);
 
         // Abrir o painel de um local torna esse local o atual. É a mesma regra
         // de precedência que as listas aplicam a um `place_id` explícito na URL:

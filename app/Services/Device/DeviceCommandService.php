@@ -15,6 +15,7 @@ use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Services\DeviceService;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -49,8 +50,7 @@ class DeviceCommandService
         $mqtt->disconnect();
 
         $placeId = $device->places()->value('places.id')
-            ?? $device->place_id
-            ?? $device->placeDeviceFunctions()->value('place_id');
+            ?? $device->place_id;
 
         if ($placeId === null) {
             return $commandId;
@@ -146,7 +146,6 @@ class DeviceCommandService
         $device->refresh();
         $placeIds = $device->places()
             ->pluck('places.id')
-            ->merge($device->placeDeviceFunctions()->pluck('place_id'))
             ->unique();
 
         $pin = data_get($payload, 'pin') ?? data_get($payload, 'sensor-pin');
@@ -182,7 +181,6 @@ class DeviceCommandService
 
         $placeIds = $device->places()
             ->pluck('places.id')
-            ->merge($device->placeDeviceFunctions()->pluck('place_id'))
             ->unique();
         foreach ($placeIds as $placeId) {
             PlaceDeviceStatusEvent::dispatch((int) $placeId, $device->id, $device->isAvailable());
@@ -205,28 +203,29 @@ class DeviceCommandService
 
         $pin = (string) data_get($payload, 'pin', data_get($payload, 'default_pin', ''));
         $result = $this->normalizeAccessResult(data_get($payload, 'result', 'invalid'));
-        $placeId = $device->places()->value('places.id')
-            ?? $device->place_id
-            ?? $device->placeDeviceFunctions()->value('place_id');
 
-        $accessCode = null;
-        if ($placeId !== null && $pin !== '') {
-            $accessCode = AccessCode::query()
-                ->where('place_id', $placeId)
-                ->where('pin', $pin)
-                ->first();
+        $deviceTimestamp = data_get($payload, 'timestamp_device')
+            ? Carbon::createFromTimestamp((int) data_get($payload, 'timestamp_device'))
+            : null;
+
+        // Spec §7: num dispositivo compartilhado, `pin` sozinho não identifica
+        // ninguém — o mesmo código pode ter sido usado por unidades diferentes
+        // em épocas diferentes. Quem desempata é o instante do evento.
+        $candidateIds = $this->resolveAccessCodeCandidates($device, $pin, $deviceTimestamp ?? now());
+
+        $metadata = $payload;
+        if (count($candidateIds) > 1) {
+            $metadata['candidate_access_code_ids'] = $candidateIds;
         }
 
         try {
             $accessEvent = AccessEvent::create([
                 'device_id' => $device->id,
-                'access_code_id' => $accessCode?->id,
+                'access_code_id' => count($candidateIds) === 1 ? $candidateIds[0] : null,
                 'pin' => $pin,
                 'result' => $result,
-                'device_timestamp' => data_get($payload, 'timestamp_device')
-                    ? Carbon::createFromTimestamp((int) data_get($payload, 'timestamp_device'))
-                    : null,
-                'metadata' => $payload,
+                'device_timestamp' => $deviceTimestamp,
+                'metadata' => $metadata,
             ]);
             Log::info('MQTT access event recorded', [
                 'chip_id' => $chipId,
@@ -243,6 +242,40 @@ class DeviceCommandService
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Códigos com este PIN, em qualquer local do dispositivo, cuja janela
+     * contém o instante do evento. Mais de um candidato é a colisão herdada
+     * de §7: o sistema não escolhe um dono, registra os dois.
+     *
+     * @return array<int, int>
+     */
+    private function resolveAccessCodeCandidates(Device $device, string $pin, CarbonInterface $at): array
+    {
+        if ($pin === '') {
+            return [];
+        }
+
+        $placeIds = $device->places()->pluck('places.id');
+
+        if ($device->place_id !== null) {
+            $placeIds = $placeIds->push($device->place_id);
+        }
+
+        $placeIds = $placeIds->unique()->values();
+
+        if ($placeIds->isEmpty()) {
+            return [];
+        }
+
+        return AccessCode::query()
+            ->whereIn('place_id', $placeIds)
+            ->where('pin', $pin)
+            ->where('start', '<=', $at)
+            ->where(fn ($query) => $query->whereNull('end')->orWhere('end', '>=', $at))
+            ->pluck('id')
+            ->all();
     }
 
     /**
@@ -285,7 +318,7 @@ class DeviceCommandService
 
     private function dispatchAckToPlaces(Device $device, DeviceFunction $deviceFunction, string $command, ?string $commandId = null): void
     {
-        $placeIds = $deviceFunction->placeDeviceFunctions->pluck('place_id')->unique();
+        $placeIds = $deviceFunction->device->places->pluck('id')->unique();
 
         if ($placeIds->isEmpty()) {
             $placeIds = $device->places()->pluck('places.id');

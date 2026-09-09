@@ -1,16 +1,13 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState, type FormEventHandler } from 'react';
+import { useState, type FormEventHandler } from 'react';
 
 import { destroy, store } from '@/actions/App/Http/Controllers/App/PlaceMemberController';
-import searchMembers from '@/actions/App/Http/Controllers/App/PlaceMemberSearchController';
 import { show } from '@/actions/App/Http/Controllers/App/PlaceController';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { FormField } from '@/components/form-field';
 import { Page, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslations } from '@/hooks/use-translations';
 import { AppLayout } from '@/layouts/app-layout';
@@ -24,14 +21,8 @@ interface MembersPageProps {
     [key: string]: unknown;
 }
 
-interface SearchResultUser {
-    id: number;
-    name: string;
-    email: string;
-}
-
 interface AddMemberForm {
-    user_id: number | null;
+    email: string;
     role: string;
     label: string;
 }
@@ -41,65 +32,19 @@ export default function Members({ place, placeUsers, placeRoles }: MembersPagePr
     const { props } = usePage<{ errors: Record<string, string> }>();
     const memberError = props.errors.member;
 
-    const [selectedUser, setSelectedUser] = useState<SearchResultUser | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [results, setResults] = useState<SearchResultUser[]>([]);
-    const [open, setOpen] = useState(false);
-    const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
     const [memberToRemove, setMemberToRemove] = useState<PlaceUser | null>(null);
 
     const { data, setData, post, processing, errors, reset } = useForm<AddMemberForm>({
-        user_id: null,
+        email: '',
         role: 'host',
         label: '',
     });
-
-    useEffect(() => {
-        if (searchTimer.current) {
-            clearTimeout(searchTimer.current);
-        }
-
-        if (searchTerm.length < 2) {
-            setResults([]);
-            return;
-        }
-
-        searchTimer.current = setTimeout(() => {
-            fetch(searchMembers.url({ place: place.id }, { query: { search: searchTerm } }))
-                .then((response) => response.json())
-                .then((body: { data: SearchResultUser[] }) => setResults(body.data ?? []))
-                .catch(() => setResults([]));
-        }, 300);
-
-        return () => {
-            if (searchTimer.current) {
-                clearTimeout(searchTimer.current);
-            }
-        };
-    }, [searchTerm, place.id]);
-
-    function selectUser(user: SearchResultUser) {
-        setSelectedUser(user);
-        setData('user_id', user.id);
-        setOpen(false);
-    }
-
-    function clearSelectedUser() {
-        setSelectedUser(null);
-        setData('user_id', null);
-        setSearchTerm('');
-        setResults([]);
-    }
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         post(store.url(place.id), {
             preserveScroll: true,
-            onSuccess: () => {
-                clearSelectedUser();
-                reset('role', 'label');
-            },
+            onSuccess: () => reset('email', 'role', 'label'),
         });
     };
 
@@ -158,56 +103,15 @@ export default function Members({ place, placeUsers, placeRoles }: MembersPagePr
                 <div className="rounded-[10px] border border-border bg-card p-3.5">
                     <h2 className="mt-0 mb-3">{t('add_member')}</h2>
                     <form onSubmit={submit} className="space-y-3">
-                        <FormField htmlFor="userSearch" label={t('member_search_label')} error={errors.user_id}>
-                            {selectedUser ? (
-                                <div className="flex items-center justify-between gap-2 rounded-lg border border-input bg-muted/40 p-2.5">
-                                    <span>
-                                        <strong>{selectedUser.name}</strong>{' '}
-                                        <span className="text-muted-foreground">({selectedUser.email})</span>
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={clearSelectedUser}
-                                        className="text-sm text-primary-600 hover:text-primary-700 hover:underline"
-                                    >
-                                        {t('member_selected_change')}
-                                    </button>
-                                </div>
-                            ) : (
-                                <Popover open={open} onOpenChange={setOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Input
-                                            id="userSearch"
-                                            type="text"
-                                            autoComplete="off"
-                                            placeholder={t('member_search_placeholder')}
-                                            value={searchTerm}
-                                            onChange={(e) => {
-                                                setSearchTerm(e.target.value);
-                                                setOpen(true);
-                                            }}
-                                            onFocus={() => setOpen(true)}
-                                        />
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-(--radix-popper-anchor-width) p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                                        <Command shouldFilter={false}>
-                                            <CommandList>
-                                                {searchTerm.length >= 2 ? (
-                                                    <CommandEmpty>{t('member_search_no_results')}</CommandEmpty>
-                                                ) : null}
-                                                <CommandGroup>
-                                                    {results.map((user) => (
-                                                        <CommandItem key={user.id} value={String(user.id)} onSelect={() => selectUser(user)}>
-                                                            <strong>{user.name}</strong>{' '}
-                                                            <span className="text-muted-foreground">({user.email})</span>
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                            )}
+                        <FormField htmlFor="memberEmail" label={t('user_email_label')} error={errors.email}>
+                            <Input
+                                id="memberEmail"
+                                type="email"
+                                autoComplete="off"
+                                placeholder={t('user_email_placeholder')}
+                                value={data.email}
+                                onChange={(e) => setData('email', e.target.value)}
+                            />
                         </FormField>
 
                         <FormField htmlFor="addRole" label={t('role')}>
@@ -235,7 +139,7 @@ export default function Members({ place, placeUsers, placeRoles }: MembersPagePr
                             />
                         </FormField>
 
-                        <Button type="submit" disabled={processing || !data.user_id}>
+                        <Button type="submit" disabled={processing || data.email === ''}>
                             {t('member_add_submit')}
                         </Button>
                     </form>

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\App;
 
 use App\Enums\DeviceBrandEnum;
 use App\Enums\DeviceTypeEnum;
+use App\Enums\PlaceRoleEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDeviceRequest;
 use App\Http\Requests\UpdateDeviceRequest;
@@ -13,13 +14,13 @@ use App\Http\Resources\AccessCodeDeviceSyncResource;
 use App\Http\Resources\CommandLogResource;
 use App\Http\Resources\DeviceResource;
 use App\Http\Resources\PlaceResource;
+use App\Models\AccessCode;
 use App\Models\AccessCodeDeviceSync;
 use App\Models\CommandLog;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Models\Place;
 use App\Services\CurrentPlaceService;
-use App\Services\Device\DevicePlaceFunctionSyncService;
 use App\Services\Tuya\TuyaIntegrationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -118,30 +119,25 @@ class DeviceController extends Controller
     }
 
     /**
+     * Os locais que alimentam o filtro da listagem. São SÓ os locais do
+     * próprio usuário.
+     *
+     * Já foram os locais dele mais os de todo dispositivo a que ele estivesse
+     * vinculado em `device_user`. Aquilo era inofensivo enquanto `device_user`
+     * só guardava importação Tuya — o vínculo era com dispositivo dele, nos
+     * locais dele. Com a concessão, virou vazamento: o morador que recebeu o
+     * portão do condomínio passaria a ver, no filtro, o nome do condomínio e
+     * o da unidade de cada vizinho que divide aquele portão.
+     *
+     * A listagem de dispositivos não depende disto para escopo — ela tem o
+     * próprio ramo `whereHas('deviceUsers')`, que mostra o dispositivo
+     * concedido independentemente do local.
+     *
      * @return Collection<int, int>
      */
     private function allowedPlaceIds(): Collection
     {
-        $userPlaceIds = Auth::user()->placeUsers()->pluck('place_id');
-        $sharedDevicePlaceIds = collect();
-        if (Schema::hasTable('device_user')) {
-            $sharedDevicePlaceIds = Device::query()
-                ->whereHas('deviceUsers', fn ($q) => $q->where('user_id', Auth::id()))
-                ->with('places:id')
-                ->get()
-                ->flatMap(function (Device $device) {
-                    $placeIds = $device->places->pluck('id');
-                    if ($device->place_id !== null) {
-                        $placeIds->push($device->place_id);
-                    }
-
-                    return $placeIds;
-                })
-                ->unique()
-                ->values();
-        }
-
-        return $userPlaceIds->merge($sharedDevicePlaceIds)->unique()->filter()->values();
+        return Auth::user()->placeUsers()->pluck('place_id')->unique()->filter()->values();
     }
 
     /**
@@ -153,23 +149,21 @@ class DeviceController extends Controller
     {
         $placeIds = [];
 
-        if ($place !== null) {
-            abort_unless(
-                $place->placeUsers()->where('user_id', Auth::id())->exists(),
-                403
-            );
-            $placeIds = [$place->id];
-        } else {
-            $defaultPlaceId = Auth::user()->placeUsers()->value('place_id');
-            if ($defaultPlaceId !== null) {
-                $placeIds = [$defaultPlaceId];
-            }
-        }
-
+        // Mesma habilidade do `store()`: a tela nao pode oferecer um local em
+        // que o POST vai devolver 403.
         $places = Place::query()
-            ->whereHas('placeUsers', fn (Builder $query) => $query->where('user_id', Auth::id()))
+            ->whereHas('placeUsers', fn (Builder $query) => $query
+                ->where('user_id', Auth::id())
+                ->where('role', PlaceRoleEnum::Admin->value))
             ->orderBy('name')
             ->get();
+
+        if ($place !== null) {
+            abort_unless(Auth::user()?->can('update', $place), 403);
+            $placeIds = [$place->id];
+        } elseif ($places->isNotEmpty()) {
+            $placeIds = [$places->first()->id];
+        }
 
         return Inertia::render('devices/create', [
             'places' => PlaceResource::collection($places),
@@ -193,13 +187,16 @@ class DeviceController extends Controller
             ->values()
             ->all();
 
-        $allowedPlaceIds = Auth::user()
-            ->placeUsers()
-            ->whereIn('place_id', $placeIds)
-            ->pluck('place_id')
-            ->all();
+        // Criar um dispositivo JA anexado a locais e o mesmo ato que anexar,
+        // por outra porta: `PlaceAttachDeviceController` exige admin do local,
+        // e sem esta checagem um `host` contornava aquilo criando o
+        // dispositivo direto dentro do local. "So o admin adiciona ou remove
+        // dispositivo" tem que valer nos dois caminhos.
+        foreach (Place::query()->findMany($placeIds) as $target) {
+            abort_unless(Auth::user()?->can('update', $target), 403);
+        }
 
-        abort_unless(count($allowedPlaceIds) === count($placeIds), 403);
+        abort_unless(count($placeIds) === Place::query()->whereKey($placeIds)->count(), 403);
 
         $device = Device::create([
             'place_id' => $placeIds[0] ?? null,
@@ -210,6 +207,11 @@ class DeviceController extends Controller
         ]);
 
         $device->places()->sync($placeIds);
+
+        $device->deviceUsers()->create([
+            'user_id' => Auth::id(),
+            'role' => \App\Enums\DeviceRoleEnum::Admin->value,
+        ]);
 
         return redirect()
             ->route('app.devices.show', ['device' => $device->id])
@@ -244,10 +246,38 @@ class DeviceController extends Controller
             ->limit(20)
             ->get();
 
+        $isDeviceAdmin = $device->isAdministeredBy(Auth::user());
+
+        $codesOnDevice = $isDeviceAdmin
+            ? AccessCode::query()
+                ->with('place')
+                ->whereIn('place_id', $device->places()->pluck('places.id'))
+                ->where('start', '<=', now())
+                ->where(fn ($query) => $query->whereNull('end')->orWhere('end', '>=', now()))
+                ->get()
+                // Spec §8: o dono do equipamento audita e revoga, mas não
+                // ganha a credencial do hóspede de outra pessoa. Sem `pin`.
+                ->map(fn (AccessCode $code): array => [
+                    'id' => $code->id,
+                    'place_name' => $code->place?->name,
+                    'start' => $code->start?->toIso8601String(),
+                    'end' => $code->end?->toIso8601String(),
+                ])
+                ->values()
+                ->all()
+            : [];
+
         return Inertia::render('devices/show', [
             'device' => new DeviceResource($device),
             'recentCommands' => CommandLogResource::collection($recentCommands),
             'recentTuyaSyncs' => AccessCodeDeviceSyncResource::collection($recentTuyaSyncs),
+            'codesOnDevice' => $codesOnDevice,
+            // Falando pela Policy, nao pela flag: e ela que decide, e se as
+            // duas habilidades divergirem no futuro a tela acompanha.
+            'abilities' => [
+                'update' => Auth::user()?->can('update', $device) ?? false,
+                'managePermissions' => Auth::user()?->can('managePermissions', $device) ?? false,
+            ],
         ]);
     }
 
@@ -265,24 +295,20 @@ class DeviceController extends Controller
     }
 
     /**
-     * Ported 1:1 from `App\Livewire\Devices\Edit::mount()`: access is
-     * granted either through the user's link to one of the device's places,
-     * or — for a device with no place yet — through the direct
-     * `device_user` link. `deviceFunctions` falls back to a single empty
-     * row when the device has none, matching `Edit::addFunction()`.
+     * A tela de edição mostra pinos, funções e `external_device_id` — ou seja,
+     * a configuração do dispositivo. Ela tem que usar a MESMA habilidade do
+     * `update()`, senão vira uma porta de leitura para quem só recebeu
+     * concessão de uso ou é membro de um local que contém o dispositivo.
+     * `deviceFunctions` cai para uma linha vazia quando o dispositivo não tem
+     * nenhuma, como o formulário espera.
      */
     public function edit(Request $request, Device $device): Response
     {
+        abort_unless(Auth::user()?->can('update', $device), 403);
+
         $device->load(['deviceFunctions', 'places']);
 
-        $devicePlaceIds = $device->places->pluck('id')->all();
-        $hasAccess = $devicePlaceIds !== []
-            ? Auth::user()->placeUsers()->whereIn('place_id', $devicePlaceIds)->exists()
-            : Auth::user()->devices()->where('devices.id', $device->id)->exists();
-
-        abort_unless($hasAccess, 403);
-
-        $placeIds = $devicePlaceIds;
+        $placeIds = $device->places->pluck('id')->all();
         if ($placeIds === [] && $device->place_id !== null) {
             $placeIds = [$device->place_id];
         }
@@ -319,40 +345,24 @@ class DeviceController extends Controller
     }
 
     /**
-     * Ported 1:1 from `App\Livewire\Devices\Edit::save()`: same ownership
-     * re-check on `placeIds` as `store()`, then reconciles device functions
-     * (deletes the ones missing from the payload, updates the ones with an
-     * `id` — always scoped to this device — and creates the rest) before
-     * delegating the place/place-function pivot sync to
-     * `DevicePlaceFunctionSyncService`.
+     * Ported 1:1 from `App\Livewire\Devices\Edit::save()`, minus place
+     * management: locais só mudam pelos endpoints de anexar/desanexar
+     * (Task 2.1). Reconcilia as funções do dispositivo (apaga as que faltam
+     * no payload, atualiza as que têm `id` — sempre escopado a este
+     * dispositivo — e cria o resto).
      */
-    public function update(UpdateDeviceRequest $request, Device $device, DevicePlaceFunctionSyncService $syncService): RedirectResponse
+    public function update(UpdateDeviceRequest $request, Device $device): RedirectResponse
     {
         // Unlike the Livewire component (whose `save()` runs against an
         // already-`mount()`-checked, signed component snapshot), this route
         // takes `{device}` straight from the URL, so it needs its own
-        // access check — the placeIds ownership check below only validates
-        // the *target* places, not that the caller may touch this device.
+        // access check.
         abort_unless(Auth::user()?->can('update', $device), 403);
 
         $validated = $request->validated();
 
-        $placeIds = collect($validated['placeIds'])
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
-
-        $allowedPlaceIds = Auth::user()
-            ->placeUsers()
-            ->whereIn('place_id', $placeIds)
-            ->pluck('place_id')
-            ->all();
-
-        abort_unless(count($allowedPlaceIds) === count($placeIds), 403);
-
         $device->update([
-            'place_id' => $placeIds[0] ?? null,
+            'place_id' => $device->place_id,
             'name' => $validated['name'],
             'brand' => DeviceBrandEnum::from($validated['brand']),
             'external_device_id' => ($validated['external_device_id'] ?? null) ?: null,
@@ -388,9 +398,6 @@ class DeviceController extends Controller
                 'pin' => $function['pin'],
             ]);
         }
-
-        $device->places()->sync($placeIds);
-        $syncService->sync($device, $placeIds);
 
         return redirect()
             ->route('app.devices.show', ['device' => $device->id])

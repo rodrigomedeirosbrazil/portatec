@@ -146,6 +146,34 @@ return [
         'host' => 'Anfitrião',
     ],
 
+    // Permissão de dispositivo
+    'device_roles' => [
+        'admin' => 'Administrador',
+        'user' => 'Uso',
+    ],
+
+    'device_permissions_title' => 'Permissões do dispositivo',
+    'device_permissions_heading' => 'Quem pode usar',
+    'device_permissions_empty' => 'Ninguém além do administrador tem acesso a este dispositivo.',
+    'device_permission_grant' => 'Conceder acesso',
+    'device_permission_granted' => 'Acesso concedido.',
+    'device_permission_revoke' => 'Revogar',
+    'device_permission_revoked' => 'Acesso revogado. O dispositivo saiu dos locais dessa pessoa e os códigos de acesso originados neles foram apagados do equipamento.',
+    'device_permission_revoke_confirm' => 'Revogar o acesso de :name? Hóspedes com estadia em andamento perdem o acesso a este dispositivo imediatamente.',
+    'device_admin_heading' => 'Administrador do dispositivo',
+    'device_admin_none' => 'Este dispositivo está sem administrador. Fale com o suporte.',
+    'device_transfer' => 'Transferir administração',
+    'device_transfer_confirm' => 'Transferir a administração deste dispositivo para :name (:email)? Você continua podendo acioná-lo, mas perde a configuração e não desfaz essa ação sozinho.',
+    'device_transferred' => 'Administração transferida para :name.',
+    'device_codes_heading' => 'Códigos gravados neste dispositivo',
+    'device_codes_empty' => 'Nenhum código de acesso ativo neste dispositivo.',
+    'device_codes_origin_place' => 'Local de origem',
+    'device_codes_window' => 'Validade',
+    'user_email_label' => 'E-mail da pessoa',
+    'user_email_placeholder' => 'nome@exemplo.com',
+    'user_email_not_found' => 'Nenhuma conta encontrada com esse e-mail.',
+    'access_code_pin_conflict' => 'Este PIN já está em uso em um dos dispositivos deste local, num período que se sobrepõe.',
+
     // Membros do local
     'members' => 'Membros',
     'manage_members' => 'Gerir membros',
@@ -178,12 +206,12 @@ return [
 
     // Associar dispositivo ao local
     'attach_device' => 'Adicionar dispositivo ao local',
-    'attach_device_description' => 'Escolha um dispositivo existente ou que esteja em outro local que você acessa para associá-lo a :place.',
+    'attach_device_description' => 'Escolha um dispositivo que você administra ou que alguém concedeu a você, para associá-lo a :place.',
     'attach_device_select' => 'Dispositivo',
     'attach_device_select_placeholder' => 'Selecione um dispositivo',
     'attach_device_no_place' => 'Sem local',
     'attach_device_submit' => 'Associar ao local',
-    'attach_device_empty' => 'Não há dispositivos disponíveis para associar. Crie um novo dispositivo em Dispositivos ou use um que já esteja em outro local que você acessa.',
+    'attach_device_empty' => 'Nenhum dispositivo disponível. Você só pode associar dispositivos que administra ou que alguém concedeu a você — participar de um local que contém o dispositivo não basta. Para usar o dispositivo de outra pessoa, peça a quem o administra para conceder acesso a você na tela de permissões do dispositivo. Ou cadastre um dispositivo novo em Dispositivos.',
     'device_already_in_place' => 'Este dispositivo já está associado a este local.',
     'device_attached' => 'Dispositivo ":name" associado ao local com sucesso.',
 

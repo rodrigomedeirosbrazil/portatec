@@ -78,10 +78,7 @@ class PlaceController extends Controller
             )->with('platform'),
         ]);
 
-        abort_unless(
-            $place->placeUsers()->where('user_id', Auth::id())->exists(),
-            403
-        );
+        abort_unless(Auth::user()?->can('view', $place), 403);
 
         $place->loadCount('bookings');
 
@@ -99,7 +96,6 @@ class PlaceController extends Controller
             'bookingSources' => IntegrationResource::collection($place->integrations),
             'abilities' => [
                 'manageMembers' => Auth::user()?->can('manageMembers', $place) ?? false,
-                'replicate' => Auth::user()?->can('replicate', $place) ?? false,
                 'update' => Auth::user()?->can('update', $place) ?? false,
             ],
         ]);
@@ -107,10 +103,7 @@ class PlaceController extends Controller
 
     public function edit(Request $request, Place $place): Response
     {
-        abort_unless(
-            $place->placeUsers()->where('user_id', Auth::id())->exists(),
-            403
-        );
+        abort_unless(Auth::user()?->can('update', $place), 403);
 
         return Inertia::render('places/edit', [
             'place' => new PlaceResource($place),
@@ -119,10 +112,7 @@ class PlaceController extends Controller
 
     public function update(UpdatePlaceRequest $request, Place $place): RedirectResponse
     {
-        abort_unless(
-            $place->placeUsers()->where('user_id', Auth::id())->exists(),
-            403
-        );
+        abort_unless(Auth::user()?->can('update', $place), 403);
 
         $validated = $request->validated();
 

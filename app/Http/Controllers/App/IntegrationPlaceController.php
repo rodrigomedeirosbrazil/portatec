@@ -26,7 +26,7 @@ class IntegrationPlaceController extends Controller
     public function update(UpdateIntegrationPlaceRequest $request, Integration $integration, Place $place): RedirectResponse
     {
         abort_unless(Auth::user()?->can('update', $integration), 403);
-        abort_unless(Auth::user()?->can('view', $place), 403);
+        abort_unless(Auth::user()?->can('update', $place), 403);
         abort_unless($integration->places()->where('places.id', $place->id)->exists(), 404);
 
         $validated = $request->validated();
@@ -51,7 +51,7 @@ class IntegrationPlaceController extends Controller
     public function destroy(Request $request, Integration $integration, Place $place): RedirectResponse
     {
         abort_unless(Auth::user()?->can('update', $integration), 403);
-        abort_unless(Auth::user()?->can('view', $place), 403);
+        abort_unless(Auth::user()?->can('update', $place), 403);
 
         $integration->places()->detach($place->id);
         $integration->refresh();

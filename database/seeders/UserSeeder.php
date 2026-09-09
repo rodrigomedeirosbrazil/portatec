@@ -81,7 +81,7 @@ class UserSeeder extends Seeder
             'updated_at' => $now,
         ]);
 
-        $buttonFunctionId = DB::table('device_functions')->insertGetId([
+        DB::table('device_functions')->insert([
             'device_id' => $deviceId,
             'type' => 'button',
             'pin' => '3',
@@ -90,28 +90,13 @@ class UserSeeder extends Seeder
             'updated_at' => $now,
         ]);
 
-        $sensorFunctionId = DB::table('device_functions')->insertGetId([
+        DB::table('device_functions')->insert([
             'device_id' => $deviceId,
             'type' => 'sensor',
             'pin' => '0',
             'status' => false,
             'created_at' => $now,
             'updated_at' => $now,
-        ]);
-
-        DB::table('place_device_functions')->insert([
-            [
-                'place_id' => $placeId,
-                'device_function_id' => $buttonFunctionId,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'place_id' => $placeId,
-                'device_function_id' => $sensorFunctionId,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
         ]);
     }
 }

@@ -69,15 +69,13 @@ class DeviceControlController extends Controller
 
     /**
      * Mirrors the `$placeId` computed in `control.blade.php`: first the
-     * device's loaded `places`, then the legacy `place_id` column, then the
-     * place of its first `PlaceDeviceFunction`, else `0` (no realtime
-     * channel to subscribe to).
+     * device's loaded `places`, then the legacy `place_id` column, else `0`
+     * (no realtime channel to subscribe to).
      */
     private function resolvePlaceId(Device $device): int
     {
         $placeId = $device->places->first()?->id
-            ?? $device->place_id
-            ?? $device->placeDeviceFunctions()->value('place_id');
+            ?? $device->place_id;
 
         return (int) ($placeId ?? 0);
     }

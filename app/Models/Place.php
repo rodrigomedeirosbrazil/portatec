@@ -27,11 +27,6 @@ class Place extends Model
         return $this->hasMany(PlaceUser::class);
     }
 
-    public function placeDeviceFunctions(): HasMany
-    {
-        return $this->hasMany(PlaceDeviceFunction::class);
-    }
-
     public function devices(): BelongsToMany
     {
         return $this->belongsToMany(Device::class, 'device_place')->withTimestamps();

@@ -7,7 +7,6 @@ namespace Tests\Feature\Places;
 use App\Models\Device;
 use App\Models\DeviceFunction;
 use App\Models\Place;
-use App\Models\PlaceDeviceFunction;
 use App\Models\PlaceUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,6 +35,63 @@ class PlacesTest extends TestCase
         ]);
 
         return $place;
+    }
+
+    private function makePlaceWithHost(User $user, string $name = 'Condomínio'): Place
+    {
+        $place = Place::create(['name' => $name]);
+
+        PlaceUser::create([
+            'place_id' => $place->id,
+            'user_id' => User::factory()->create()->id,
+            'role' => 'admin',
+            'label' => 'Síndico',
+        ]);
+
+        PlaceUser::create([
+            'place_id' => $place->id,
+            'user_id' => $user->id,
+            'role' => 'host',
+            'label' => $user->name,
+        ]);
+
+        return $place;
+    }
+
+    public function test_host_cannot_rename_the_place(): void
+    {
+        $host = User::factory()->create();
+        $place = $this->makePlaceWithHost($host);
+
+        $this->actingAs($host)
+            ->put("/app/places/{$place->id}", ['name' => 'Novo nome'])
+            ->assertForbidden();
+
+        $this->actingAs($host)
+            ->get("/app/places/{$place->id}/edit")
+            ->assertForbidden();
+    }
+
+    public function test_place_admin_can_rename_the_place(): void
+    {
+        $user = User::factory()->create();
+        $place = $this->makePlaceWithAdmin($user);
+
+        $this->actingAs($user)
+            ->put("/app/places/{$place->id}", ['name' => 'Novo nome'])
+            ->assertRedirect("/app/places/{$place->id}");
+
+        $this->assertSame('Novo nome', $place->fresh()->name);
+    }
+
+    public function test_host_still_sees_the_place(): void
+    {
+        $host = User::factory()->create();
+        $place = $this->makePlaceWithHost($host);
+
+        $this->actingAs($host)
+            ->get("/app/places/{$place->id}")
+            ->assertOk();
     }
 
     // ------------------------------------------------------------------
@@ -105,17 +161,6 @@ class PlacesTest extends TestCase
             ->get("/app/places/{$place->id}/members")
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('places/members'));
-    }
-
-    public function test_clone_renders_places_clone(): void
-    {
-        $user = User::factory()->create();
-        $place = $this->makePlaceWithAdmin($user);
-
-        $this->actingAs($user)
-            ->get("/app/places/{$place->id}/clone")
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('places/clone'));
     }
 
     public function test_attach_device_renders_places_attach_device(): void
@@ -193,17 +238,6 @@ class PlacesTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_user_cannot_clone_place_of_another_user(): void
-    {
-        $user = User::factory()->create();
-        $otherUser = User::factory()->create();
-        $foreignPlace = $this->makePlaceWithAdmin($otherUser);
-
-        $this->actingAs($user)
-            ->get("/app/places/{$foreignPlace->id}/clone")
-            ->assertForbidden();
-    }
-
     // ------------------------------------------------------------------
     // Create / update
     // ------------------------------------------------------------------
@@ -262,19 +296,9 @@ class PlacesTest extends TestCase
             'pin' => '1',
         ]);
 
-        PlaceDeviceFunction::create([
-            'place_id' => $place->id,
-            'device_function_id' => $function->id,
-        ]);
-
         $this->actingAs($user)
             ->delete("/app/places/{$place->id}/devices/{$device->id}")
             ->assertRedirect("/app/places/{$place->id}");
-
-        $this->assertDatabaseMissing('place_device_functions', [
-            'place_id' => $place->id,
-            'device_function_id' => $function->id,
-        ]);
 
         $this->assertDatabaseMissing('device_place', [
             'place_id' => $place->id,
@@ -317,7 +341,7 @@ class PlacesTest extends TestCase
 
         $this->actingAs($user)
             ->post("/app/places/{$place->id}/members", [
-                'user_id' => $newMember->id,
+                'email' => $newMember->email,
                 'role' => 'host',
                 'label' => 'Cuidador',
             ])
@@ -345,10 +369,10 @@ class PlacesTest extends TestCase
 
         $this->actingAs($user)
             ->post("/app/places/{$place->id}/members", [
-                'user_id' => $duplicateMember->id,
+                'email' => $duplicateMember->email,
                 'role' => 'host',
             ])
-            ->assertSessionHasErrors('user_id');
+            ->assertSessionHasErrors('email');
 
         $this->assertSame(
             1,
@@ -401,24 +425,24 @@ class PlacesTest extends TestCase
     // Member search endpoint
     // ------------------------------------------------------------------
 
-    public function test_member_search_returns_empty_with_less_than_two_characters(): void
+    public function test_member_search_returns_empty_without_email(): void
     {
         $user = User::factory()->create();
         $place = $this->makePlaceWithAdmin($user);
-        User::factory()->create(['name' => 'Ana Silva']);
+        User::factory()->create(['email' => 'ana@exemplo.com']);
 
         $this->actingAs($user)
-            ->getJson("/app/places/{$place->id}/members/search?search=a")
+            ->getJson("/app/places/{$place->id}/members/search?email=")
             ->assertOk()
             ->assertJson(['data' => []]);
     }
 
-    public function test_member_search_excludes_existing_members_and_limits_to_ten(): void
+    public function test_member_search_finds_by_exact_email_and_excludes_existing_members(): void
     {
         $user = User::factory()->create();
         $place = $this->makePlaceWithAdmin($user);
 
-        $existingMember = User::factory()->create(['name' => 'Zeta Existente']);
+        $existingMember = User::factory()->create(['email' => 'zeta@exemplo.com']);
         PlaceUser::create([
             'place_id' => $place->id,
             'user_id' => $existingMember->id,
@@ -426,17 +450,32 @@ class PlacesTest extends TestCase
             'label' => null,
         ]);
 
-        foreach (range(1, 12) as $i) {
-            User::factory()->create(['name' => "Zeta Candidato {$i}"]);
-        }
+        $candidate = User::factory()->create(['email' => 'candidato@exemplo.com']);
 
         $response = $this->actingAs($user)
-            ->getJson("/app/places/{$place->id}/members/search?search=Zeta")
+            ->getJson("/app/places/{$place->id}/members/search?email=candidato@exemplo.com")
             ->assertOk();
 
         $data = $response->json('data');
-        $this->assertCount(10, $data);
-        $this->assertNotContains($existingMember->id, array_column($data, 'id'));
+        $this->assertCount(1, $data);
+        $this->assertSame($candidate->id, $data[0]['id']);
+
+        $this->actingAs($user)
+            ->getJson("/app/places/{$place->id}/members/search?email=zeta@exemplo.com")
+            ->assertOk()
+            ->assertJson(['data' => []]);
+    }
+
+    public function test_member_search_partial_email_finds_nobody(): void
+    {
+        $user = User::factory()->create();
+        $place = $this->makePlaceWithAdmin($user);
+        User::factory()->create(['email' => 'candidato@exemplo.com']);
+
+        $this->actingAs($user)
+            ->getJson("/app/places/{$place->id}/members/search?email=candidato")
+            ->assertOk()
+            ->assertJson(['data' => []]);
     }
 
     public function test_member_search_denies_access_to_user_who_cannot_manage_members(): void
@@ -446,56 +485,20 @@ class PlacesTest extends TestCase
         $foreignPlace = $this->makePlaceWithAdmin($otherUser);
 
         $this->actingAs($user)
-            ->getJson("/app/places/{$foreignPlace->id}/members/search?search=an")
+            ->getJson("/app/places/{$foreignPlace->id}/members/search?email=an@exemplo.com")
             ->assertForbidden();
-    }
-
-    // ------------------------------------------------------------------
-    // Clone
-    // ------------------------------------------------------------------
-
-    public function test_clone_creates_new_place_ignoring_empty_rows_and_self(): void
-    {
-        $user = User::factory()->create();
-        $place = $this->makePlaceWithAdmin($user, 'Original');
-        $otherMember = User::factory()->create();
-
-        $this->actingAs($user)
-            ->post("/app/places/{$place->id}/clone", [
-                'name' => 'Clone da Original',
-                'additionalMembers' => [
-                    ['user_id' => null, 'role' => 'host'],
-                    ['user_id' => $user->id, 'role' => 'admin'],
-                    ['user_id' => $otherMember->id, 'role' => 'host', 'label' => 'Convidado'],
-                ],
-            ])
-            ->assertRedirect();
-
-        $newPlace = Place::query()->where('name', 'Clone da Original')->firstOrFail();
-
-        $this->assertDatabaseHas('place_users', [
-            'place_id' => $newPlace->id,
-            'user_id' => $user->id,
-            'role' => 'admin',
-        ]);
-
-        $this->assertDatabaseHas('place_users', [
-            'place_id' => $newPlace->id,
-            'user_id' => $otherMember->id,
-            'role' => 'host',
-        ]);
-
-        $this->assertSame(
-            2,
-            PlaceUser::query()->where('place_id', $newPlace->id)->count()
-        );
     }
 
     // ------------------------------------------------------------------
     // Attach device
     // ------------------------------------------------------------------
 
-    public function test_attach_device_creates_place_device_functions(): void
+    /**
+     * Task 2.1: anexar exige `DevicePolicy::attach` (admin do dispositivo
+     * ou concessão de uso) — o dispositivo precisa de vínculo em
+     * `device_user`, não basta estar sem local.
+     */
+    public function test_attach_device_assigns_place_id_when_device_has_none(): void
     {
         $user = User::factory()->create();
         $place = $this->makePlaceWithAdmin($user);
@@ -504,8 +507,9 @@ class PlacesTest extends TestCase
             'name' => 'Sensor Livre',
             'brand' => 'portatec',
         ]));
+        $device->deviceUsers()->create(['user_id' => $user->id, 'role' => 'admin']);
 
-        $function = DeviceFunction::create([
+        DeviceFunction::create([
             'device_id' => $device->id,
             'type' => 'switch',
             'pin' => '2',
@@ -514,11 +518,6 @@ class PlacesTest extends TestCase
         $this->actingAs($user)
             ->post("/app/places/{$place->id}/devices/attach", ['deviceId' => $device->id])
             ->assertRedirect("/app/places/{$place->id}");
-
-        $this->assertDatabaseHas('place_device_functions', [
-            'place_id' => $place->id,
-            'device_function_id' => $function->id,
-        ]);
 
         $device->refresh();
         $this->assertSame($place->id, $device->place_id);
@@ -534,6 +533,7 @@ class PlacesTest extends TestCase
             'name' => 'Ja Associado',
             'brand' => 'portatec',
         ]));
+        $device->deviceUsers()->create(['user_id' => $user->id, 'role' => 'admin']);
         $device->places()->attach($place->id);
 
         $this->actingAs($user)

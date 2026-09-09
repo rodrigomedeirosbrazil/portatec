@@ -7,23 +7,41 @@ import { AppLayout } from '@/layouts/app-layout';
 import devices from '@/routes/app/devices';
 import type { AccessCodeDeviceSync, CommandLog, Device } from '@/types';
 
+interface CodeOnDevice {
+    id: number;
+    place_name: string | null;
+    start: string | null;
+    end: string | null;
+}
+
 interface DevicesShowProps {
     device: Device;
     recentCommands: CommandLog[];
     recentTuyaSyncs: AccessCodeDeviceSync[];
+    codesOnDevice: CodeOnDevice[];
+    abilities: { update: boolean; managePermissions: boolean };
     [key: string]: unknown;
 }
 
-export default function DevicesShow({ device, recentCommands, recentTuyaSyncs }: DevicesShowProps) {
+export default function DevicesShow({ device, recentCommands, recentTuyaSyncs, codesOnDevice, abilities }: DevicesShowProps) {
     const { t } = useTranslations();
 
     const locationsLabel = (device.places ?? []).map((place) => place.name).join(', ') || device.place?.name || t('unassigned_place');
 
     const headerActions = (
         <>
-            <Button variant="outline" asChild>
-                <Link href={devices.edit.url({ device: device.id })}>{t('edit')}</Link>
-            </Button>
+            {abilities.managePermissions ? (
+                <Button variant="outline" asChild>
+                    <Link href={devices.permissions.index.url({ device: device.id })}>{t('device_permissions_title')}</Link>
+                </Button>
+            ) : null}
+            {/* Editar e configuracao do dispositivo: so o admin dele. Sem este
+                gate o botao aparecia para quem so tem uso e devolvia 403. */}
+            {abilities.update ? (
+                <Button variant="outline" asChild>
+                    <Link href={devices.edit.url({ device: device.id })}>{t('edit')}</Link>
+                </Button>
+            ) : null}
             <Button asChild>
                 <Link href={devices.control.url({ device: device.id })}>{t('control')}</Link>
             </Button>
@@ -85,6 +103,43 @@ export default function DevicesShow({ device, recentCommands, recentTuyaSyncs }:
                         )}
                     </ul>
                 </div>
+
+                {abilities.managePermissions ? (
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
+                        <h2 className="mt-0">{t('device_codes_heading')}</h2>
+                        {codesOnDevice.length === 0 ? (
+                            <p className="m-0 text-muted-foreground">{t('device_codes_empty')}</p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse text-left">
+                                    <thead>
+                                        <tr className="border-b border-neutral-200">
+                                            <th className="py-2 pr-3 font-medium">{t('device_codes_origin_place')}</th>
+                                            <th className="py-2 font-medium">{t('device_codes_window')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {/*
+                                          Spec §8: o dono do equipamento audita e revoga, mas não
+                                          ganha a credencial do hóspede de outra pessoa. Nenhuma
+                                          coluna de PIN aqui — nem o backend manda o dígito.
+                                        */}
+                                        {codesOnDevice.map((code) => (
+                                            <tr key={code.id} className="border-b border-neutral-200 last:border-b-0">
+                                                <td className="py-2 pr-3">{code.place_name ?? '—'}</td>
+                                                <td className="py-2">
+                                                    {code.start ? formatDateTime(code.start) : '—'}
+                                                    {' – '}
+                                                    {code.end ? formatDateTime(code.end) : '∞'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                ) : null}
 
                 <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                     <h2 className="mt-0">{device.is_tuya_lock ? t('device_recent_syncs_title') : t('device_recent_commands_title')}</h2>

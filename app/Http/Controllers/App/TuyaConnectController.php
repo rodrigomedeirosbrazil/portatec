@@ -128,7 +128,10 @@ class TuyaConnectController extends Controller
                     'last_sync' => now(),
                 ]
             );
-            $device->deviceUsers()->firstOrCreate(['user_id' => Auth::id()]);
+            $device->deviceUsers()->firstOrCreate(
+                ['user_id' => Auth::id()],
+                ['role' => \App\Enums\DeviceRoleEnum::Admin->value],
+            );
 
             try {
                 app(TuyaIntegrationService::class)->syncDeviceSpecifications($device);

@@ -57,4 +57,60 @@ class TranslationKeysTest extends TestCase
             .'os dois cabeçalhos de integrações passam a usar [app.integrations].'
         );
     }
+
+    /**
+     * O texto da tela de anexar descrevia a regra ANTIGA: "use um que já
+     * esteja em outro local que você acessa". Depois da permissão por
+     * dispositivo isso deixou de funcionar, e a tela continuava prometendo —
+     * um morador seguiu a instrução e não entendeu a lista vazia.
+     */
+    public function test_attach_device_copy_does_not_promise_the_old_rule(): void
+    {
+        foreach (['attach_device_description', 'attach_device_empty'] as $key) {
+            $this->assertStringNotContainsString(
+                'que você acessa',
+                trans("app.{$key}"),
+                "O texto [app.{$key}] ainda descreve a regra antiga de acesso por local."
+            );
+        }
+
+        $this->assertStringContainsString('concedeu', trans('app.attach_device_empty'));
+    }
+
+    public function test_device_permission_keys_exist(): void
+    {
+        $keys = [
+            'device_roles.admin',
+            'device_roles.user',
+            'device_permissions_title',
+            'device_permissions_heading',
+            'device_permissions_empty',
+            'device_permission_grant',
+            'device_permission_granted',
+            'device_permission_revoke',
+            'device_permission_revoked',
+            'device_permission_revoke_confirm',
+            'device_admin_heading',
+            'device_admin_none',
+            'device_transfer',
+            'device_transfer_confirm',
+            'device_transferred',
+            'device_codes_heading',
+            'device_codes_empty',
+            'device_codes_origin_place',
+            'device_codes_window',
+            'user_email_label',
+            'user_email_placeholder',
+            'user_email_not_found',
+            'access_code_pin_conflict',
+        ];
+
+        foreach ($keys as $key) {
+            $this->assertNotSame(
+                "app.{$key}",
+                trans("app.{$key}"),
+                "A chave de tradução [app.{$key}] não existe."
+            );
+        }
+    }
 }

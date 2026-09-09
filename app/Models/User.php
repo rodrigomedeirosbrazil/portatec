@@ -65,6 +65,13 @@ class User extends Authenticatable implements FilamentUser
 
     /**
      * Transitional compatibility helper while role system is removed.
+     *
+     * A lista vem de `config('portatec.super_admin_emails')`, já normalizada.
+     * Ler o `env()` daqui não funcionava em produção: com o config cacheado
+     * pelo `artisan optimize` do entrypoint, o Laravel não carrega o `.env`, e
+     * o `.env` chega ao container como arquivo montado, não como variável de
+     * ambiente — então `env()` caía sempre no default e a lista configurada
+     * não tinha efeito nenhum. Veja o comentário em `config/portatec.php`.
      */
     public function hasRole(string $role): bool
     {
@@ -72,11 +79,11 @@ class User extends Authenticatable implements FilamentUser
             return false;
         }
 
-        $allowedEmails = collect(explode(',', (string) env('PORTATEC_SUPER_ADMIN_EMAILS', 'contato@medeirostec.com.br')))
-            ->map(static fn (string $email): string => strtolower(trim($email)))
-            ->filter();
-
-        return $allowedEmails->contains(strtolower((string) $this->email));
+        return in_array(
+            strtolower((string) $this->email),
+            (array) config('portatec.super_admin_emails', []),
+            true,
+        );
     }
 
     public function canAccessPanel(Panel $panel): bool

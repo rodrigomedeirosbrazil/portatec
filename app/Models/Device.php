@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\DeviceBrandEnum;
+use App\Enums\DeviceRoleEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Events\DeviceCreatedEvent;
 use App\Events\DeviceDeletedEvent;
@@ -14,7 +15,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Device extends Model
@@ -58,18 +58,6 @@ class Device extends Model
         static::deleted(function (Device $device) {
             event(new DeviceDeletedEvent($device->id));
         });
-    }
-
-    public function placeDeviceFunctions(): HasManyThrough
-    {
-        return $this->hasManyThrough(
-            PlaceDeviceFunction::class,
-            DeviceFunction::class,
-            'device_id',
-            'device_function_id',
-            'id',
-            'id'
-        );
     }
 
     public function deviceFunctions(): HasMany
@@ -122,6 +110,60 @@ class Device extends Model
     public function deviceUsers(): HasMany
     {
         return $this->hasMany(DeviceUser::class);
+    }
+
+    /** O dono do dispositivo. `null` em dispositivo órfão — ver spec §4. */
+    public function adminUser(): ?User
+    {
+        return $this->deviceUsers()
+            ->where('role', DeviceRoleEnum::Admin)
+            ->first()?->user;
+    }
+
+    public function isAdministeredBy(User $user): bool
+    {
+        return $this->deviceUsers()
+            ->where('user_id', $user->id)
+            ->where('role', DeviceRoleEnum::Admin)
+            ->exists();
+    }
+
+    /** Admin conta como quem pode usar: quem manda também usa. */
+    /**
+     * Os locais deste dispositivo que $user pode enxergar.
+     *
+     * Um dispositivo compartilhado pertence a locais de donos diferentes.
+     * Devolver a lista inteira conta a cada morador o nome da unidade de todos
+     * os vizinhos que dividem aquele portao - o mesmo vazamento que o spec §8
+     * fecha no historico de acesso, pela mesma razao.
+     *
+     * Vive aqui, e nao em quem exibe, porque ja vazou duas vezes por estar
+     * duplicado: DeviceResource e a tela de anexar dispositivo.
+     *
+     * @return \Illuminate\Support\Collection<int, Place>
+     */
+    public function visiblePlacesFor(?User $user): \Illuminate\Support\Collection
+    {
+        if (! $user instanceof User) {
+            return collect();
+        }
+
+        if ($this->isAdministeredBy($user)) {
+            return $this->places;
+        }
+
+        $userPlaceIds = $user->placeUsers()->pluck('place_id');
+
+        return $this->places
+            ->filter(fn (Place $place): bool => $userPlaceIds->contains($place->id))
+            ->values();
+    }
+
+    public function isUsableBy(User $user): bool
+    {
+        return $this->deviceUsers()
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     public function accessCodeDeviceSyncs(): HasMany
