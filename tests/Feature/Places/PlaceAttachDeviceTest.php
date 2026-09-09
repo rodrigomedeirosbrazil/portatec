@@ -111,6 +111,28 @@ class PlaceAttachDeviceTest extends TestCase
         );
     }
 
+    public function test_attach_list_does_not_leak_names_of_other_places_sharing_the_device(): void
+    {
+        $owner = User::factory()->create();
+        $resident = User::factory()->create();
+
+        $gate = $this->deviceOwnedBy($owner, 'Garagem A');
+        $gate->deviceUsers()->create(['user_id' => $resident->id, 'role' => 'user']);
+
+        $condominio = Place::create(['name' => 'CONDOMINIO SEGREDO']);
+        $vizinho = Place::create(['name' => 'APTO DO VIZINHO']);
+        $gate->places()->attach([$condominio->id, $vizinho->id]);
+
+        $meuApto = $this->placeAdministeredBy($resident, 'Meu apto');
+
+        $this->actingAs($resident)
+            ->get("/app/places/{$meuApto->id}/devices/attach")
+            ->assertOk()
+            ->assertSee('Garagem A')
+            ->assertDontSee('CONDOMINIO SEGREDO')
+            ->assertDontSee('APTO DO VIZINHO');
+    }
+
     private function deviceOwnedBy(User $user, string $name): Device
     {
         $device = Device::withoutEvents(fn (): Device => Device::create([

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use App\Models\Place;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -46,7 +45,7 @@ class DeviceResource extends JsonResource
             'supports_tuya_temporary_password' => $this->supportsTuyaTemporaryPassword(),
             'device_functions_count' => $this->whenCounted('deviceFunctions'),
             'device_functions' => DeviceFunctionResource::collection($this->whenLoaded('deviceFunctions')),
-            'places' => PlaceResource::collection($this->whenLoaded('places', fn () => $this->visiblePlaces())),
+            'places' => PlaceResource::collection($this->whenLoaded('places', fn () => $this->visiblePlacesFor(Auth::user()))),
             'place' => new PlaceResource($this->whenLoaded('place')),
             'integration' => new IntegrationResource($this->whenLoaded('integration')),
             'created_at' => $this->created_at?->toIso8601String(),
@@ -59,35 +58,5 @@ class DeviceResource extends JsonResource
         $user = Auth::user();
 
         return $user instanceof User && $this->isAdministeredBy($user);
-    }
-
-    /**
-     * Um dispositivo compartilhado pertence a vários locais de donos
-     * diferentes. Devolver a lista inteira contaria a cada morador o nome da
-     * unidade de todos os vizinhos que dividem aquele portão — o mesmo
-     * vazamento que o spec §8 fecha no histórico de acesso, pela mesma razão.
-     *
-     * O admin do dispositivo vê tudo; os demais veem só os locais de que
-     * participam.
-     *
-     * @return \Illuminate\Support\Collection<int, Place>
-     */
-    private function visiblePlaces(): \Illuminate\Support\Collection
-    {
-        $user = Auth::user();
-
-        if (! $user instanceof User) {
-            return collect();
-        }
-
-        if ($this->viewerIsDeviceAdmin()) {
-            return $this->places;
-        }
-
-        $userPlaceIds = $user->placeUsers()->pluck('place_id');
-
-        return $this->places->filter(
-            fn (Place $place): bool => $userPlaceIds->contains($place->id)
-        )->values();
     }
 }

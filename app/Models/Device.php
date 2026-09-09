@@ -129,6 +129,36 @@ class Device extends Model
     }
 
     /** Admin conta como quem pode usar: quem manda também usa. */
+    /**
+     * Os locais deste dispositivo que $user pode enxergar.
+     *
+     * Um dispositivo compartilhado pertence a locais de donos diferentes.
+     * Devolver a lista inteira conta a cada morador o nome da unidade de todos
+     * os vizinhos que dividem aquele portao - o mesmo vazamento que o spec §8
+     * fecha no historico de acesso, pela mesma razao.
+     *
+     * Vive aqui, e nao em quem exibe, porque ja vazou duas vezes por estar
+     * duplicado: DeviceResource e a tela de anexar dispositivo.
+     *
+     * @return \Illuminate\Support\Collection<int, Place>
+     */
+    public function visiblePlacesFor(?User $user): \Illuminate\Support\Collection
+    {
+        if (! $user instanceof User) {
+            return collect();
+        }
+
+        if ($this->isAdministeredBy($user)) {
+            return $this->places;
+        }
+
+        $userPlaceIds = $user->placeUsers()->pluck('place_id');
+
+        return $this->places
+            ->filter(fn (Place $place): bool => $userPlaceIds->contains($place->id))
+            ->values();
+    }
+
     public function isUsableBy(User $user): bool
     {
         return $this->deviceUsers()

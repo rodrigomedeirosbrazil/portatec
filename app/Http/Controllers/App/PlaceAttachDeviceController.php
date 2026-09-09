@@ -43,7 +43,9 @@ class PlaceAttachDeviceController extends Controller
                 'name' => $device->name,
                 'brand' => $device->brand?->value,
                 'device_functions_count' => $device->device_functions_count,
-                'place_names' => $device->places->pluck('name')->values(),
+                // Mesma fonte do DeviceResource: quem nao administra o
+                // dispositivo so ve os locais de que ja participa.
+                'place_names' => $device->visiblePlacesFor(Auth::user())->pluck('name')->values(),
                 'fallback_place_name' => $device->place?->name,
             ])->values(),
         ]);
