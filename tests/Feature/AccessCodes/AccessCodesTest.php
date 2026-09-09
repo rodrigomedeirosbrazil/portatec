@@ -512,4 +512,37 @@ class AccessCodesTest extends TestCase
 
         $spy->shouldHaveReceived('syncUpdatedAccessCode')->once();
     }
+
+    public function test_manual_pin_conflicting_on_a_shared_device_is_rejected(): void
+    {
+        $user = \App\Models\User::factory()->create();
+
+        $apto1 = \App\Models\Place::create(['name' => 'Apto 1']);
+        $apto2 = \App\Models\Place::create(['name' => 'Apto 2']);
+
+        \App\Models\PlaceUser::create(['place_id' => $apto2->id, 'user_id' => $user->id, 'role' => 'admin']);
+
+        $gate = \App\Models\Device::withoutEvents(fn () => \App\Models\Device::create([
+            'name' => 'Garagem A',
+            'brand' => 'portatec',
+            'external_device_id' => 'chip-a',
+        ]));
+        $gate->places()->attach([$apto1->id, $apto2->id]);
+
+        \App\Models\AccessCode::withoutEvents(fn () => \App\Models\AccessCode::create([
+            'place_id' => $apto1->id,
+            'pin' => '123456',
+            'start' => now()->subDay(),
+            'end' => now()->addDays(5),
+        ]));
+
+        $this->actingAs($user)
+            ->post('/app/access-codes', [
+                'placeId' => $apto2->id,
+                'pin' => '123456',
+                'start' => now()->toDateTimeString(),
+                'end' => now()->addDay()->toDateTimeString(),
+            ])
+            ->assertSessionHasErrors('pin');
+    }
 }

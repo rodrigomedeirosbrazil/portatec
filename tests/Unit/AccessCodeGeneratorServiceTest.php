@@ -31,9 +31,36 @@ class AccessCodeGeneratorServiceTest extends TestCase
         ]);
 
         $service = app(AccessCodeGeneratorService::class);
-        $pin = $service->generatePin($placeId);
+        $pin = $service->generatePin($placeId, now(), now()->addDay());
 
         $this->assertMatchesRegularExpression('/^\d{6}$/', $pin);
         $this->assertNotSame('123456', $pin);
+    }
+
+    public function test_generated_pin_avoids_conflict_on_a_shared_device(): void
+    {
+        $apto1 = \App\Models\Place::create(['name' => 'Apto 1']);
+        $apto2 = \App\Models\Place::create(['name' => 'Apto 2']);
+
+        $gate = \App\Models\Device::withoutEvents(fn () => \App\Models\Device::create([
+            'name' => 'Garagem A',
+            'brand' => 'portatec',
+            'external_device_id' => 'chip-a',
+        ]));
+        $gate->places()->attach([$apto1->id, $apto2->id]);
+
+        \App\Models\AccessCode::withoutEvents(fn () => \App\Models\AccessCode::create([
+            'place_id' => $apto1->id,
+            'pin' => '123456',
+            'start' => now()->subDay(),
+            'end' => now()->addDays(5),
+        ]));
+
+        $generator = app(\App\Services\AccessCode\AccessCodeGeneratorService::class);
+
+        for ($i = 0; $i < 20; $i++) {
+            $pin = $generator->generatePin($apto2->id, now(), now()->addDay());
+            $this->assertNotSame('123456', $pin);
+        }
     }
 }
