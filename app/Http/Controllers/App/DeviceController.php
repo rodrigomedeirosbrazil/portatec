@@ -6,6 +6,7 @@ namespace App\Http\Controllers\App;
 
 use App\Enums\DeviceBrandEnum;
 use App\Enums\DeviceTypeEnum;
+use App\Enums\PlaceRoleEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDeviceRequest;
 use App\Http\Requests\UpdateDeviceRequest;
@@ -148,23 +149,21 @@ class DeviceController extends Controller
     {
         $placeIds = [];
 
-        if ($place !== null) {
-            abort_unless(
-                $place->placeUsers()->where('user_id', Auth::id())->exists(),
-                403
-            );
-            $placeIds = [$place->id];
-        } else {
-            $defaultPlaceId = Auth::user()->placeUsers()->value('place_id');
-            if ($defaultPlaceId !== null) {
-                $placeIds = [$defaultPlaceId];
-            }
-        }
-
+        // Mesma habilidade do `store()`: a tela nao pode oferecer um local em
+        // que o POST vai devolver 403.
         $places = Place::query()
-            ->whereHas('placeUsers', fn (Builder $query) => $query->where('user_id', Auth::id()))
+            ->whereHas('placeUsers', fn (Builder $query) => $query
+                ->where('user_id', Auth::id())
+                ->where('role', PlaceRoleEnum::Admin->value))
             ->orderBy('name')
             ->get();
+
+        if ($place !== null) {
+            abort_unless(Auth::user()?->can('update', $place), 403);
+            $placeIds = [$place->id];
+        } elseif ($places->isNotEmpty()) {
+            $placeIds = [$places->first()->id];
+        }
 
         return Inertia::render('devices/create', [
             'places' => PlaceResource::collection($places),
@@ -188,13 +187,16 @@ class DeviceController extends Controller
             ->values()
             ->all();
 
-        $allowedPlaceIds = Auth::user()
-            ->placeUsers()
-            ->whereIn('place_id', $placeIds)
-            ->pluck('place_id')
-            ->all();
+        // Criar um dispositivo JA anexado a locais e o mesmo ato que anexar,
+        // por outra porta: `PlaceAttachDeviceController` exige admin do local,
+        // e sem esta checagem um `host` contornava aquilo criando o
+        // dispositivo direto dentro do local. "So o admin adiciona ou remove
+        // dispositivo" tem que valer nos dois caminhos.
+        foreach (Place::query()->findMany($placeIds) as $target) {
+            abort_unless(Auth::user()?->can('update', $target), 403);
+        }
 
-        abort_unless(count($allowedPlaceIds) === count($placeIds), 403);
+        abort_unless(count($placeIds) === Place::query()->whereKey($placeIds)->count(), 403);
 
         $device = Device::create([
             'place_id' => $placeIds[0] ?? null,

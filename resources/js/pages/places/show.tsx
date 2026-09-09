@@ -162,9 +162,12 @@ export default function PlacesShow({ place, activeAccessCodes, bookingsCount, bo
                 <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                     <div className="flex items-center justify-between border-b border-neutral-200 px-4.5 py-3">
                         <span className="text-xs font-bold tracking-wide text-neutral-500 uppercase">{t('place_devices_heading')}</span>
-                        <Button asChild size="sm">
-                            <Link href={places.devices.attach.url({ place: place.id })}>{t('place_add_device_action')}</Link>
-                        </Button>
+                        {/* Adicionar e remover dispositivo do local e do admin do local. */}
+                        {abilities.update ? (
+                            <Button asChild size="sm">
+                                <Link href={places.devices.attach.url({ place: place.id })}>{t('place_add_device_action')}</Link>
+                            </Button>
+                        ) : null}
                     </div>
                     {devices.length > 0 ? (
                         devices.map((device) => (
@@ -179,13 +182,15 @@ export default function PlacesShow({ place, activeAccessCodes, bookingsCount, bo
                                     {device.name}
                                 </Link>
                                 <span className="text-[12.5px] text-neutral-500">({device.brand})</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setDeviceToRemove(device)}
-                                    className="rounded-md border border-error-300 bg-error-100 px-2.5 py-1 text-[12px] font-semibold text-error-700 hover:bg-error-300/40"
-                                >
-                                    {t('place_remove_device_action')}
-                                </button>
+                                {abilities.update ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setDeviceToRemove(device)}
+                                        className="rounded-md border border-error-300 bg-error-100 px-2.5 py-1 text-[12px] font-semibold text-error-700 hover:bg-error-300/40"
+                                    >
+                                        {t('place_remove_device_action')}
+                                    </button>
+                                ) : null}
                             </div>
                         ))
                     ) : (

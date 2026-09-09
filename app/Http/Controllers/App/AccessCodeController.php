@@ -114,12 +114,9 @@ class AccessCodeController extends Controller
     {
         $validated = $request->validated();
 
-        $hasAccess = Auth::user()
-            ->placeUsers()
-            ->where('place_id', $validated['placeId'])
-            ->exists();
-
-        abort_unless($hasAccess, 403);
+        // `host` PODE criar codigo de acesso - decisao de produto, tomada com
+        // a objecao na mesa. Membro do local basta, mas dito pela policy.
+        abort_unless(Auth::user()?->can('view', Place::findOrFail($validated['placeId'])), 403);
 
         $accessCode = $generator->createStandalone(
             placeId: $validated['placeId'],

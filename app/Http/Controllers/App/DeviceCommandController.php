@@ -23,10 +23,10 @@ class DeviceCommandController extends Controller
      */
     public function store(SendDeviceCommandRequest $request, Place $place, DeviceCommandService $service): JsonResponse
     {
-        abort_unless(
-            $place->placeUsers()->where('user_id', Auth::id())->exists(),
-            403
-        );
+        // Acionar e USO: membro do local basta. Via policy, para o app ter um
+        // vocabulario so - checagem escrita a mao ja deixou passar `host` em
+        // lugares onde a regra era outra.
+        abort_unless(Auth::user()?->can('view', $place), 403);
 
         $deviceId = $request->integer('device_id');
         $action = $request->string('action')->toString();

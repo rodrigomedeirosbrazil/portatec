@@ -164,12 +164,9 @@ class BookingController extends Controller
     {
         $validated = $request->validated();
 
-        $hasAccess = Auth::user()
-            ->placeUsers()
-            ->where('place_id', $validated['placeId'])
-            ->exists();
-
-        abort_unless($hasAccess, 403);
+        // Reserva manual e permitida a `host` - mesma decisao do codigo de
+        // acesso. Membro do local basta, mas dito pela policy.
+        abort_unless(Auth::user()?->can('view', Place::findOrFail($validated['placeId'])), 403);
 
         $booking = Booking::create([
             'place_id' => $validated['placeId'],

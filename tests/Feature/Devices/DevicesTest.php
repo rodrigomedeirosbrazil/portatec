@@ -89,6 +89,53 @@ class DevicesTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('devices/edit'));
     }
 
+    public function test_host_cannot_create_a_device_inside_the_place(): void
+    {
+        $admin = User::factory()->create();
+        $host = User::factory()->create();
+
+        $place = Place::create(['name' => 'Village']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $admin->id, 'role' => 'admin']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $host->id, 'role' => 'host']);
+
+        // Criar um dispositivo ja anexado e o mesmo ato que anexar, por outra
+        // porta. "So o admin adiciona dispositivo" tem que valer nos dois.
+        $this->actingAs($host)
+            ->post('/app/devices', [
+                'name' => 'Portao pirata',
+                'brand' => 'portatec',
+                'placeIds' => [$place->id],
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(0, $place->devices()->count());
+
+        $this->actingAs($admin)
+            ->post('/app/devices', [
+                'name' => 'Portao legitimo',
+                'brand' => 'portatec',
+                'placeIds' => [$place->id],
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(1, $place->devices()->count());
+    }
+
+    public function test_host_does_not_see_the_place_in_the_device_form(): void
+    {
+        $admin = User::factory()->create();
+        $host = User::factory()->create();
+
+        $place = Place::create(['name' => 'LOCAL SO DO ADMIN']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $admin->id, 'role' => 'admin']);
+        PlaceUser::create(['place_id' => $place->id, 'user_id' => $host->id, 'role' => 'host']);
+
+        $this->actingAs($host)
+            ->get('/app/devices/create')
+            ->assertOk()
+            ->assertDontSee('LOCAL SO DO ADMIN');
+    }
+
     public function test_control_renders_devices_control(): void
     {
         $user = User::factory()->create();
