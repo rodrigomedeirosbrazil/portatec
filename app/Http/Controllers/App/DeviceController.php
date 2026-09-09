@@ -211,6 +211,11 @@ class DeviceController extends Controller
 
         $device->places()->sync($placeIds);
 
+        $device->deviceUsers()->create([
+            'user_id' => Auth::id(),
+            'role' => \App\Enums\DeviceRoleEnum::Admin->value,
+        ]);
+
         return redirect()
             ->route('app.devices.show', ['device' => $device->id])
             ->with('status', __('app.device_created'));

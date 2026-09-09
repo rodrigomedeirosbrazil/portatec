@@ -391,6 +391,7 @@ class DevicesTest extends TestCase
 
         $device = Device::create(['name' => 'Dispositivo', 'brand' => DeviceBrandEnum::Portatec]);
         $device->places()->attach($placeA->id);
+        $device->deviceUsers()->create(['user_id' => $user->id, 'role' => 'admin']);
 
         $toKeep = DeviceFunction::create(['device_id' => $device->id, 'type' => DeviceTypeEnum::Switch, 'pin' => '1']);
         $toRemove = DeviceFunction::create(['device_id' => $device->id, 'type' => DeviceTypeEnum::Button, 'pin' => '2']);
