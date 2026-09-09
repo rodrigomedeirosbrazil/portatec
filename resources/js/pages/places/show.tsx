@@ -57,9 +57,11 @@ export default function PlacesShow({ place, activeAccessCodes, bookingsCount, bo
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                        <Link href={places.edit.url({ place: place.id })}>{t('place_edit_action')}</Link>
-                    </DropdownMenuItem>
+                    {abilities.update ? (
+                        <DropdownMenuItem asChild>
+                            <Link href={places.edit.url({ place: place.id })}>{t('place_edit_action')}</Link>
+                        </DropdownMenuItem>
+                    ) : null}
                     {abilities.manageMembers ? (
                         <DropdownMenuItem asChild>
                             <Link href={places.members.url({ place: place.id })}>{t('manage_members')}</Link>

@@ -38,6 +38,63 @@ class PlacesTest extends TestCase
         return $place;
     }
 
+    private function makePlaceWithHost(User $user, string $name = 'Condomínio'): Place
+    {
+        $place = Place::create(['name' => $name]);
+
+        PlaceUser::create([
+            'place_id' => $place->id,
+            'user_id' => User::factory()->create()->id,
+            'role' => 'admin',
+            'label' => 'Síndico',
+        ]);
+
+        PlaceUser::create([
+            'place_id' => $place->id,
+            'user_id' => $user->id,
+            'role' => 'host',
+            'label' => $user->name,
+        ]);
+
+        return $place;
+    }
+
+    public function test_host_cannot_rename_the_place(): void
+    {
+        $host = User::factory()->create();
+        $place = $this->makePlaceWithHost($host);
+
+        $this->actingAs($host)
+            ->put("/app/places/{$place->id}", ['name' => 'Novo nome'])
+            ->assertForbidden();
+
+        $this->actingAs($host)
+            ->get("/app/places/{$place->id}/edit")
+            ->assertForbidden();
+    }
+
+    public function test_place_admin_can_rename_the_place(): void
+    {
+        $user = User::factory()->create();
+        $place = $this->makePlaceWithAdmin($user);
+
+        $this->actingAs($user)
+            ->put("/app/places/{$place->id}", ['name' => 'Novo nome'])
+            ->assertRedirect("/app/places/{$place->id}");
+
+        $this->assertSame('Novo nome', $place->fresh()->name);
+    }
+
+    public function test_host_still_sees_the_place(): void
+    {
+        $host = User::factory()->create();
+        $place = $this->makePlaceWithHost($host);
+
+        $this->actingAs($host)
+            ->get("/app/places/{$place->id}")
+            ->assertOk();
+    }
+
     // ------------------------------------------------------------------
     // GET screens render the right Inertia component
     // ------------------------------------------------------------------

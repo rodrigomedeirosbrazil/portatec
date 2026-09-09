@@ -28,14 +28,19 @@ class PlacePolicy
         return true;
     }
 
+    /**
+     * Spec §5: renomear o local, anexar e desanexar dispositivo são a mesma
+     * habilidade e são do admin do local. `host` mantém acionar, códigos de
+     * acesso, reservas e histórico.
+     */
     public function update(User $user, Place $place): bool
     {
-        return $this->hasPlaceAccess($user, $place->id);
+        return $this->hasPlaceAdminAccess($user, $place->id);
     }
 
     public function delete(User $user, Place $place): bool
     {
-        return $this->hasPlaceAccess($user, $place->id);
+        return $this->hasPlaceAdminAccess($user, $place->id);
     }
 
     public function restore(User $user, Place $place): bool
