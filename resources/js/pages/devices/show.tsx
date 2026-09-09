@@ -11,16 +11,22 @@ interface DevicesShowProps {
     device: Device;
     recentCommands: CommandLog[];
     recentTuyaSyncs: AccessCodeDeviceSync[];
+    abilities: { managePermissions: boolean };
     [key: string]: unknown;
 }
 
-export default function DevicesShow({ device, recentCommands, recentTuyaSyncs }: DevicesShowProps) {
+export default function DevicesShow({ device, recentCommands, recentTuyaSyncs, abilities }: DevicesShowProps) {
     const { t } = useTranslations();
 
     const locationsLabel = (device.places ?? []).map((place) => place.name).join(', ') || device.place?.name || t('unassigned_place');
 
     const headerActions = (
         <>
+            {abilities.managePermissions ? (
+                <Button variant="outline" asChild>
+                    <Link href={devices.permissions.index.url({ device: device.id })}>{t('device_permissions_title')}</Link>
+                </Button>
+            ) : null}
             <Button variant="outline" asChild>
                 <Link href={devices.edit.url({ device: device.id })}>{t('edit')}</Link>
             </Button>

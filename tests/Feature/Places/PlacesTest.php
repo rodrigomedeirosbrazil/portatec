@@ -347,7 +347,7 @@ class PlacesTest extends TestCase
 
         $this->actingAs($user)
             ->post("/app/places/{$place->id}/members", [
-                'user_id' => $newMember->id,
+                'email' => $newMember->email,
                 'role' => 'host',
                 'label' => 'Cuidador',
             ])
@@ -375,10 +375,10 @@ class PlacesTest extends TestCase
 
         $this->actingAs($user)
             ->post("/app/places/{$place->id}/members", [
-                'user_id' => $duplicateMember->id,
+                'email' => $duplicateMember->email,
                 'role' => 'host',
             ])
-            ->assertSessionHasErrors('user_id');
+            ->assertSessionHasErrors('email');
 
         $this->assertSame(
             1,
@@ -431,24 +431,24 @@ class PlacesTest extends TestCase
     // Member search endpoint
     // ------------------------------------------------------------------
 
-    public function test_member_search_returns_empty_with_less_than_two_characters(): void
+    public function test_member_search_returns_empty_without_email(): void
     {
         $user = User::factory()->create();
         $place = $this->makePlaceWithAdmin($user);
-        User::factory()->create(['name' => 'Ana Silva']);
+        User::factory()->create(['email' => 'ana@exemplo.com']);
 
         $this->actingAs($user)
-            ->getJson("/app/places/{$place->id}/members/search?search=a")
+            ->getJson("/app/places/{$place->id}/members/search?email=")
             ->assertOk()
             ->assertJson(['data' => []]);
     }
 
-    public function test_member_search_excludes_existing_members_and_limits_to_ten(): void
+    public function test_member_search_finds_by_exact_email_and_excludes_existing_members(): void
     {
         $user = User::factory()->create();
         $place = $this->makePlaceWithAdmin($user);
 
-        $existingMember = User::factory()->create(['name' => 'Zeta Existente']);
+        $existingMember = User::factory()->create(['email' => 'zeta@exemplo.com']);
         PlaceUser::create([
             'place_id' => $place->id,
             'user_id' => $existingMember->id,
@@ -456,17 +456,32 @@ class PlacesTest extends TestCase
             'label' => null,
         ]);
 
-        foreach (range(1, 12) as $i) {
-            User::factory()->create(['name' => "Zeta Candidato {$i}"]);
-        }
+        $candidate = User::factory()->create(['email' => 'candidato@exemplo.com']);
 
         $response = $this->actingAs($user)
-            ->getJson("/app/places/{$place->id}/members/search?search=Zeta")
+            ->getJson("/app/places/{$place->id}/members/search?email=candidato@exemplo.com")
             ->assertOk();
 
         $data = $response->json('data');
-        $this->assertCount(10, $data);
-        $this->assertNotContains($existingMember->id, array_column($data, 'id'));
+        $this->assertCount(1, $data);
+        $this->assertSame($candidate->id, $data[0]['id']);
+
+        $this->actingAs($user)
+            ->getJson("/app/places/{$place->id}/members/search?email=zeta@exemplo.com")
+            ->assertOk()
+            ->assertJson(['data' => []]);
+    }
+
+    public function test_member_search_partial_email_finds_nobody(): void
+    {
+        $user = User::factory()->create();
+        $place = $this->makePlaceWithAdmin($user);
+        User::factory()->create(['email' => 'candidato@exemplo.com']);
+
+        $this->actingAs($user)
+            ->getJson("/app/places/{$place->id}/members/search?email=candidato")
+            ->assertOk()
+            ->assertJson(['data' => []]);
     }
 
     public function test_member_search_denies_access_to_user_who_cannot_manage_members(): void
@@ -476,7 +491,7 @@ class PlacesTest extends TestCase
         $foreignPlace = $this->makePlaceWithAdmin($otherUser);
 
         $this->actingAs($user)
-            ->getJson("/app/places/{$foreignPlace->id}/members/search?search=an")
+            ->getJson("/app/places/{$foreignPlace->id}/members/search?email=an@exemplo.com")
             ->assertForbidden();
     }
 

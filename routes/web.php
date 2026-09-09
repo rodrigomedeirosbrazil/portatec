@@ -9,6 +9,8 @@ use App\Http\Controllers\App\DeviceCommandController;
 use App\Http\Controllers\App\DeviceControlController;
 use App\Http\Controllers\App\DeviceController;
 use App\Http\Controllers\App\DeviceIntegrationController;
+use App\Http\Controllers\App\DevicePermissionController;
+use App\Http\Controllers\App\DeviceTransferController;
 use App\Http\Controllers\App\IntegrationController;
 use App\Http\Controllers\App\IntegrationPlaceController;
 use App\Http\Controllers\App\PlaceAttachDeviceController;
@@ -132,6 +134,10 @@ Route::middleware('auth')
         Route::get('/devices/{device}', [DeviceController::class, 'show'])->name('devices.show');
         Route::get('/devices/{device}/control', [DeviceControlController::class, 'show'])->name('devices.control');
         Route::post('/devices/{device}/commands', [DeviceCommandController::class, 'storeForDevice'])->name('devices.commands.store');
+        Route::get('/devices/{device}/permissions', [DevicePermissionController::class, 'index'])->name('devices.permissions.index');
+        Route::post('/devices/{device}/permissions', [DevicePermissionController::class, 'store'])->name('devices.permissions.store');
+        Route::delete('/devices/{device}/permissions/{deviceUser}', [DevicePermissionController::class, 'destroy'])->name('devices.permissions.destroy');
+        Route::post('/devices/{device}/transfer', [DeviceTransferController::class, 'store'])->name('devices.transfer');
 
         Route::redirect('/integrations', '/app/bookings/integrations');
         Route::redirect('/integrations/tuya-connect', '/app/devices/integrations/tuya-connect');

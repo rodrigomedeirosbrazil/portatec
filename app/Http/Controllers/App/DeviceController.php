@@ -252,6 +252,7 @@ class DeviceController extends Controller
             'device' => new DeviceResource($device),
             'recentCommands' => CommandLogResource::collection($recentCommands),
             'recentTuyaSyncs' => AccessCodeDeviceSyncResource::collection($recentTuyaSyncs),
+            'abilities' => ['managePermissions' => $device->isAdministeredBy(Auth::user())],
         ]);
     }
 
