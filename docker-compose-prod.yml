@@ -22,6 +22,19 @@ services:
             redis:
                 condition: service_healthy
         restart: always
+        # 472 MB observados em produção; o teto existe para um vazamento aqui
+        # ser contido neste container em vez de sorteado pelo OOM killer entre
+        # todos os da VPS — inclusive o mysql do biolitoral.
+        mem_limit: 768m
+        healthcheck:
+            # /up é a rota de saúde que o bootstrap/app.php já expõe, servida
+            # pelo nginx interno. Cobre nginx e php-fpm; NÃO cobre os outros
+            # cinco processos do supervisor, que seguem invisíveis ao docker ps.
+            test: ["CMD", "curl", "-fsS", "http://127.0.0.1/up"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 60s
 
 
     redis:
