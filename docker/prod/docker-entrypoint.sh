@@ -4,15 +4,12 @@ set -e
 # echo "Changing Nginx default port to ${HTTP_NGINX_PORT}/${HTTPS_NGINX_PORT}"
 # /usr/bin/envsubst '$HTTP_NGINX_PORT,$HTTPS_NGINX_PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
-# Rebuild frontend assets so VITE_* (e.g. VITE_REVERB_*) from the mounted .env are embedded.
-# The image is built in CI without .env, so the initial build has undefined Reverb URL and WebSocket fails.
+# storage e o banco são montados do host: o dono precisa ser acertado a cada
+# arranque. Os chowns de resources/js/* saíram junto com o `npm run build` —
+# o bundle agora vem pronto do CI, e a conexão do Reverb chega em runtime pelo
+# documento (config/reverb_client.php).
 chown -R www-data:www-data /var/www/storage
 chown www-data:www-data /var/www/database/database.sqlite
-# wayfinder:generate (run during the build below) writes into these dirs as www-data.
-chown -R www-data:www-data /var/www/resources/js/actions /var/www/resources/js/routes /var/www/resources/js/wayfinder
-
-echo "Building frontend assets with current .env (VITE_* for Reverb/WebSocket)..."
-su www-data -s /bin/sh -c "cd /var/www && npm run build"
 
 echo "Running database migrations..."
 su www-data -s /bin/sh -c "/usr/local/bin/php /var/www/artisan migrate --force"

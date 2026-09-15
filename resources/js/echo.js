@@ -3,12 +3,17 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 window.Pusher = Pusher;
 
+// Vem do documento, não do bundle: ver resources/views/app.blade.php. Com
+// import.meta.env, estes quatro valores eram assados no build, e o container
+// precisava reconstruir o frontend no arranque para acertá-los.
+const reverb = window.__reverb ?? {};
+
 window.Echo = new Echo({
     broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: import.meta.env.VITE_REVERB_HOST,
-    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+    key: reverb.key,
+    wsHost: reverb.host,
+    wsPort: reverb.port,
+    wssPort: reverb.port,
+    forceTLS: reverb.scheme === 'https',
     enabledTransports: ['ws', 'wss'],
 });
