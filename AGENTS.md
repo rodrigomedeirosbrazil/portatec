@@ -15,7 +15,7 @@ importa reservas via iCal (Airbnb e afins) e controla dispositivos em tempo real
 |---|---|
 | Framework | Laravel 11 (`laravel/framework ^11.31`) |
 | PHP | `^8.2` no composer; imagens e CI usam **8.4** |
-| UI do app | Livewire 3 + Blade + Tailwind CSS 4 (Vite) |
+| UI do app | Inertia + React + Tailwind CSS 4 (Vite) |
 | UI de admin | **Filament 4** (`filament/filament ^4.0`) no painel `/admin` |
 | Filas | Redis + **Horizon** |
 | Realtime | **Reverb** (WebSocket) + Laravel Echo |
@@ -79,7 +79,6 @@ app/
   Filament/            painel administrativo (Resources + Pages)
   Http/Controllers/    auth, impersonation, DeviceController (API de firmware)
   Jobs/                SyncIntegrationBookingsJob
-  Livewire/            telas do app do cliente (/app/*)
   Models/              domínio (ver seção 4)
   Observers/           AccessCodeObserver, BookingObserver
   Policies/            autorização por model
@@ -90,15 +89,17 @@ database/migrations/   ~20 migrations
 docker/8.4/            imagem de desenvolvimento (Sail)
 docker/prod/           imagem de produção (nginx + php-fpm + supervisord)
 resources/lang/pt_BR/  traduções da aplicação (app.php, auth.php, validation.php, ...)
-resources/views/       layouts, components reutilizáveis, telas livewire
+resources/views/       app.blade.php (documento Inertia) e components reutilizáveis
+resources/js/          app.tsx, pages/ (telas do app do cliente), hooks/ (useEcho)
 routes/                web.php, api.php, channels.php, console.php (schedule)
 tests/                 Unit/ e Feature/ + Fixtures/ (arquivos .ics reais)
 ```
 
 ### Duas interfaces distintas
 
-- **`/app/*` — app do cliente**: Livewire (`app/Livewire`), rotas nomeadas `app.*` em
-  `routes/web.php`, protegidas pelo middleware `auth`.
+- **`/app/*` — app do cliente**: Inertia + React (`resources/js/app.tsx`, páginas em
+  `resources/js/pages`), rotas nomeadas `app.*` em `routes/web.php`, protegidas pelo
+  middleware `auth`. O documento é `resources/views/app.blade.php`.
 - **`/admin` — painel interno**: Filament, acessível somente a super admin
   (`User::canAccessPanel`).
 
@@ -180,7 +181,7 @@ Ao mexer no schedule, atualize `tests/Unit/ScheduleTest.php`.
 - Prefira helpers a Facades quando houver equivalente (`auth()`, `config()`, `now()`); mantenha
   `auth()` — não troque por `filament()`.
 - Eloquent/Query Builder em vez de SQL cru; use as relações já declaradas nos models.
-- Regra de negócio em Services, não em componentes Livewire, controllers ou resources Filament.
+- Regra de negócio em Services, não em componentes React, controllers ou resources Filament.
 - Efeitos colaterais de modelo em Observers (`AccessCodeObserver`, `BookingObserver`).
 - Autorização sempre via Policy.
 - Nada de segredo hard-coded: use `config('...')`, e `env()` apenas dentro de `config/`.
@@ -233,7 +234,11 @@ Nunca declare "pronto" sem rodar os testes e ver a saída.
   `php artisan migrate:fresh && php artisan test` em PHP 8.4 (no CI, sem Sail).
 - `.github/workflows/deploy.yml`: dispara em tags no formato `20*-*-*.*` (ou manualmente),
   builda `docker/prod/Dockerfile`, envia a imagem por SSH e sobe com `docker compose`.
-- O entrypoint de produção roda `npm run build`, `artisan migrate --force` e `artisan optimize`.
+- O entrypoint de produção roda `artisan migrate --force` e `artisan optimize`. O bundle
+  do frontend vem pronto da imagem: ele é construído uma vez, no CI. A conexão do Reverb
+  usada pelo navegador chega em runtime pelo documento (`config/reverb_client.php`), e não
+  embutida no bundle — ver
+  [docs/superpowers/specs/2026-09-15-imagem-e-deploy-design.md](docs/superpowers/specs/2026-09-15-imagem-e-deploy-design.md).
 - Em produção o supervisord mantém: php-fpm, nginx, scheduler, horizon, reverb e mqtt-subscriber.
 
 ---
