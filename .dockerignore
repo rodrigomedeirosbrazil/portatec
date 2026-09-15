@@ -1,0 +1,43 @@
+# Contexto de build da imagem de produção. Duas coisas moram aqui: o que não
+# pode vazar e o que não deve inchar a imagem. A primeira é a razão de existir.
+
+# Segredos. A imagem viaja por scp e fica em disco na VPS; um .env assado numa
+# camada é vazamento, não desperdício.
+.env
+.env.*
+!.env.example
+
+# Reinstalados dentro do build, com --no-dev. Com `**/` porque o padrão simples
+# casa só na raiz do contexto, e há cópias inteiras destes diretórios dentro dos
+# worktrees de agente em .claude/ — 400 MB que iam parar dentro da imagem.
+vendor
+node_modules
+**/vendor
+**/node_modules
+
+# Worktrees de agente e configuração de ferramenta. Nada disso tem o que fazer
+# numa imagem de produção.
+.claude
+
+# O histórico inteiro está hoje dentro da imagem publicada. Todo segredo que já
+# passou por ele viaja junto.
+.git
+.gitignore
+.github
+
+# storage inteiro, e não subcaminhos: a suíte cria diretórios ali como root, e
+# excluir item a item sempre deixa de fora o próximo que o Laravel inventar.
+# O Dockerfile recria a estrutura que o framework exige.
+storage
+
+# Ferramental de desenvolvimento e artefatos locais.
+tests
+docs
+phpunit.xml
+pint.json
+.editorconfig
+.phpunit.result.cache
+docker-compose-prod.yml
+docker-compose.yml
+database/database.sqlite
+.DS_Store
