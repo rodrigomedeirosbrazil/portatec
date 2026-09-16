@@ -26,7 +26,7 @@ para as fechaduras e permite controlar e acompanhar os dispositivos em tempo rea
 
 ## Stack
 
-Laravel 11 · PHP 8.4 · Livewire 3 · Filament 4 · Tailwind CSS 4 (Vite) · Redis + Horizon ·
+Laravel 11 · PHP 8.4 · Inertia + React · Filament 4 · Tailwind CSS 4 (Vite) · Redis + Horizon ·
 Laravel Reverb (WebSocket) · MQTT
 
 ## Ambiente de desenvolvimento

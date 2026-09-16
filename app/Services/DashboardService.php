@@ -65,10 +65,15 @@ class DashboardService
             ->where('check_out', '>=', $now)
             ->count();
 
+        // O dia inteiro, e não "de agora em diante". O card diz "Check-ins hoje"
+        // e o número é clicável: ele abre a lista de reservas filtrada por
+        // date_from = date_to = hoje, sem recorte de hora. Com o recorte, o
+        // card mostrava menos do que a lista que ele próprio abre, e a
+        // diferença crescia ao longo do dia — às 23h o card marcava zero com o
+        // dia cheio de check-ins.
         $todayCheckIns = Booking::query()
             ->whereIn('place_id', $placeIds)
             ->whereDate('check_in', $now->toDateString())
-            ->where('check_in', '>=', $now)
             ->count();
 
         $activeAccessCodes = AccessCode::query()

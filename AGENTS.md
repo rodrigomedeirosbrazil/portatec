@@ -239,7 +239,14 @@ Nunca declare "pronto" sem rodar os testes e ver a saída.
   usada pelo navegador chega em runtime pelo documento (`config/reverb_client.php`), e não
   embutida no bundle — ver
   [docs/superpowers/specs/2026-09-15-imagem-e-deploy-design.md](docs/superpowers/specs/2026-09-15-imagem-e-deploy-design.md).
-- Em produção o supervisord mantém: php-fpm, nginx, scheduler, horizon, reverb e mqtt-subscriber.
+- `docker/prod/Dockerfile` é multi-stage: o estágio de build tem Node e composer e produz
+  `vendor` e `public/build`; a imagem final não tem nenhum dos dois. Esse estágio precisa de
+  PHP **e** do `vendor`, não só de Node, porque o `vite build` roda o plugin do wayfinder,
+  que chama `artisan`.
+- Em produção o supervisord mantém **sete** processos: php-fpm, nginx, scheduler, horizon,
+  reverb, mqtt-subscriber e tuya-subscriber. O healthcheck do container bate em `/up` e
+  cobre só nginx e php-fpm — os outros cinco podem estar em ciclo de reinício com o
+  container marcado `healthy`.
 
 ---
 
