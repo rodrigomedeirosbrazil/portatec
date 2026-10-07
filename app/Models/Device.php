@@ -9,6 +9,7 @@ use App\Enums\DeviceRoleEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Events\DeviceCreatedEvent;
 use App\Events\DeviceDeletedEvent;
+use App\Services\Tuya\DTOs\TuyaLockStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -207,6 +208,12 @@ class Device extends Model
     {
         return $this->brand === DeviceBrandEnum::Tuya
             && in_array($this->tuya_category, self::TUYA_LOCK_CATEGORIES, true);
+    }
+
+    /** Status derivado para a tela; `null` quando o dispositivo não é fechadura Tuya. */
+    public function tuyaLockStatus(): ?TuyaLockStatus
+    {
+        return TuyaLockStatus::fromDevice($this);
     }
 
     /**
