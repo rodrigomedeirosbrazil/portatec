@@ -80,7 +80,7 @@ class TuyaIntegrationService
             'tuya_product_name' => $snapshot->productName,
             'tuya_icon' => $snapshot->icon,
             'tuya_online' => $snapshot->online,
-            'tuya_status_payload' => $snapshot->status,
+            'tuya_status_payload' => TuyaStatusPayload::merge($device->tuya_status_payload ?? [], $snapshot->status),
             'last_sync' => now(),
         ])->save();
 

@@ -104,9 +104,55 @@ class TuyaMqttServiceTest extends TestCase
 
         $device->refresh();
         $this->assertSame(
-            [['code' => 'lock_motor_state', 'value' => true]],
+            [['code' => 'lock_motor_state', 'value' => true, 't' => null]],
             $device->tuya_status_payload,
         );
+    }
+
+    public function test_a_partial_report_keeps_the_other_reported_codes(): void
+    {
+        $device = Device::create([
+            'name' => 'Fechadura',
+            'brand' => DeviceBrandEnum::Tuya,
+            'external_device_id' => 'dev-3',
+            'tuya_status_payload' => [
+                ['code' => 'residual_electricity', 'value' => 51, 't' => 1000],
+                ['code' => 'lock_motor_state', 'value' => false, 't' => 1000],
+            ],
+        ]);
+
+        (new TuyaMqttService)->handleMessage([
+            'protocol' => 4,
+            'data' => [
+                'devId' => 'dev-3',
+                'status' => [['47' => true, 'code' => 'lock_motor_state', 'value' => true, 't' => 2000]],
+            ],
+        ]);
+
+        $this->assertSame([
+            ['code' => 'residual_electricity', 'value' => 51, 't' => 1000],
+            ['code' => 'lock_motor_state', 'value' => true, 't' => 2000],
+        ], $device->refresh()->tuya_status_payload);
+    }
+
+    public function test_it_never_stores_the_ble_unlock_check(): void
+    {
+        $device = Device::create([
+            'name' => 'Fechadura',
+            'brand' => DeviceBrandEnum::Tuya,
+            'external_device_id' => 'dev-4',
+            'tuya_status_payload' => [],
+        ]);
+
+        (new TuyaMqttService)->handleMessage([
+            'protocol' => 4,
+            'data' => [
+                'devId' => 'dev-4',
+                'status' => [['code' => 'ble_unlock_check', 'value' => 'AAH//w==', 't' => 2000]],
+            ],
+        ]);
+
+        $this->assertSame([], $device->refresh()->tuya_status_payload);
     }
 
     public function test_it_updates_online_state_from_biz_code(): void

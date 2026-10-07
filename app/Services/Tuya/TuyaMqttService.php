@@ -135,7 +135,7 @@ class TuyaMqttService
         $status = is_array($data['status'] ?? null) ? $data['status'] : [];
 
         $device->forceFill([
-            'tuya_status_payload' => $status,
+            'tuya_status_payload' => TuyaStatusPayload::merge($device->tuya_status_payload ?? [], $status),
             'last_sync' => now(),
         ])->save();
 
