@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Tuya;
 
+use App\Events\PlaceDeviceStatusEvent;
+use App\Events\PlaceTuyaLockStatusEvent;
 use App\Models\Device;
 use App\Models\Integration;
 use Illuminate\Support\Facades\Log;
@@ -133,6 +135,7 @@ class TuyaMqttService
         }
 
         $status = is_array($data['status'] ?? null) ? $data['status'] : [];
+        $before = $device->tuyaLockStatus()?->toArray();
 
         $device->forceFill([
             'tuya_status_payload' => TuyaStatusPayload::merge($device->tuya_status_payload ?? [], $status),
@@ -141,8 +144,20 @@ class TuyaMqttService
 
         Log::info('[Tuya MQTT] status reportado', [
             'device_id' => $device->id,
-            'codes' => collect($status)->pluck('code')->all(),
+            'codes' => collect($status)->pluck('code')->filter()->values()->all(),
         ]);
+
+        $after = $device->tuyaLockStatus()?->toArray();
+
+        // Só quando mudou: o mesmo relatório chega por /sta e /pen, e a bateria é reportada
+        // várias vezes por acionamento.
+        if ($after === null || $after === $before) {
+            return;
+        }
+
+        foreach ($this->placeIdsOf($device) as $placeId) {
+            PlaceTuyaLockStatusEvent::dispatch($placeId, $device->id, $after);
+        }
     }
 
     /** @param array<string, mixed> $data */
@@ -160,10 +175,38 @@ class TuyaMqttService
             return;
         }
 
+        $wasOnline = $device->tuya_online;
+        $isOnline = self::ONLINE_BIZ_CODES[$bizCode];
+
         $device->forceFill([
-            'tuya_online' => self::ONLINE_BIZ_CODES[$bizCode],
+            'tuya_online' => $isOnline,
             'last_sync' => now(),
         ])->save();
+
+        if ($wasOnline === $isOnline) {
+            return;
+        }
+
+        foreach ($this->placeIdsOf($device) as $placeId) {
+            PlaceDeviceStatusEvent::dispatch($placeId, $device->id, $device->isAvailable());
+        }
+    }
+
+    /**
+     * Mesma resolução de local do DeviceCommandService, mais o `place_id` legado.
+     *
+     * @return list<int>
+     */
+    private function placeIdsOf(Device $device): array
+    {
+        return $device->places()
+            ->pluck('places.id')
+            ->push($device->place_id)
+            ->filter()
+            ->map(fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function findDevice(mixed $externalId): ?Device
