@@ -287,6 +287,8 @@ comercial da Tuya, não uma limitação do nosso código. Não gaste tempo procu
 | 2 — CustomerApi | `TuyaCustomerApiClient` | AES-128-GCM, `X-sign`, refresh de token |
 | 3 — Domínio | `TuyaIntegrationService` | homes, devices, specifications, comandos DP |
 | Push | `TuyaMqttService` + `tuya:subscribe` | eventos de status e online/offline |
+| Persistência | `TuyaStatusPayload` | mescla o status por `code`; nunca grava DPs sensíveis |
+| Derivação | `DTOs\TuyaLockStatus` | trancada, bateria e alerta da fechadura para a tela |
 
 **Toda chamada autenticada passa pelo `TuyaCustomerApiClient`.** Ele lança
 `App\Exceptions\TuyaApiException` em falha e devolve o `result` já decifrado — inclusive quando
@@ -502,6 +504,10 @@ copie para documentação ou issues.
 
 `devices`: `integration_id`, `tuya_category`, `tuya_product_id`, `tuya_product_name`,
 `tuya_icon`, `tuya_online`, `tuya_status_payload`, `tuya_functions`.
+
+`tuya_status_payload` é uma lista `{code, value, t}` mesclada por `code` — toda gravação passa
+por `TuyaStatusPayload::merge`. O `PlaceTuyaLockStatusEvent` sai pelo canal
+`Place.Device.Status.{placeId}` quando o status derivado da fechadura muda.
 
 `access_code_device_syncs`: rastreia o que cada dispositivo realmente recebeu
 (`external_reference`, `synced_pin`, `status`).
