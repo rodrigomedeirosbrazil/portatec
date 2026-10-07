@@ -14,7 +14,7 @@ class TuyaDeviceDTO
         public readonly ?string $productId = null,
         public readonly ?string $productName = null,
         public readonly ?string $icon = null,
-        /** @var array<array{code: string, value: mixed}> */
+        /** @var list<array{code: string, value: mixed, t: int|null}> */
         public readonly array $status = [],
     ) {}
 
