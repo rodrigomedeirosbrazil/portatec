@@ -52,6 +52,8 @@ class DeviceControlController extends Controller
             'name' => $device->name,
             'is_available' => $device->isAvailable(),
             'is_tuya_lock' => $device->isTuyaLock(),
+            'supports_tuya_temporary_password' => $device->supportsTuyaTemporaryPassword(),
+            'lock_status' => $device->tuyaLockStatus()?->toArray(),
             'controllable_functions' => $controllableFunctions
                 ->map(fn (DeviceFunction $function): array => [
                     'pin' => $function->pin,

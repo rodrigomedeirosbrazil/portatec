@@ -272,6 +272,9 @@ class DeviceController extends Controller
             'recentCommands' => CommandLogResource::collection($recentCommands),
             'recentTuyaSyncs' => AccessCodeDeviceSyncResource::collection($recentTuyaSyncs),
             'codesOnDevice' => $codesOnDevice,
+            // Canal de realtime do status da fechadura: os canais são por local. Usa um local que
+            // o usuário enxerga; sem nenhum, a tela fica só com o status do carregamento.
+            'placeId' => $device->visiblePlacesFor(Auth::user())->first()?->id,
             // Falando pela Policy, nao pela flag: e ela que decide, e se as
             // duas habilidades divergirem no futuro a tela acompanha.
             'abilities' => [
