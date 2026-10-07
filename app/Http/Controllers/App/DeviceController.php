@@ -267,14 +267,21 @@ class DeviceController extends Controller
                 ->all()
             : [];
 
+        $user = Auth::user();
+        $memberPlaceIds = $user->placeUsers()->pluck('place_id');
+        $visiblePlaces = $device->visiblePlacesFor($user);
+        $realtimePlace = $visiblePlaces->first(fn (Place $place): bool => $memberPlaceIds->contains($place->id))
+            ?? ($user->hasRole('super_admin') ? $visiblePlaces->first() : null);
+
         return Inertia::render('devices/show', [
             'device' => new DeviceResource($device),
             'recentCommands' => CommandLogResource::collection($recentCommands),
             'recentTuyaSyncs' => AccessCodeDeviceSyncResource::collection($recentTuyaSyncs),
             'codesOnDevice' => $codesOnDevice,
-            // Canal de realtime do status da fechadura: os canais são por local. Usa um local que
-            // o usuário enxerga; sem nenhum, a tela fica só com o status do carregamento.
-            'placeId' => $device->visiblePlacesFor(Auth::user())->first()?->id,
+            // Os canais de realtime são por local e autorizados por vínculo com o local
+            // (routes/channels.php): usa um local cujo canal o usuário consegue ouvir. Sem nenhum,
+            // a tela fica só com o status do carregamento.
+            'placeId' => $realtimePlace?->id,
             // Falando pela Policy, nao pela flag: e ela que decide, e se as
             // duas habilidades divergirem no futuro a tela acompanha.
             'abilities' => [

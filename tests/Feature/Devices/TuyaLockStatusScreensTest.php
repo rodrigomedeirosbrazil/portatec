@@ -59,6 +59,22 @@ class TuyaLockStatusScreensTest extends TestCase
                 ->where('placeId', $place->id));
     }
 
+    public function test_device_show_sends_no_place_when_the_user_is_not_a_member_of_any_place(): void
+    {
+        [, , $lock] = $this->scenario();
+
+        // Admin só do equipamento: enxerga o local, mas não pode ouvir o canal dele.
+        $deviceAdmin = User::factory()->create();
+        $lock->deviceUsers()->create(['user_id' => $deviceAdmin->id, 'role' => 'admin']);
+
+        $this->actingAs($deviceAdmin)
+            ->get("/app/devices/{$lock->id}")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('device.lock_status.locked', true)
+                ->where('placeId', null));
+    }
+
     /** @return array{0: User, 1: Place, 2: Device} */
     private function scenario(): array
     {
