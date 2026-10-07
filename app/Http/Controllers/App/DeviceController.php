@@ -272,6 +272,9 @@ class DeviceController extends Controller
             'recentCommands' => CommandLogResource::collection($recentCommands),
             'recentTuyaSyncs' => AccessCodeDeviceSyncResource::collection($recentTuyaSyncs),
             'codesOnDevice' => $codesOnDevice,
+            // Local cujo canal de realtime o usuário consegue ouvir; sem nenhum, a tela fica só
+            // com o status do carregamento.
+            'placeId' => $device->realtimePlaceFor(Auth::user())?->id,
             // Falando pela Policy, nao pela flag: e ela que decide, e se as
             // duas habilidades divergirem no futuro a tela acompanha.
             'abilities' => [

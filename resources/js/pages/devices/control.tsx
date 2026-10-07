@@ -4,13 +4,16 @@ import axios from 'axios';
 import { storeForDevice as sendCommandAction } from '@/actions/App/Http/Controllers/App/DeviceCommandController';
 import { show } from '@/actions/App/Http/Controllers/App/DeviceController';
 import { FunctionRow } from '@/components/device-control/function-row';
+import { TuyaLockStatusPanel } from '@/components/device-control/tuya-lock-status-panel';
 import { Page, PageHeader } from '@/components/page';
 import { StatusBadge } from '@/components/status-badge';
 import type { DeviceCommandKind, DeviceCommandResult } from '@/hooks/use-device-commands';
 import { useDeviceCommands } from '@/hooks/use-device-commands';
 import { useTranslations } from '@/hooks/use-translations';
+import { useTuyaLockStatus } from '@/hooks/use-tuya-lock-status';
 import { AppLayout } from '@/layouts/app-layout';
 import devices from '@/routes/app/devices';
+import type { TuyaLockStatus } from '@/types';
 
 interface ControllableFunction {
     pin: string;
@@ -28,13 +31,15 @@ interface ControlDevice {
     name: string;
     is_available: boolean;
     is_tuya_lock: boolean;
+    supports_tuya_temporary_password: boolean;
+    lock_status: TuyaLockStatus | null;
     controllable_functions: ControllableFunction[];
     status_function: StatusFunction | null;
 }
 
 interface ControlPageProps {
     device: ControlDevice;
-    placeId: number;
+    placeId: number | null;
     initialFunctionStatus: Record<string, unknown>;
     [key: string]: unknown;
 }
@@ -46,14 +51,14 @@ interface ControlPageProps {
  * esta tela só cuida do layout e do envio do comando.
  *
  * Os canais de realtime são por local (`Place.Device.*.{placeId}`), não por
- * dispositivo — `placeId` aqui é o mesmo resolvido no controller, espelhando
- * o `$placeId` computado hoje em `control.blade.php`.
+ * dispositivo — `placeId` aqui é o local resolvido no controller cujo canal o
+ * usuário consegue ouvir (`null` quando não há nenhum).
  */
 export default function DeviceControl({ device, placeId, initialFunctionStatus }: ControlPageProps) {
     const { t } = useTranslations();
 
     const commands = useDeviceCommands({
-        placeId: placeId || null,
+        placeId,
         initialFunctionStatus,
         initialDeviceAvailability: { [String(device.id)]: device.is_available },
         sendCommand: async ({ action, pin }): Promise<DeviceCommandResult> => {
@@ -64,6 +69,11 @@ export default function DeviceControl({ device, placeId, initialFunctionStatus }
 
             return { commandId: response.data.commandId ?? null };
         },
+    });
+
+    const lockStatus = useTuyaLockStatus({
+        placeId,
+        initial: device.lock_status ? { [String(device.id)]: device.lock_status } : {},
     });
 
     const triggerAction = (functionType: ControllableFunction['type']): DeviceCommandKind =>
@@ -109,7 +119,12 @@ export default function DeviceControl({ device, placeId, initialFunctionStatus }
                             />
                         ))
                     ) : device.is_tuya_lock ? (
-                        <p className="m-0 text-neutral-500">{t('device_control_tuya_lock_message')}</p>
+                        <div className="space-y-2">
+                            <TuyaLockStatusPanel status={lockStatus.get(device.id)} />
+                            {device.supports_tuya_temporary_password ? (
+                                <p className="m-0 text-neutral-500">{t('device_control_tuya_lock_message')}</p>
+                            ) : null}
+                        </div>
                     ) : (
                         <p className="m-0 text-neutral-500">{t('device_control_no_functions')}</p>
                     )}

@@ -9,6 +9,7 @@ use App\Enums\DeviceRoleEnum;
 use App\Enums\DeviceTypeEnum;
 use App\Events\DeviceCreatedEvent;
 use App\Events\DeviceDeletedEvent;
+use App\Services\Tuya\DTOs\TuyaLockStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -159,6 +160,20 @@ class Device extends Model
             ->values();
     }
 
+    /**
+     * Local cujo canal de realtime (`Place.Device.*.{placeId}`) o usuário consegue assinar.
+     * Os canais são autorizados por vínculo com o local (routes/channels.php), então só serve
+     * um local visível em que ele é membro — ou qualquer um visível, para super_admin.
+     */
+    public function realtimePlaceFor(User $user): ?Place
+    {
+        $memberPlaceIds = $user->placeUsers()->pluck('place_id');
+        $visiblePlaces = $this->visiblePlacesFor($user);
+
+        return $visiblePlaces->first(fn (Place $place): bool => $memberPlaceIds->contains($place->id))
+            ?? ($user->hasRole('super_admin') ? $visiblePlaces->first() : null);
+    }
+
     public function isUsableBy(User $user): bool
     {
         return $this->deviceUsers()
@@ -207,6 +222,12 @@ class Device extends Model
     {
         return $this->brand === DeviceBrandEnum::Tuya
             && in_array($this->tuya_category, self::TUYA_LOCK_CATEGORIES, true);
+    }
+
+    /** Status derivado para a tela; `null` quando o dispositivo não é fechadura Tuya. */
+    public function tuyaLockStatus(): ?TuyaLockStatus
+    {
+        return TuyaLockStatus::fromDevice($this);
     }
 
     /**

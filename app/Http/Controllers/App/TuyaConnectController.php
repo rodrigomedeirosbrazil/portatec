@@ -12,6 +12,7 @@ use App\Models\Integration;
 use App\Models\Platform;
 use App\Services\Tuya\DTOs\TuyaTokenDTO;
 use App\Services\Tuya\TuyaIntegrationService;
+use App\Services\Tuya\TuyaStatusPayload;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -124,7 +125,7 @@ class TuyaConnectController extends Controller
                     'tuya_product_name' => $meta['productName'] ?? null,
                     'tuya_icon' => $meta['icon'] ?? null,
                     'tuya_online' => $meta['online'] ?? null,
-                    'tuya_status_payload' => $meta['status'] ?? [],
+                    'tuya_status_payload' => TuyaStatusPayload::merge([], $meta['status'] ?? []),
                     'last_sync' => now(),
                 ]
             );

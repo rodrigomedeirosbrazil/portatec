@@ -43,6 +43,7 @@ class DeviceResource extends JsonResource
             'is_available' => $this->isAvailable(),
             'is_tuya_lock' => $this->isTuyaLock(),
             'supports_tuya_temporary_password' => $this->supportsTuyaTemporaryPassword(),
+            'lock_status' => $this->tuyaLockStatus()?->toArray(),
             'device_functions_count' => $this->whenCounted('deviceFunctions'),
             'device_functions' => DeviceFunctionResource::collection($this->whenLoaded('deviceFunctions')),
             'places' => PlaceResource::collection($this->whenLoaded('places', fn () => $this->visiblePlacesFor(Auth::user()))),

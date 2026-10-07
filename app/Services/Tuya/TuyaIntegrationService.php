@@ -53,7 +53,9 @@ class TuyaIntegrationService
                 productId: $device['product_id'] ?? $device['productId'] ?? null,
                 productName: $device['product_name'] ?? $device['productName'] ?? null,
                 icon: $device['icon'] ?? null,
-                status: is_array($device['status'] ?? null) ? $device['status'] : [],
+                // O DTO vai para a sessao e para o navegador no fluxo do QR:
+                // nunca pode carregar DPs sensiveis (ex.: ble_unlock_check).
+                status: TuyaStatusPayload::merge([], is_array($device['status'] ?? null) ? $device['status'] : []),
             ))
             ->filter(fn (TuyaDeviceDTO $device): bool => $device->id !== '')
             ->values();
@@ -80,7 +82,7 @@ class TuyaIntegrationService
             'tuya_product_name' => $snapshot->productName,
             'tuya_icon' => $snapshot->icon,
             'tuya_online' => $snapshot->online,
-            'tuya_status_payload' => $snapshot->status,
+            'tuya_status_payload' => TuyaStatusPayload::merge($device->tuya_status_payload ?? [], $snapshot->status),
             'last_sync' => now(),
         ])->save();
 

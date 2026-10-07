@@ -287,6 +287,8 @@ comercial da Tuya, não uma limitação do nosso código. Não gaste tempo procu
 | 2 — CustomerApi | `TuyaCustomerApiClient` | AES-128-GCM, `X-sign`, refresh de token |
 | 3 — Domínio | `TuyaIntegrationService` | homes, devices, specifications, comandos DP |
 | Push | `TuyaMqttService` + `tuya:subscribe` | eventos de status e online/offline |
+| Persistência | `TuyaStatusPayload` | mescla o status por `code`; nunca grava DPs sensíveis |
+| Derivação | `DTOs\TuyaLockStatus` | trancada, bateria e alerta da fechadura para a tela |
 
 **Toda chamada autenticada passa pelo `TuyaCustomerApiClient`.** Ele lança
 `App\Exceptions\TuyaApiException` em falha e devolve o `result` já decifrado — inclusive quando
@@ -366,6 +368,14 @@ POST /v1.0/m/life/ha/access/config                credenciais do broker MQTT
 GET  /v1.0/m/token/{refreshToken}                 refresh
 ```
 
+**`/commands` só aceita DP declarado em `functions` do `/specifications`.** Um DP válido do
+dispositivo que não esteja ali (mesmo que apareça em `status`, no mapa de `/status` ou nos eventos
+MQTT) volta `[2008]` — a nuvem recusa antes de chegar ao dispositivo, qualquer que seja o valor.
+Não adianta montar payload: confira `functions` primeiro.
+
+`[2001]` em `/commands` para sub-dispositivo Bluetooth (atrás de hub `wg2`) é transitório: o
+dispositivo estava sem conexão BLE com o hub. O mesmo comando, repetido segundos depois, passa.
+
 ---
 
 ### 11.5 MQTT — canal de push
@@ -385,6 +395,12 @@ tópico válido que nunca recebe mensagem.
 As mensagens chegam em **JSON puro, sem criptografia**. `protocol: 4` traz `data.devId` +
 `data.status`; `protocol: 20` traz `data.bizCode` (`online`, `offline`, `nameUpdate`, …) com
 `data.bizData.devId`.
+
+Cada mensagem `protocol: 4` traz **só os DPs que mudaram**, não o estado completo — e o mesmo
+evento chega duas vezes, em `/sta` (com `code` + `value`) e em `/pen` (com `dpId` + `value`).
+DPs que o produto não declara no mapa de `/status` chegam **sem `code`**, só como chave numérica
+(ex.: `{"46": true}`). Quem persistir status a partir do MQTT precisa mesclar por `code`, não
+substituir — senão cada evento apaga o resto do estado.
 
 As credenciais expiram em ~2h: o comando encerra e o supervisord reinicia com credenciais novas.
 
@@ -433,6 +449,53 @@ em fechaduras que expõem esse DP** — existem modelos Tuya que expõem. O envi
 `Device::supportsTuyaTemporaryPassword()`, que exige o DP declarado em `/specifications`: em
 fechadura sem o DP o sistema **recusa**, em vez de fingir sucesso e deixar um PIN fantasma.
 
+#### 11.6.1 Fechadura Bluetooth de acionamento — abrir/trancar também não é possível
+
+Terceira fechadura testada (out/2026): "Smart Fechadura", categoria `ms`, produto `uamrw6h3`.
+Sem teclado nem senha — só motor, acionado pelo app. É **Bluetooth**, ligada à nuvem como
+sub-dispositivo de um hub `wg2` (`sub: true`, sem IP).
+
+| DP | Código | Tipo | No `/specifications` |
+|---|---|---|---|
+| 8 | `residual_electricity` | Integer 0–100 (bateria %) | status |
+| 18 | `open_inside` | Boolean (última abertura foi por dentro) | status |
+| 19 | `unlock_ble` | Integer (member ID que abriu via BLE) | status |
+| 21 | `alarm_lock` | Enum (`wrong_finger`, `pry`, `low_battery`, …) | status |
+| 27 | `doorbell_volume` | Enum | **function** |
+| 47 | `lock_motor_state` | Boolean (`true` = destrancada) | status |
+| 48 | `lock_motor_direction` | Enum | **function** |
+| 56 | `motor_torque` | Enum | **function** |
+| 71 | `ble_unlock_check` | Raw | status |
+| 33, 46, 61, 62, 69 | não declarados — só aparecem no MQTT, sem `code` | | — |
+
+Pela numeração padrão da Tuya: 33 `automatic_lock`, 46 `manual_lock`, 61 `remote_no_dp_key`,
+62 `unlock_app`.
+
+**O que o app faz, observado pelo MQTT:**
+
+- **Trancar** (com ou sem Bluetooth): DP 46 `manual_lock = true`.
+- **Abrir pelo Bluetooth do celular:** DP 71 `ble_unlock_check` — pedido e resposta com member
+  ID, um código de verificação **fixo** de 8 dígitos ASCII (gravado no pareamento, via DP 70
+  `check_code_set`), flag de ação e timestamp. Seguido de `unlock_ble`.
+- **Abrir remotamente (via hub, sem Bluetooth):** DP 61 `remote_no_dp_key` + DP 62 `unlock_app`.
+  Só a resposta da fechadura aparece; o comando sai da API de nuvem de fechadura (`remoteOpen`,
+  ver Smart Lock Open Service acima), não de um DP enviado pelo app.
+- **Abrir pela fechadura:** só `lock_motor_state = true` com `open_inside = true`.
+
+**Teste de comando pelo nosso canal:** `doorbell_volume` (declarado) passou e a fechadura
+confirmou. `manual_lock`, `lock_motor_state` e `ble_unlock_check` (com o pedido do DP 71
+remontado e timestamp novo) voltaram `[2008]` — ver §11.4. **Não há como abrir nem trancar esta
+fechadura pelo canal de device-sharing.**
+
+**O que funciona:** status em tempo real. Trancada/destrancada (DP 47), abertura por dentro
+(DP 18), bateria (DP 8) e alarmes (DP 21) chegam pelo MQTT em ~2 s.
+
+**Cuidado — dado sensível no status:** o DP 71 carrega em claro o código de verificação BLE que
+abre a fechadura por Bluetooth. Ele aparece no `status` do `/devices/detail` e nos eventos MQTT.
+`TuyaStatusPayload::SENSITIVE_CODES` o descarta em toda gravação de `tuya_status_payload` e na
+montagem do `TuyaDeviceDTO` (que vai para a sessão e para o navegador no fluxo do QR). Não
+contorne esse filtro: não logue nem exiba esse DP, e não o copie para documentação ou issues.
+
 ---
 
 ### 11.7 Colunas no banco
@@ -442,6 +505,10 @@ fechadura sem o DP o sistema **recusa**, em vez de fingir sucesso e deixar um PI
 
 `devices`: `integration_id`, `tuya_category`, `tuya_product_id`, `tuya_product_name`,
 `tuya_icon`, `tuya_online`, `tuya_status_payload`, `tuya_functions`.
+
+`tuya_status_payload` é uma lista `{code, value, t}` mesclada por `code` — toda gravação passa
+por `TuyaStatusPayload::merge`. O `PlaceTuyaLockStatusEvent` sai pelo canal
+`Place.Device.Status.{placeId}` quando o status derivado da fechadura muda.
 
 `access_code_device_syncs`: rastreia o que cada dispositivo realmente recebeu
 (`external_reference`, `synced_pin`, `status`).
@@ -472,3 +539,20 @@ tar xzf /tmp/tuya-sdk.tar.gz -C /tmp
 | `device.py` `DeviceRepository` | `TuyaIntegrationService` |
 | `home.py` `HomeRepository` | `TuyaIntegrationService::listDevices` |
 | `mq.py` + `manager.py:on_message` | `TuyaMqttService` |
+
+---
+
+### 11.9 Investigar dispositivo real com dump de produção
+
+**Nunca chame a API Tuya localmente com os tokens de uma integração vinda do dump.** Os dois
+tokens rotacionam no refresh (§11.3): se o local renovar, produção passa a dar `sign invalid`;
+se produção já renovou, o local é que falha.
+
+Faça uma sessão própria: gere um QR com o `tuya_user_code` da integração
+(`TuyaQrAuthService::generateQrCode`), o dono escaneia no Smart Life e o `pollLogin` devolve
+tokens novos, que vão para uma **integração nova no banco local**. A sessão de produção não é
+afetada. Com ela dá para chamar os endpoints da §11.4 e assinar o MQTT (§11.5) com os tópicos do
+home e do `devId` investigado. Ao terminar, apague a integração local.
+
+Para descobrir quais DPs uma ação do app usa, assine o MQTT e peça ao dono que faça uma ação por
+vez, anotando a ordem — foi assim que se chegou à §11.6.1.
