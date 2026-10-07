@@ -76,7 +76,7 @@ export default function DeviceControl({ device, placeId, initialFunctionStatus }
         initial: device.lock_status ? { [String(device.id)]: device.lock_status } : {},
     });
 
-    const triggerAction =(functionType: ControllableFunction['type']): DeviceCommandKind =>
+    const triggerAction = (functionType: ControllableFunction['type']): DeviceCommandKind =>
         functionType === 'button' ? 'push_button' : 'toggle';
 
     return (

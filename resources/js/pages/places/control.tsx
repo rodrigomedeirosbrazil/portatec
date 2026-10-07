@@ -89,7 +89,7 @@ export default function PlaceControl({ place, devices, initialFunctionStatus }: 
 
     const lockStatus = useTuyaLockStatus({ placeId: place.id, initial: initialLockStatus });
 
-    const triggerAction =(functionType: ControllableFunction['type']): DeviceCommandKind =>
+    const triggerAction = (functionType: ControllableFunction['type']): DeviceCommandKind =>
         functionType === 'button' ? 'push_button' : 'toggle';
 
     return (
