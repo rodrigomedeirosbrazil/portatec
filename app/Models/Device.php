@@ -160,6 +160,20 @@ class Device extends Model
             ->values();
     }
 
+    /**
+     * Local cujo canal de realtime (`Place.Device.*.{placeId}`) o usuário consegue assinar.
+     * Os canais são autorizados por vínculo com o local (routes/channels.php), então só serve
+     * um local visível em que ele é membro — ou qualquer um visível, para super_admin.
+     */
+    public function realtimePlaceFor(User $user): ?Place
+    {
+        $memberPlaceIds = $user->placeUsers()->pluck('place_id');
+        $visiblePlaces = $this->visiblePlacesFor($user);
+
+        return $visiblePlaces->first(fn (Place $place): bool => $memberPlaceIds->contains($place->id))
+            ?? ($user->hasRole('super_admin') ? $visiblePlaces->first() : null);
+    }
+
     public function isUsableBy(User $user): bool
     {
         return $this->deviceUsers()

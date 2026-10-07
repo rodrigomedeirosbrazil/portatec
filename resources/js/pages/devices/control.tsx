@@ -39,7 +39,7 @@ interface ControlDevice {
 
 interface ControlPageProps {
     device: ControlDevice;
-    placeId: number;
+    placeId: number | null;
     initialFunctionStatus: Record<string, unknown>;
     [key: string]: unknown;
 }
@@ -51,14 +51,14 @@ interface ControlPageProps {
  * esta tela só cuida do layout e do envio do comando.
  *
  * Os canais de realtime são por local (`Place.Device.*.{placeId}`), não por
- * dispositivo — `placeId` aqui é o mesmo resolvido no controller, espelhando
- * o `$placeId` computado hoje em `control.blade.php`.
+ * dispositivo — `placeId` aqui é o local resolvido no controller cujo canal o
+ * usuário consegue ouvir (`null` quando não há nenhum).
  */
 export default function DeviceControl({ device, placeId, initialFunctionStatus }: ControlPageProps) {
     const { t } = useTranslations();
 
     const commands = useDeviceCommands({
-        placeId: placeId || null,
+        placeId,
         initialFunctionStatus,
         initialDeviceAvailability: { [String(device.id)]: device.is_available },
         sendCommand: async ({ action, pin }): Promise<DeviceCommandResult> => {
@@ -72,7 +72,7 @@ export default function DeviceControl({ device, placeId, initialFunctionStatus }
     });
 
     const lockStatus = useTuyaLockStatus({
-        placeId: placeId || null,
+        placeId,
         initial: device.lock_status ? { [String(device.id)]: device.lock_status } : {},
     });
 

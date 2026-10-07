@@ -19,12 +19,13 @@ class TuyaLockStatusScreensTest extends TestCase
 
     public function test_device_control_sends_the_lock_status(): void
     {
-        [$user, , $lock] = $this->scenario();
+        [$user, $place, $lock] = $this->scenario();
 
         $this->actingAs($user)
             ->get("/app/devices/{$lock->id}/control")
             ->assertOk()
             ->assertInertia(fn ($page) => $page
+                ->where('placeId', $place->id)
                 ->where('device.lock_status.locked', true)
                 ->where('device.lock_status.battery', 51)
                 ->where('device.supports_tuya_temporary_password', false));
@@ -73,6 +74,20 @@ class TuyaLockStatusScreensTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->where('device.lock_status.locked', true)
                 ->where('placeId', null));
+    }
+
+    public function test_device_control_sends_no_place_when_the_user_is_not_a_member_of_any_place(): void
+    {
+        [, , $lock] = $this->scenario();
+
+        // Admin só do equipamento: não pode ouvir o canal do local, então não recebe placeId.
+        $deviceAdmin = User::factory()->create();
+        $lock->deviceUsers()->create(['user_id' => $deviceAdmin->id, 'role' => 'admin']);
+
+        $this->actingAs($deviceAdmin)
+            ->get("/app/devices/{$lock->id}/control")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('placeId', null));
     }
 
     /** @return array{0: User, 1: Place, 2: Device} */

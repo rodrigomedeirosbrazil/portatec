@@ -16,8 +16,8 @@ use Inertia\Response;
 class DeviceControlController extends Controller
 {
     /**
-     * Ported 1:1 from `App\Livewire\Devices\Control::mount()` + `render()`
-     * and the `$placeId` computation in `devices/control.blade.php`.
+     * Ported from `App\Livewire\Devices\Control::mount()` + `render()`. O `placeId` é o local
+     * cujo canal de realtime o usuário consegue ouvir (`Device::realtimePlaceFor`), ou `null`.
      */
     public function show(Request $request, Device $device, TuyaIntegrationService $tuyaIntegrationService): Response
     {
@@ -31,7 +31,7 @@ class DeviceControlController extends Controller
 
         return Inertia::render('devices/control', [
             'device' => $this->mapDevice($device),
-            'placeId' => $this->resolvePlaceId($device),
+            'placeId' => $device->realtimePlaceFor(Auth::user())?->id,
             'initialFunctionStatus' => $this->initialFunctionStatus($device),
         ]);
     }
@@ -67,19 +67,6 @@ class DeviceControlController extends Controller
                 'status' => $statusFunction->status,
             ] : null,
         ];
-    }
-
-    /**
-     * Mirrors the `$placeId` computed in `control.blade.php`: first the
-     * device's loaded `places`, then the legacy `place_id` column, else `0`
-     * (no realtime channel to subscribe to).
-     */
-    private function resolvePlaceId(Device $device): int
-    {
-        $placeId = $device->places->first()?->id
-            ?? $device->place_id;
-
-        return (int) ($placeId ?? 0);
     }
 
     /**
