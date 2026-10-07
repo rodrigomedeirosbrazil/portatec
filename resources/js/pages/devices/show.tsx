@@ -1,8 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
 
+import { TuyaLockStatusPanel } from '@/components/device-control/tuya-lock-status-panel';
 import { Page, PageHeader } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/hooks/use-translations';
+import { useTuyaLockStatus } from '@/hooks/use-tuya-lock-status';
 import { AppLayout } from '@/layouts/app-layout';
 import devices from '@/routes/app/devices';
 import type { AccessCodeDeviceSync, CommandLog, Device } from '@/types';
@@ -20,11 +22,17 @@ interface DevicesShowProps {
     recentTuyaSyncs: AccessCodeDeviceSync[];
     codesOnDevice: CodeOnDevice[];
     abilities: { update: boolean; managePermissions: boolean };
+    placeId: number | null;
     [key: string]: unknown;
 }
 
-export default function DevicesShow({ device, recentCommands, recentTuyaSyncs, codesOnDevice, abilities }: DevicesShowProps) {
+export default function DevicesShow({ device, recentCommands, recentTuyaSyncs, codesOnDevice, abilities, placeId }: DevicesShowProps) {
     const { t } = useTranslations();
+
+    const lockStatus = useTuyaLockStatus({
+        placeId,
+        initial: device.lock_status ? { [String(device.id)]: device.lock_status } : {},
+    });
 
     const locationsLabel = (device.places ?? []).map((place) => place.name).join(', ') || device.place?.name || t('unassigned_place');
 
@@ -73,6 +81,14 @@ export default function DevicesShow({ device, recentCommands, recentTuyaSyncs, c
                         <strong>{t('status')}</strong>
                         <p className="mt-1.5 m-0">{device.is_available ? t('online') : t('offline')}</p>
                     </div>
+                    {device.is_tuya_lock ? (
+                        <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
+                            <strong>{t('tuya_lock_status_title')}</strong>
+                            <div className="mt-1.5">
+                                <TuyaLockStatusPanel status={lockStatus.get(device.id)} />
+                            </div>
+                        </div>
+                    ) : null}
                     <div className="rounded-lg border border-neutral-200 bg-white p-3.5">
                         <strong>{t('last_sync')}</strong>
                         <p className="mt-1.5 m-0">{device.last_sync ? formatDateTime(device.last_sync) : t('never_synced')}</p>
