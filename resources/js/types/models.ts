@@ -19,6 +19,14 @@ export interface Place {
 
 export type DeviceBrand = 'portatec' | 'tuya';
 
+/** `TuyaLockStatus::toArray()` — cada campo pode ser desconhecido. */
+export interface TuyaLockStatus {
+    locked: boolean | null;
+    battery: number | null;
+    alert: string | null;
+    updated_at: string | null;
+}
+
 export interface Device {
     id: number;
     name: string;
@@ -38,6 +46,7 @@ export interface Device {
     is_available: boolean;
     is_tuya_lock?: boolean;
     supports_tuya_temporary_password?: boolean;
+    lock_status?: TuyaLockStatus | null;
     device_functions_count?: number;
     device_functions?: DeviceFunction[];
     places?: Place[];
