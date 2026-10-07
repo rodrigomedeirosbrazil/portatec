@@ -491,9 +491,10 @@ fechadura pelo canal de device-sharing.**
 (DP 18), bateria (DP 8) e alarmes (DP 21) chegam pelo MQTT em ~2 s.
 
 **Cuidado — dado sensível no status:** o DP 71 carrega em claro o código de verificação BLE que
-abre a fechadura por Bluetooth. Ele aparece no `status` do `/devices/detail` e nos eventos MQTT,
-e portanto pode parar em `devices.tuya_status_payload`. Não logue nem exiba esse DP, e não o
-copie para documentação ou issues.
+abre a fechadura por Bluetooth. Ele aparece no `status` do `/devices/detail` e nos eventos MQTT.
+`TuyaStatusPayload::SENSITIVE_CODES` o descarta em toda gravação de `tuya_status_payload` e na
+montagem do `TuyaDeviceDTO` (que vai para a sessão e para o navegador no fluxo do QR). Não
+contorne esse filtro: não logue nem exiba esse DP, e não o copie para documentação ou issues.
 
 ---
 
