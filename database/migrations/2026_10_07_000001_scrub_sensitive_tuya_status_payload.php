@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Services\Tuya\TuyaStatusPayload;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
