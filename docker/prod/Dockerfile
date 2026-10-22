@@ -2,7 +2,7 @@
 #
 # Precisa de PHP e do vendor, e não só de Node: o `vite build` roda o plugin do
 # wayfinder, que chama `php artisan` para gerar as rotas em TypeScript.
-FROM php:8.4.3-fpm AS build
+FROM php:8.4.27-fpm AS build
 
 RUN apt-get update \
     && curl -sL https://deb.nodesource.com/setup_22.x -o nodesource_setup.sh \
@@ -42,7 +42,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ 
 RUN npm ci && npm run build
 
 # Imagem final: sem Node, sem composer, sem node_modules.
-FROM php:8.4.3-fpm
+FROM php:8.4.27-fpm
 
 # Mesma lista do estágio de build, menos o que era só de build: nodejs (e o
 # repositório da nodesource), git e unzip. certbot, nano e cron já tinham saído.
