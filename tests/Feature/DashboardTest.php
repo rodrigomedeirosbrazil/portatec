@@ -47,6 +47,10 @@ class DashboardTest extends TestCase
 
     public function test_aggregates_are_scoped_to_the_users_places(): void
     {
+        // Meio-dia fixo: os check-ins são contados no dia inteiro, então o
+        // resultado não pode depender da hora em que o teste roda.
+        $this->travelTo(now()->setTime(12, 0));
+
         $user = User::factory()->create();
         $place = $this->makePlaceWithAdmin($user);
 
@@ -106,7 +110,7 @@ class DashboardTest extends TestCase
             $this->assertSame(1, $props['totalOnline']);
             $this->assertSame(1, $props['totalOffline']);
             $this->assertSame(1, $props['activeBookings']);
-            $this->assertSame(1, $props['todayCheckIns']);
+            $this->assertSame(2, $props['todayCheckIns']);
             $this->assertCount(1, $props['places']);
         });
     }

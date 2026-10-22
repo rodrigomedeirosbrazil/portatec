@@ -8,7 +8,7 @@ RUN apt-get update \
     && curl -sL https://deb.nodesource.com/setup_22.x -o nodesource_setup.sh \
     && bash nodesource_setup.sh \
     && apt install -y \
-    gettext libzip-dev libxml2-dev libpng-dev \
+    gettext libzip-dev libxml2-dev libpng-dev libicu-dev \
     git unzip \
     nodejs \
     && rm -r /var/lib/apt/lists/*
@@ -48,7 +48,7 @@ FROM php:8.4.27-fpm
 # repositório da nodesource), git e unzip. certbot, nano e cron já tinham saído.
 RUN apt-get update \
     && apt install -y \
-    gettext libzip-dev libxml2-dev libpng-dev \
+    gettext libzip-dev libxml2-dev libpng-dev libicu-dev \
     nginx supervisor \
     && rm -r /var/lib/apt/lists/*
 
